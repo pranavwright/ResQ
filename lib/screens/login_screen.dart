@@ -8,7 +8,19 @@ class LoginScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text('Login')),
       body: Center(
-        child: Text('Login Screen'),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Login Screen'),
+            SizedBox(height: 20), // Adds some spacing
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/otp');
+              },
+              child: Text('Go to OTP'),
+            ),
+          ],
+        ),
       ),
     );
   }
