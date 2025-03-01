@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class CampStatusScreen extends StatelessWidget {
+  const CampStatusScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
