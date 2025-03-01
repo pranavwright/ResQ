@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-class HomeScreen extends StatelessWidget {
+class AdminDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Home')),
+      appBar: AppBar(title: Text('Admin Dashboard')),
       body: Center(
-        child: Text('Home Screen'),
+        child: Text('Admin Dashboard'),
       ),
     );
   }
