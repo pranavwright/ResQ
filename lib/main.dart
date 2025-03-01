@@ -1,4 +1,6 @@
+
 import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'screens/otp_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/admin_dashboard.dart';
@@ -10,8 +12,11 @@ import 'screens/role_creation.dart';
 import 'screens/home.dart';
 
 void main() {
+  // Configure the URL strategy for web
+  setUrlStrategy(PathUrlStrategy());
   runApp(MyApp());
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
