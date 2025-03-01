@@ -1,6 +1,5 @@
-
 import 'package:flutter/material.dart';
-import 'package:flutter_web_plugins/flutter_web_plugins.dart';
+import 'dart:io' show Platform;
 import 'screens/otp_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/admin_dashboard.dart';
@@ -12,11 +11,8 @@ import 'screens/role_creation.dart';
 import 'screens/home.dart';
 
 void main() {
-  // Configure the URL strategy for web
-  setUrlStrategy(PathUrlStrategy());
   runApp(MyApp());
 }
-
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -25,9 +21,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        // Add platform-specific theme settings if needed
+        primaryColor: Platform.isAndroid ? Colors.green : Colors.blue,
+      ),
       initialRoute: '/',
       routes: {
-        // Use routes instead of onGenerateRoute for better web support
         '/': (context) => LoginScreen(),
         '/otp': (context) => OtpScreen(),
         '/admin-dashboard': (context) => AdminDashboard(),
@@ -38,12 +38,9 @@ class MyApp extends StatelessWidget {
         '/create-notice': (context) => CreateNoticeScreen(),
         '/home': (context) => HomeScreen(),
       },
-      onUnknownRoute:
-          (settings) => MaterialPageRoute(
-            builder:
-                (context) =>
-                    Scaffold(body: Center(child: Text('Page Not Found'))),
-          ),
+      onUnknownRoute: (settings) => MaterialPageRoute(
+        builder: (context) => Scaffold(body: Center(child: Text('Page Not Found'))),
+      ),
     );
   }
 }
