@@ -1,10 +1,26 @@
 import 'package:flutter/material.dart';
+import 'auth_service.dart';
+
 
 class OtpScreen extends StatelessWidget {
   const OtpScreen({super.key});
 
+  // Mock function to simulate API call - replace with actual API call
+  Future<Map<String, dynamic>> verifyOtp(String otp) async {
+    // This is just a mock - replace with actual API call
+    await Future.delayed(Duration(seconds: 1)); // Simulate network delay
+    
+    // Mock response
+    return {
+      'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', // Sample token
+      'roles': ['admin', 'familysurvey', 'roomsurvey'] // Sample roles
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
+    final otpController = TextEditingController();
+
     return Scaffold(
       appBar: AppBar(title: Text('OTP Verification')),
       body: Padding(
@@ -19,6 +35,7 @@ class OtpScreen extends StatelessWidget {
             SizedBox(height: 20),
             // OTP input field
             TextField(
+              controller: otpController,
               keyboardType: TextInputType.number,
               maxLength: 6,
               textAlign: TextAlign.center,
@@ -32,15 +49,51 @@ class OtpScreen extends StatelessWidget {
               ),
             ),
             SizedBox(height: 30),
-            // Button to navigate to admin dashboard
+            // Button to verify OTP
             ElevatedButton(
-              onPressed: () {
-                // Navigate to admin dashboard and remove all previous routes
-                Navigator.pushNamedAndRemoveUntil(
-                  context, 
-                  '/admin-dashboard',
-                  (route) => false, // Remove all previous routes
+              onPressed: () async {
+                // Show loading indicator
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => Center(child: CircularProgressIndicator()),
                 );
+                
+                try {
+                  // Call API to verify OTP
+                  final response = await verifyOtp(otpController.text);
+                  
+                  // Extract token and roles
+                  final token = response['token'];
+                  final roles = List<String>.from(response['roles']);
+                  
+                  // Login with token and roles
+                  await AuthService().login(token, roles);
+                  
+                  // Close loading dialog
+                  Navigator.pop(context);
+                  
+                  // Navigate to appropriate dashboard based on roles
+                  String targetRoute = '/app'; // Default route
+                  
+                
+            
+                  
+                  // Navigate to the appropriate dashboard
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    targetRoute,
+                    (route) => false,
+                  );
+                } catch (e) {
+                  // Close loading dialog
+                  Navigator.pop(context);
+                  
+                  // Show error message
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('OTP verification failed: ${e.toString()}')),
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
