@@ -79,7 +79,7 @@ class _CampAdminDashboardState extends State<CampAdminDashboard> {
                     const Icon(Icons.menu),
                     const Spacer(),
                     const Text(
-                      'Admin',
+                      'CampAdmin',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,

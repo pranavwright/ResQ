@@ -79,7 +79,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                     const Icon(Icons.menu),
                     const Spacer(),
                     const Text(
-                      'Admin',
+                      'SuperAdmin',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,

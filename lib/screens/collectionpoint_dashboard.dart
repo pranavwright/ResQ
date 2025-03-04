@@ -79,7 +79,7 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard> {
                     const Icon(Icons.menu),
                     const Spacer(),
                     const Text(
-                      'Admin',
+                      'Collection Point',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,

@@ -79,7 +79,7 @@ class _VolunteerDashboardState extends State<VolunteerDashboard> {
                     const Icon(Icons.menu),
                     const Spacer(),
                     const Text(
-                      'Admin',
+                      'Volunteer',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,

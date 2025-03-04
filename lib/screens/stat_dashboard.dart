@@ -79,7 +79,7 @@ class _StatDashboardState extends State<StatDashboard> {
                     const Icon(Icons.menu),
                     const Spacer(),
                     const Text(
-                      'Admin',
+                      'Stat',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,

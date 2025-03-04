@@ -80,7 +80,7 @@ class _KasDashboardState extends State<KasDashboard> {
                     const Icon(Icons.menu),
                     const Spacer(),
                     const Text(
-                      'Admin',
+                      'KAS',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,

@@ -21,7 +21,8 @@ class AuthService {
       _isAuthenticated = true;
 
       // Manually set roles for testing
-      _userRoles = ['superadmin'];
+      _userRoles = ['stat'];
+
     } else {
       _isAuthenticated = false;
       _userRoles = [];
