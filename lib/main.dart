@@ -8,8 +8,8 @@ import 'screens/create_notice.dart';
 import 'screens/families.dart';
 import 'screens/role_creation.dart';
 import 'screens/home.dart';
-import 'screens/auth_route.dart';
-import 'screens/auth_service.dart';
+import 'utlis/auth/auth_route.dart';
+import 'utlis/auth/auth_service.dart';
 import 'screens/stat_dashboard.dart';
 import 'screens/campadmin_dashboard.dart';
 import 'screens/kas_dashboard.dart';
@@ -29,10 +29,9 @@ class MyApp extends StatelessWidget {
 
   Widget getDashboardForRole(List<String> roles) {
     
-    if (roles.contains('stat')) return StatDashboard();
     if (roles.contains('superadmin')) return SuperAdminDashboard();
     if (roles.contains('admin')) return AdminDashboard();
-
+    if (roles.contains('stat')) return StatDashboard();
     if (roles.contains('kas')) return KasDashboard();
     if (roles.contains('collectionpointadmin'))return CollectionPointDashboard();
     if (roles.contains('campadmin')) return CampAdminDashboard();

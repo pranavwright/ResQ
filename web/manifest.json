@@ -1,11 +1,11 @@
 {
-    "name": "myapp",
-    "short_name": "myapp",
+    "name": "REalSQ",
+    "short_name": "RESQ",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "A Disaster Management Tool.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

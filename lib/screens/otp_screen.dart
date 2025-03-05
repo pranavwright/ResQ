@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'auth_service.dart';
+import '../utlis/auth/auth_service.dart';
 
 
 class OtpScreen extends StatelessWidget {
@@ -13,7 +13,7 @@ class OtpScreen extends StatelessWidget {
     // Mock response
     return {
       'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', // Sample token
-      'roles': ['admin', 'familysurvey', 'roomsurvey'] // Sample roles
+      'roles': ['superadmin', 'familysurvey', 'roomsurvey'] // Sample roles
     };
   }
 
