@@ -16,6 +16,7 @@ import 'screens/kas_dashboard.dart';
 import 'screens/superadmin_dashboard.dart';
 import 'screens/collectionpoint_dashboard.dart';
 import 'screens/volunteer_dashboard.dart';
+import 'screens/donation_request_form.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -106,6 +107,8 @@ class MyApp extends StatelessWidget {
 
         // Home - accessible to all authenticated users
         '/home': (context) => const AuthRoute(child: HomeScreen()),
+     
+      '/public-donation': (context) => DonationRequestPage(),
       },
       onUnknownRoute:
           (settings) => MaterialPageRoute(

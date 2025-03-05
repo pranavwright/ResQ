@@ -31,6 +31,17 @@ class LoginScreen extends StatelessWidget {
               },
               child: Text('Go to OTP'),
             ),
+                     SizedBox(height: 20),
+            // New Donation Button
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/public-donation');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange, // Distinctive color
+              ),
+              child: Text('Donate Now'),
+            ),
             SizedBox(height: 20),
             Text(
               Platform.isAndroid
