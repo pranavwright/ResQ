@@ -16,6 +16,7 @@ import 'screens/kas_dashboard.dart';
 import 'screens/superadmin_dashboard.dart';
 import 'screens/collectionpoint_dashboard.dart';
 import 'screens/volunteer_dashboard.dart';
+import 'screens/donation_request_form.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,10 +30,10 @@ class MyApp extends StatelessWidget {
 
   Widget getDashboardForRole(List<String> roles) {
     
-    if (roles.contains('stat')) return StatDashboard();
+   
     if (roles.contains('superadmin')) return SuperAdminDashboard();
     if (roles.contains('admin')) return AdminDashboard();
-
+ if (roles.contains('stat')) return StatDashboard();
     if (roles.contains('kas')) return KasDashboard();
     if (roles.contains('collectionpointadmin'))return CollectionPointDashboard();
     if (roles.contains('campadmin')) return CampAdminDashboard();
@@ -104,6 +105,9 @@ class MyApp extends StatelessWidget {
               requiredRoles: ['admin'],
               child: CreateNoticeScreen(),
             ),
+            
+            
+             '/public-donation': (context) => DonationRequestPage(),
 
         // Home - accessible to all authenticated users
         '/home': (context) => const AuthRoute(child: HomeScreen()),
