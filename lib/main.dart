@@ -29,12 +29,12 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   Widget getDashboardForRole(List<String> roles) {
-    
     if (roles.contains('superadmin')) return SuperAdminDashboard();
     if (roles.contains('admin')) return AdminDashboard();
     if (roles.contains('stat')) return StatDashboard();
     if (roles.contains('kas')) return KasDashboard();
-    if (roles.contains('collectionpointadmin'))return CollectionPointDashboard();
+    if (roles.contains('collectionpointadmin'))
+      return CollectionPointDashboard();
     if (roles.contains('campadmin')) return CampAdminDashboard();
     if (roles.contains('collectionpointvolunteer')) return VolunteerDashboard();
     return HomeScreen(); // Provide a fallback
@@ -43,10 +43,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     List<String> roles = AuthService().getCurrentUserRoles();
-    
 
     return MaterialApp(
-      
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -54,7 +52,6 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        // Auth not required for these routes
         '/':
             (context) =>
                 const AuthRoute(requiresAuth: false, child: LoginScreen()),
@@ -62,7 +59,6 @@ class MyApp extends StatelessWidget {
             (context) =>
                 const AuthRoute(requiresAuth: false, child: OtpScreen()),
 
-        // Admin dashboard - requires admin role
         '/app':
             (context) => AuthRoute(
               requiredRoles: [
@@ -77,41 +73,34 @@ class MyApp extends StatelessWidget {
               child: getDashboardForRole(roles),
             ),
 
-        // Family survey - requires admin or familySurvey role
         '/families':
             (context) => const AuthRoute(
               requiredRoles: ['admin', 'familySurvey'],
               child: FamiliesScreen(),
             ),
 
-        // Camp status - requires admin or camp admin role
         '/camp-status':
             (context) => const AuthRoute(
               requiredRoles: ['admin', 'campAdmin'],
               child: CampStatusScreen(),
             ),
 
-        // Role creation - requires admin role only
         '/notice-board':
             (context) => const AuthRoute(
               requiredRoles: ['admin'],
               child: RoleCreationScreen(),
             ),
 
-        // Create notice - requires admin role
         '/create-notice':
             (context) => const AuthRoute(
               requiredRoles: ['admin'],
               child: CreateNoticeScreen(),
             ),
-            
-            
-             '/public-donation': (context) => DonationRequestPage(),
 
-        // Home - accessible to all authenticated users
+        '/public-donation': (context) => DonationRequestPage(),
+
+        // accessible to all authenticated users
         '/home': (context) => const AuthRoute(child: HomeScreen()),
-     
-      '/public-donation': (context) => DonationRequestPage(),
       },
       onUnknownRoute:
           (settings) => MaterialPageRoute(
