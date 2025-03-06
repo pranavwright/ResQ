@@ -49,7 +49,7 @@ class RoleCreationScreen extends StatelessWidget {
                       onTap: () {},
                     ),
                     _buildRoleCard(
-                      icon: Icons.person_check,
+                      icon: Icons.person,
                       label: 'KAS',
                       onTap: () {},
                     ),
@@ -118,5 +118,5 @@ class CustomIcons {
   static IconData campHouse = Icons.home;
   static IconData layers = Icons.layers;
   static IconData stats = Icons.trending_up;
-  static IconData personCheck = Icons.person_check;
+  static IconData personCheck = Icons.person;
 }

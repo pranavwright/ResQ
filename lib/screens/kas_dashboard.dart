@@ -1,7 +1,6 @@
+// TODO Implement this library.
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'login_screen.dart';
-import '../utlis/auth/auth_service.dart';
 
 void main() {
   runApp(const MyApp());
@@ -10,29 +9,28 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Admin Dashboard',
+      title: 'KAS Dashboard',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: Colors.grey[100],
       ),
-      home: const AdminDashboard(),
+      home: const KasDashboard(),
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
-class AdminDashboard extends StatefulWidget {
-  const AdminDashboard({super.key});
+class KasDashboard extends StatefulWidget {
+  const KasDashboard({super.key});
 
   @override
-  State<AdminDashboard> createState() => _AdminDashboardState();
+  State<KasDashboard> createState() => _KasDashboardState();
 }
 
-class _AdminDashboardState extends State<AdminDashboard> {
+class _KasDashboardState extends State<KasDashboard> {
   String selectedStatus = 'Alive';
   
   // Sample data for each status
@@ -66,15 +64,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
     'Deceased': Colors.red,
   };
 
-   void _logout() {
-    AuthService().logout().then((_) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => LoginScreen()),
-        (Route<dynamic> route) => false,
-      );
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -91,19 +80,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     const Icon(Icons.menu),
                     const Spacer(),
                     const Text(
-                      'Admin',
+                      'KAS',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const Spacer(),
-                       // Logout Button
-                    IconButton(
-                      icon: const Icon(Icons.logout),
-                      onPressed: _logout, // Using defined logout method
-                      tooltip: 'Logout',
-                    ),
                   ],
                 ),
               ),
@@ -189,9 +172,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       maxY: 7,
                       lineBarsData: [
                         LineChartBarData(
-                          spots: statusData[selectedStatus] ?? [],
+                          spots: statusData[selectedStatus]!,
                           isCurved: true,
-                         color: statusColors[selectedStatus]!,
+                          color: statusColors[selectedStatus],
                           barWidth: 3,
                           dotData: const FlDotData(show: false),
                           belowBarData: BarAreaData(
