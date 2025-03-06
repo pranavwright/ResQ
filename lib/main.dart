@@ -104,6 +104,9 @@ class MyApp extends StatelessWidget {
               requiredRoles: ['admin'],
               child: CreateNoticeScreen(),
             ),
+            
+            
+             '/public-donation': (context) => DonationRequestPage(),
 
         // Home - accessible to all authenticated users
         '/home': (context) => const AuthRoute(child: HomeScreen()),

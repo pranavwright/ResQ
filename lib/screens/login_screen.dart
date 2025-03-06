@@ -4,8 +4,6 @@ import 'dart:io' show Platform; // Import to check the OS
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
-  
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -32,6 +30,17 @@ class LoginScreen extends StatelessWidget {
               child: Text('Go to OTP'),
             ),
                      SizedBox(height: 20),
+            // New Donation Button
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/public-donation');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange, // Distinctive color
+              ),
+              child: Text('Donate Now'),
+            ),
+            SizedBox(height: 20),
             // New Donation Button
             ElevatedButton(
               onPressed: () {

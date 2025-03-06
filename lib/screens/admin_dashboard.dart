@@ -34,7 +34,7 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   String selectedStatus = 'Alive';
-  
+
   // Sample data for each status
   final Map<String, List<FlSpot>> statusData = {
     'Alive': [
@@ -66,7 +66,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     'Deceased': Colors.red,
   };
 
-   void _logout() {
+  void _logout() {
     AuthService().logout().then((_) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => LoginScreen()),
@@ -98,7 +98,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       ),
                     ),
                     const Spacer(),
-                       // Logout Button
+                    // Logout Button
                     IconButton(
                       icon: const Icon(Icons.logout),
                       onPressed: _logout, // Using defined logout method
@@ -107,7 +107,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   ],
                 ),
               ),
-              
+
               // Navigation Icons
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -121,9 +121,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   ],
                 ),
               ),
-              
+
               const Divider(),
-              
+
               // Overview Title
               const Padding(
                 padding: EdgeInsets.all(16.0),
@@ -138,7 +138,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   ),
                 ),
               ),
-              
+
               // Chart
               Expanded(
                 child: Padding(
@@ -191,7 +191,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         LineChartBarData(
                           spots: statusData[selectedStatus] ?? [],
                           isCurved: true,
-                         color: statusColors[selectedStatus]!,
+                          color: statusColors[selectedStatus]!,
                           barWidth: 3,
                           dotData: const FlDotData(show: false),
                           belowBarData: BarAreaData(
@@ -203,7 +203,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   ),
                 ),
               ),
-              
+
               // Status Toggles
               Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -255,7 +255,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Widget buildStatusButton(String status, Color color) {
     final isSelected = selectedStatus == status;
-    
+
     return GestureDetector(
       onTap: () {
         setState(() {
