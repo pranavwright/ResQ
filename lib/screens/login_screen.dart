@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:io' show Platform; // Import to check the OS
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -9,7 +9,7 @@ class LoginScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Login'),
-        backgroundColor: Platform.isAndroid ? Colors.green : Colors.blue, // Android-specific color
+        backgroundColor: !kIsWeb? Colors.green : Colors.blue, // Android-specific color
       ),
       body: Center(
         child: Column(
@@ -19,7 +19,7 @@ class LoginScreen extends StatelessWidget {
               'Login Screen',
               style: TextStyle(
                 fontSize: 20,
-                color: Platform.isAndroid ? Colors.green : Colors.red, // Different color for Android
+                color: !kIsWeb? Colors.green : Colors.red, // Different color for Android
               ),
             ),
             SizedBox(height: 20), // Adds some spacing
@@ -42,7 +42,7 @@ class LoginScreen extends StatelessWidget {
             ),
             SizedBox(height: 20),
             Text(
-              Platform.isAndroid
+              !kIsWeb
                   ? 'Running on Android ✅'
                   : 'Not running on Android ❌',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),

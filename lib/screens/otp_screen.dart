@@ -60,26 +60,15 @@ class OtpScreen extends StatelessWidget {
                 );
                 
                 try {
-                  // Call API to verify OTP
                   final response = await verifyOtp(otpController.text);
                   
-                  // Extract token and roles
                   final token = response['token'];
                   final roles = List<String>.from(response['roles']);
-                  
-                  // Login with token and roles
-                  await AuthService().login(token, roles);
-                  
-                  // Close loading dialog
+
                   Navigator.pop(context);
-                  
-                  // Navigate to appropriate dashboard based on roles
-                  String targetRoute = '/app'; // Default route
-                  
-                
-            
-                  
-                  // Navigate to the appropriate dashboard
+                  await AuthService().login(token, roles);
+                  String targetRoute = '/app'; 
+
                   Navigator.pushNamedAndRemoveUntil(
                     context,
                     targetRoute,

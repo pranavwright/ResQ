@@ -17,17 +17,18 @@ import 'screens/superadmin_dashboard.dart';
 import 'screens/collectionpoint_dashboard.dart';
 import 'screens/volunteer_dashboard.dart';
 import 'screens/donation_request_form.dart';
+// import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // setUrlStrategy(PathUrlStrategy());
   await AuthService()
-      .loadAuthState(); // Ensuring auth state is loaded before app starts
+      .loadAuthState(); 
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
   Widget getDashboardForRole(List<String> roles) {
     if (roles.contains('superadmin')) return SuperAdminDashboard();
     if (roles.contains('admin')) return AdminDashboard();

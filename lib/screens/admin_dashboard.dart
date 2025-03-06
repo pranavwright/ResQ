@@ -98,10 +98,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       ),
                     ),
                     const Spacer(),
-                    // Logout Button
                     IconButton(
                       icon: const Icon(Icons.logout),
-                      onPressed: _logout, // Using defined logout method
+                      onPressed: _logout, 
                       tooltip: 'Logout',
                     ),
                   ],

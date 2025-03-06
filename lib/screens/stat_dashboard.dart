@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 // Import the house donation form
 import 'house_donation_form.dart';
+import '../utlis/auth/auth_service.dart';
 
 class StatDashboard extends StatelessWidget {
   @override
@@ -12,8 +13,8 @@ class StatDashboard extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.logout),
             onPressed: () async {
-              // await AuthService().logout(); // Call your logout method
-              Navigator.pushReplacementNamed(context, '/'); // Navigate to login screen
+              await AuthService().logout(); 
+              Navigator.pushReplacementNamed(context, '/');
             },
           ),
         ],
