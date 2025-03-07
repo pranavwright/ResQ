@@ -10,7 +10,6 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -34,7 +33,7 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   String selectedStatus = 'Alive';
-  
+
   // Sample data for each status
   final Map<String, List<FlSpot>> statusData = {
     'Alive': [
@@ -66,7 +65,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     'Deceased': Colors.red,
   };
 
-   void _logout() {
+  void _logout() {
     AuthService().logout().then((_) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => LoginScreen()),
@@ -98,7 +97,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       ),
                     ),
                     const Spacer(),
-                       // Logout Button
+                    // Logout Button
                     IconButton(
                       icon: const Icon(Icons.logout),
                       onPressed: _logout, // Using defined logout method
@@ -107,7 +106,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   ],
                 ),
               ),
-              
+
               // Navigation Icons
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -116,14 +115,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   children: [
                     buildNavItem(Icons.people, 'Families'),
                     buildNavItem(Icons.home_work, 'Camp Status'),
-                    buildNavItem(Icons.announcement, 'Role Based\nNotice Board', isSelected: true),
+                    buildNavItem(
+                      Icons.announcement,
+                      'Role Based\nNotice Board',
+                      isSelected: true,
+                    ),
                     buildNavItem(Icons.assignment_ind, 'Role Creation'),
                   ],
                 ),
               ),
-              
+
               const Divider(),
-              
+
               // Overview Title
               const Padding(
                 padding: EdgeInsets.all(16.0),
@@ -131,14 +134,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Overview',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
-              
+
               // Chart
               Expanded(
                 child: Padding(
@@ -191,19 +191,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         LineChartBarData(
                           spots: statusData[selectedStatus] ?? [],
                           isCurved: true,
-                         color: statusColors[selectedStatus]!,
+                          color: statusColors[selectedStatus]!,
                           barWidth: 3,
                           dotData: const FlDotData(show: false),
-                          belowBarData: BarAreaData(
-                            show: false,
-                          ),
+                          belowBarData: BarAreaData(show: false),
                         ),
                       ],
                     ),
                   ),
                 ),
               ),
-              
+
               // Status Toggles
               Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -229,33 +227,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          color: Colors.black,
-        ),
+        Icon(icon, color: Colors.black),
         const SizedBox(height: 4),
         Text(
           label,
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
         ),
         const SizedBox(height: 4),
-        if (isSelected)
-          Container(
-            height: 2,
-            width: 40,
-            color: Colors.green,
-          ),
+        if (isSelected) Container(height: 2, width: 40, color: Colors.green),
       ],
     );
   }
 
   Widget buildStatusButton(String status, Color color) {
     final isSelected = selectedStatus == status;
-    
+
     return GestureDetector(
       onTap: () {
         setState(() {

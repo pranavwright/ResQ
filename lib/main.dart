@@ -35,7 +35,7 @@ class MyApp extends StatelessWidget {
     if (roles.contains('stat')) return StatDashboard();
     if (roles.contains('kas')) return KasDashboard();
     if (roles.contains('collectionpointadmin'))return CollectionPointDashboard();
-    if (roles.contains('campadmin')) return CampAdminDashboard();
+    if (roles.contains('campadmin')) return CampAdminRequestScreen();
     if (roles.contains('collectionpointvolunteer')) return VolunteerDashboard();
     return HomeScreen(); // Provide a fallback
   }
