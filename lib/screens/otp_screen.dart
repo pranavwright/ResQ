@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../utlis/auth/auth_service.dart';
+import '../utils/auth/auth_service.dart';
 
 
 class OtpScreen extends StatelessWidget {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'login_screen.dart';
-import '../utlis/auth/auth_service.dart';
+import '../utils/auth/auth_service.dart';
 
 void main() {
   runApp(const MyApp());
