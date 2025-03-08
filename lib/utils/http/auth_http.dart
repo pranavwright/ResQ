@@ -1,18 +1,25 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:resq/utils/auth/auth_service.dart';
 import '../../constants/api_constants.dart';
 
 class AuthHttp {
   final String baseUrl = ApiConstants.baseUrl;
+  final Future<String?> token = AuthService().getToken();
 
+  // Default headers with authorization
+  Map<String, String> get _headers => {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $token',
+  };
   Future<Map<String, dynamic>> register({
     required String name,
     required String role,
     required String phoneNumber,
   }) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/register'),
-      headers: {'Content-Type': 'application/json'},
+      Uri.parse('$baseUrl/auth/register'),
+      headers: _headers,
       body: jsonEncode({
         'name': name,
         'phone_number': phoneNumber,
@@ -27,15 +34,13 @@ class AuthHttp {
     }
   }
 
-  
-  Future<Map<String, dynamic>> checkUser({
-    required String uid,
+  Future<Map<String, dynamic>> checkPhoneNumber({
+    required String phoneNumber,
   }) async {
     final response = await http.get(
-      Uri.parse('$baseUrl/checkUser?uid=$uid'),
+      Uri.parse('$baseUrl/checkPhoneNumber?phoneNumber=$phoneNumber'),
       headers: {'Content-Type': 'application/json'},
     );
-
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -47,11 +52,9 @@ class AuthHttp {
     required String token,
   }) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/verifyFirebaseToken'),
+      Uri.parse('$baseUrl/auth/verifyFirebaseToken'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'token': token,
-      }),
+      body: jsonEncode({'token': token}),
     );
 
     if (response.statusCode == 200) {

@@ -17,13 +17,15 @@ import 'screens/superadmin_dashboard.dart';
 import 'screens/collectionpoint_dashboard.dart';
 import 'screens/volunteer_dashboard.dart';
 import 'screens/donation_request_form.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 // import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // setUrlStrategy(PathUrlStrategy());
-  await AuthService()
-      .loadAuthState(); 
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await AuthService().loadAuthState();
   runApp(const MyApp());
 }
 

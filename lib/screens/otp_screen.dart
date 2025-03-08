@@ -1,20 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:resq/utils/http/auth_http.dart';
 import '../utils/auth/auth_service.dart';
-
 
 class OtpScreen extends StatelessWidget {
   const OtpScreen({super.key});
 
   // Mock function to simulate API call - replace with actual API call
   Future<Map<String, dynamic>> verifyOtp(String otp) async {
-    // This is just a mock - replace with actual API call
-    await Future.delayed(Duration(seconds: 1)); // Simulate network delay
-    
-    // Mock response
-    return {
-      'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', // Sample token
-      'roles': ['superadmin', 'familysurvey', 'roomsurvey'] // Sample roles
-    };
+    const token = 'ertg';
+    var res = await AuthHttp().verifyFirebaseToken(token: token);
+    return res;
   }
 
   @override
@@ -56,18 +51,19 @@ class OtpScreen extends StatelessWidget {
                 showDialog(
                   context: context,
                   barrierDismissible: false,
-                  builder: (context) => Center(child: CircularProgressIndicator()),
+                  builder:
+                      (context) => Center(child: CircularProgressIndicator()),
                 );
-                
+
                 try {
                   final response = await verifyOtp(otpController.text);
-                  
+
                   final token = response['token'];
                   final roles = List<String>.from(response['roles']);
 
                   Navigator.pop(context);
                   await AuthService().login(token, roles);
-                  String targetRoute = '/app'; 
+                  String targetRoute = '/app';
 
                   Navigator.pushNamedAndRemoveUntil(
                     context,
@@ -77,10 +73,12 @@ class OtpScreen extends StatelessWidget {
                 } catch (e) {
                   // Close loading dialog
                   Navigator.pop(context);
-                  
+
                   // Show error message
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('OTP verification failed: ${e.toString()}')),
+                    SnackBar(
+                      content: Text('OTP verification failed: ${e.toString()}'),
+                    ),
                   );
                 }
               },
@@ -90,10 +88,7 @@ class OtpScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: Text(
-                'Verify & Continue',
-                style: TextStyle(fontSize: 18),
-              ),
+              child: Text('Verify & Continue', style: TextStyle(fontSize: 18)),
             ),
           ],
         ),

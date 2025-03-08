@@ -17,12 +17,10 @@ class AuthService {
   // Load authentication state at startup
   Future<void> loadAuthState() async {
     final token = await _storage.read(key: 'auth_token');
+    final userRoles = await _storage.read(key: 'user_roles');
     if (token != null) {
       _isAuthenticated = true;
-
-      // Manually set roles for testing
-      _userRoles = ['stat'];
-
+      _userRoles = userRoles?.split(',') ?? [];
     } else {
       _isAuthenticated = false;
       _userRoles = [];
@@ -34,7 +32,7 @@ class AuthService {
     await _storage.write(
       key: 'user_roles',
       value: roles.join(','),
-    ); // Store roles
+    ); 
 
     _userRoles = List.from(roles);
     _isAuthenticated = true;
@@ -42,13 +40,13 @@ class AuthService {
 
   Future<void> logout() async {
     await _storage.delete(key: 'auth_token');
-    await _storage.delete(key: 'user_roles'); // Clear stored roles
+    await _storage.delete(key: 'user_roles'); 
     _userRoles = [];
     _isAuthenticated = false;
   }
 
   Future<String?> getToken() async {
-    return await _storage.read(key: 'auth_token');
+    return await _storage.read(key: 'auth_token') ?? '';
   }
 
   bool hasRole(String role) {
