@@ -80,6 +80,7 @@ class _OtpScreenState extends State<OtpScreen> {
             await tokenLessHttp.post('/auth/otpSent', {
               'phoneNumber': phoneNumber,
               'timestamp': DateTime.now().toIso8601String(),
+              'verificationId' : verificationId
             });
           } catch (e) {
             // Non-critical error, continue with flow

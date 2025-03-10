@@ -65,8 +65,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         profileImagePath: _profileImage!.path,
       );
       
-      // Mark profile as completed
-      await AuthService().markProfileCompleted();
       
       // Navigate to the appropriate dashboard
       Navigator.pushNamedAndRemoveUntil(context, '/app', (route) => false);

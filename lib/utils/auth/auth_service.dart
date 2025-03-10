@@ -29,16 +29,14 @@ class AuthService {
       final futures = await Future.wait([
         _storage.read(key: 'auth_token'),
         _storage.read(key: 'user_roles'),
-        _storage.read(key: 'profile_completed')
       ]);
       
       final token = futures[0];
       final rolesString = futures[1];
       final profileCompleted = futures[2];
       
-      print('AuthService: Loaded Token -> $token');
+      // print('AuthService: Loaded Token -> $token');
       print('AuthService: Loaded Roles -> $rolesString');
-      print('AuthService: Loaded Profile Completed -> $profileCompleted');
 
       // Update cache
       _cachedToken = token;
@@ -79,7 +77,7 @@ class AuthService {
     await Future.wait([
       _storage.delete(key: 'auth_token'),
       _storage.delete(key: 'user_roles'),
-      _storage.delete(key: 'profile_completed'),
+      // _storage.delete(key: 'profile_completed'),
       _storage.delete(key: 'user_email'),
       _storage.delete(key: 'profile_image_path')
     ]);
@@ -144,20 +142,6 @@ class AuthService {
     };
   }
 
-  // Mark profile as completed
-  Future<void> markProfileCompleted() async {
-    await _storage.write(key: 'profile_completed', value: 'true');
-    _isProfileCompleted = true;
-  }
-
-  // Check if profile is completed - optimized to use in-memory value when possible
-  Future<bool> checkProfileCompleted() async {
-    if (_isProfileCompleted) return true;
-    
-    final profileCompleted = await _storage.read(key: 'profile_completed');
-    _isProfileCompleted = profileCompleted == 'true';
-    return _isProfileCompleted;
-  }
 
   // Get user profile data - optimized with caching
   Future<Map<String, String?>> getUserProfile() async {
