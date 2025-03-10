@@ -53,7 +53,20 @@ class _AddFamiliesState extends State<AddFamilies> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Household Profile")),
+      appBar: AppBar(
+        title: const Text("Household Profile"),
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255), // Attractive color for AppBar
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/otp',
+                  (route) => false,
+                ); // Pops the current screen and goes back to the previous screen
+          },
+        ),
+      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -61,160 +74,53 @@ class _AddFamiliesState extends State<AddFamilies> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Household Info Text Fields (village/ward, house number, etc.)
-              TextField(
-                decoration: const InputDecoration(labelText: 'Village/Ward'),
-              ),
-              TextField(
-                decoration: const InputDecoration(labelText: 'House Number'),
-              ),
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Unique Household ID',
-                ),
-              ),
-              TextField(
-                decoration: const InputDecoration(labelText: 'Household Head'),
-              ),
-              TextField(
-                decoration: const InputDecoration(labelText: 'Address'),
-              ),
-              TextField(
-                decoration: const InputDecoration(labelText: 'Contact No'),
-              ),
-              TextField(
-                decoration: const InputDecoration(labelText: 'Ration Card No'),
-              ),
+              _buildTextField('Village/Ward'),
+              const SizedBox(height: 10), // Added space between fields
+              _buildTextField('House Number'),
+              const SizedBox(height: 10),
+              _buildTextField('Unique Household ID'),
+              const SizedBox(height: 10),
+              _buildTextField('Household Head'),
+              const SizedBox(height: 10),
+              _buildTextField('Address'),
+              const SizedBox(height: 10),
+              _buildTextField('Contact No'),
+              const SizedBox(height: 10),
+              _buildTextField('Ration Card No'),
               const SizedBox(height: 20),
 
               // Ration Card Category Checkboxes
-              const Text(
-                'Ration Card Category:',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Checkbox(
-                    value: isYellowChecked,
-                    onChanged: (bool? value) {
-                      setState(() {
-                        isYellowChecked = value ?? false;
-                      });
-                    },
-                  ),
-                  const Text("Yellow"),
-                ],
-              ),
-              Row(
-                children: [
-                  Checkbox(
-                    value: isWhiteChecked,
-                    onChanged: (bool? value) {
-                      setState(() {
-                        isWhiteChecked = value ?? false;
-                      });
-                    },
-                  ),
-                  const Text("White"),
-                ],
-              ),
-              Row(
-                children: [
-                  Checkbox(
-                    value: isPinkChecked,
-                    onChanged: (bool? value) {
-                      setState(() {
-                        isPinkChecked = value ?? false;
-                      });
-                    },
-                  ),
-                  const Text("Pink"),
-                ],
-              ),
+              _buildSectionHeader('Ration Card Category:'),
+              _buildCheckbox('Yellow', isYellowChecked, (bool? value) {
+                setState(() {
+                  isYellowChecked = value ?? false;
+                });
+              }),
+              _buildCheckbox('White', isWhiteChecked, (bool? value) {
+                setState(() {
+                  isWhiteChecked = value ?? false;
+                });
+              }),
+              _buildCheckbox('Pink', isPinkChecked, (bool? value) {
+                setState(() {
+                  isPinkChecked = value ?? false;
+                });
+              }),
               const SizedBox(height: 20),
 
               // Household Head Radio Buttons
-              const Text(
-                'Household Head Category:',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Radio<String>(
-                    value: "General",
-                    groupValue: householdHead,
-                    onChanged: (String? value) {
-                      setState(() {
-                        householdHead = value;
-                      });
-                    },
-                  ),
-                  const Text("General"),
-                ],
-              ),
-              Row(
-                children: [
-                  Radio<String>(
-                    value: "Other Backward",
-                    groupValue: householdHead,
-                    onChanged: (String? value) {
-                      setState(() {
-                        householdHead = value;
-                      });
-                    },
-                  ),
-                  const Text("Other Backward"),
-                ],
-              ),
-              Row(
-                children: [
-                  Radio<String>(
-                    value: "Scheduled Caste",
-                    groupValue: householdHead,
-                    onChanged: (String? value) {
-                      setState(() {
-                        householdHead = value;
-                      });
-                    },
-                  ),
-                  const Text("Scheduled Caste"),
-                ],
-              ),
-              Row(
-                children: [
-                  Radio<String>(
-                    value: "Scheduled Tribe",
-                    groupValue: householdHead,
-                    onChanged: (String? value) {
-                      setState(() {
-                        householdHead = value;
-                      });
-                    },
-                  ),
-                  const Text("Scheduled Tribe"),
-                ],
-              ),
-              Row(
-                children: [
-                  Radio<String>(
-                    value: "Other",
-                    groupValue: householdHead,
-                    onChanged: (String? value) {
-                      setState(() {
-                        householdHead = value;
-                      });
-                    },
-                  ),
-                  const Text("Other"),
-                ],
-              ),
+              _buildSectionHeader('Household Head Category:'),
+              _buildRadioOption('General'),
+              _buildRadioOption('Other Backward'),
+              _buildRadioOption('Scheduled Caste'),
+              _buildRadioOption('Scheduled Tribe'),
+              _buildRadioOption('Other'),
               const SizedBox(height: 20),
 
               // Family Members Input Fields
               const Text(
                 'Family Members:',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.deepPurple),
               ),
               const SizedBox(height: 10),
 
@@ -226,68 +132,10 @@ class _AddFamiliesState extends State<AddFamilies> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Family Member ${index + 1}'),
-                      TextField(
-                        decoration: const InputDecoration(labelText: 'Name'),
-                        onChanged:
-                            (value) => handleInputChange(index, 'name', value),
-                      ),
-                      TextField(
-                        decoration: const InputDecoration(labelText: 'Age'),
-                        onChanged:
-                            (value) => handleInputChange(index, 'age', value),
-                      ),
-                      TextField(
-                        decoration: const InputDecoration(labelText: 'Gender'),
-                        onChanged:
-                            (value) =>
-                                handleInputChange(index, 'gender', value),
-                      ),
-                      TextField(
-                        decoration: const InputDecoration(
-                          labelText: 'Position in the Family',
-                        ),
-                        onChanged:
-                            (value) =>
-                                handleInputChange(index, 'position', value),
-                      ),
-                      // Replace Marital Status TextField with Dropdown
-                      DropdownButton<String>(
-                        value: familyMembers[index]['materialStatus'],
-                        onChanged: (String? value) {
-                          handleMaritalStatusChange(index, value!);
-                        },
-                        items:
-                            maritalStatusOptions.map((String status) {
-                              return DropdownMenuItem<String>(
-                                value: status,
-                                child: Text(status),
-                              );
-                            }).toList(),
-                        hint: const Text("Select Marital Status"),
-                      ),
-                      TextField(
-                        decoration: const InputDecoration(labelText: 'L/D/M'),
-                        onChanged:
-                            (value) => handleInputChange(index, 'ldm', value),
-                      ),
-                      TextField(
-                        decoration: const InputDecoration(
-                          labelText: 'Aadhaar No',
-                        ),
-                        onChanged:
-                            (value) =>
-                                handleInputChange(index, 'aadhaar', value),
-                      ),
-                      const SizedBox(height: 20),
+                      
                     ],
                   );
                 },
-              ),
-              // Button to add a new family member
-              ElevatedButton(
-                onPressed: addFamilyMember,
-                child: const Text('Add Person'),
               ),
               const SizedBox(height: 20),
 
@@ -296,17 +144,68 @@ class _AddFamiliesState extends State<AddFamilies> {
                 onPressed: () {
                   Navigator.pushNamedAndRemoveUntil(
                     context,
-                    '/foodand-health',
+                    '/add-members',
                     (route) => false,
                   );
-                  // Implement your action here (e.g., submit the data)
                 },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 235, 229, 229), // Changed 'primary' to 'backgroundColor'
+                ),
                 child: const Text("Next"),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  // Function to build a simple text field with custom styling
+  Widget _buildTextField(String label) {
+    return TextField(
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: const Color.fromARGB(255, 49, 43, 43)), // Attractive label color
+        border: OutlineInputBorder(
+          borderSide: BorderSide(color: const Color.fromARGB(255, 27, 24, 24)), // Border color
+        ),
+      ),
+    );
+  }
+
+  // Function to build section headers
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title,
+      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+    );
+  }
+
+  // Function to build a checkbox option
+  Widget _buildCheckbox(String label, bool value, ValueChanged<bool?> onChanged) {
+    return Row(
+      children: [
+        Checkbox(value: value, onChanged: onChanged),
+        Text(label, style: TextStyle(color: const Color.fromARGB(255, 0, 0, 0))),
+      ],
+    );
+  }
+
+  // Function to build radio button options for Household Head
+  Widget _buildRadioOption(String label) {
+    return Row(
+      children: [
+        Radio<String>(
+          value: label,
+          groupValue: householdHead,
+          onChanged: (String? value) {
+            setState(() {
+              householdHead = value;
+            });
+          },
+        ),
+        Text(label, style: TextStyle(color: const Color.fromARGB(255, 1, 1, 1))),
+      ],
     );
   }
 }

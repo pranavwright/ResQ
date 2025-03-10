@@ -12,14 +12,26 @@ class _FoodandHealthState extends State<FoodandHealth> {
   String? _angawadiCenterStatus;
   String? _foodAssistanceStatus;
   String? _nutritionDisruptionStatus;
-  TextEditingController _foodAssistanceDetailsController = TextEditingController();
+  // New Variables for the radio buttons
+  // New variable for the family insurance question
+  String? _familyInsuranceStatus;
+  String? _insuranceDetails;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Food and Health'),
-        leading: BackButton(), // This adds the back arrow in the AppBar
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/add-members',
+                  (route) => false,
+                );// This will navigate to the previous screen
+          },
+        ),
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -43,30 +55,35 @@ class _FoodandHealthState extends State<FoodandHealth> {
                 TextField(
                   decoration: InputDecoration(
                     labelText: 'Total number of children enrolled in Anganwadi centers',
+                    border: OutlineInputBorder(), // Added outline border
                   ),
                 ),
                 SizedBox(height: 10),
                 TextField(
                   decoration: InputDecoration(
                     labelText: 'Are there any children with malnutrition?',
+                    border: OutlineInputBorder(), // Added outline border
                   ),
                 ),
                 SizedBox(height: 10),
                 TextField(
                   decoration: InputDecoration(
                     labelText: 'Pregnant women in the family',
+                    border: OutlineInputBorder(), // Added outline border
                   ),
                 ),
                 SizedBox(height: 10),
                 TextField(
                   decoration: InputDecoration(
                     labelText: 'Lactating women in the family',
+                    border: OutlineInputBorder(), // Added outline border
                   ),
                 ),
                 SizedBox(height: 10),
                 TextField(
                   decoration: InputDecoration(
                     labelText: 'How long do you need food assistance?',
+                    border: OutlineInputBorder(), // Added outline border
                   ),
                 ),
                 SizedBox(height: 20),
@@ -130,16 +147,15 @@ class _FoodandHealthState extends State<FoodandHealth> {
                     Text('No'),
                   ],
                 ),
-                
                 // Conditionally showing the TextField when "No" is selected for food assistance
                 if (_foodAssistanceStatus == 'No') 
                   Column(
                     children: [
                       SizedBox(height: 10),
                       TextField(
-                        controller: _foodAssistanceDetailsController,
                         decoration: InputDecoration(
                           labelText: 'Please explain why the current food assistance is insufficient',
+                          border: OutlineInputBorder(), // Added outline border
                         ),
                       ),
                     ],
@@ -175,17 +191,75 @@ class _FoodandHealthState extends State<FoodandHealth> {
                     Text('No'),
                   ],
                 ),
+                SizedBox(height: 20),
+
+                // Heading "HEALTH"
+               
+                SizedBox(height: 20),
+
+                // Family Insurance Radio Button
+                Text(
+                  'Do you have any family insurance?',
+                  style: TextStyle(fontSize: 16),
+                ),
+                Row(
+                  children: [
+                    Radio<String>(
+                      value: 'Yes',
+                      groupValue: _familyInsuranceStatus,
+                      onChanged: (value) {
+                        setState(() {
+                          _familyInsuranceStatus = value;
+                        });
+                      },
+                    ),
+                    Text('Yes'),
+                    Radio<String>(
+                      value: 'No',
+                      groupValue: _familyInsuranceStatus,
+                      onChanged: (value) {
+                        setState(() {
+                          _familyInsuranceStatus = value;
+                        });
+                      },
+                    ),
+                    Text('No'),
+                  ],
+                ),
+
+                // Conditionally showing the TextField when "Yes" is selected for family insurance
+                if (_familyInsuranceStatus == 'Yes') 
+                  Column(
+                    children: [
+                      SizedBox(height: 10),
+                      TextField(
+                        decoration: InputDecoration(
+                          labelText: 'Please specify your family insurance details',
+                          border: OutlineInputBorder(), // Added outline border
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            _insuranceDetails = value;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                
+                SizedBox(height: 20),
+
+                // Next Button to navigate to the next page
                 ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/shelter',
-                    (route) => false,
-                  );
-                  // Implement your action here (e.g., submit the data)
-                },
-                child: const Text("Next"),
-              ),
+                  onPressed: () {
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      '/helthnew',
+                      (route) => false,
+                    );
+                    // Implement your action here (e.g., submit the data)
+                  },
+                  child: const Text("Next"),
+                ),
               ],
             ),
           ),
