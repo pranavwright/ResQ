@@ -34,17 +34,26 @@ class AuthHttp {
     }
   }
 
-  Future<Map<String, dynamic>> checkPhoneNumber({
+Future<Map<String, dynamic>> checkPhoneNumber({
     required String phoneNumber,
   }) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/checkPhoneNumber?phoneNumber=$phoneNumber'),
-      headers: {'Content-Type': 'application/json'},
-    );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to check user: ${response.body}');
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/checkPhoneNumber'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'phoneNumber': phoneNumber}), // Serialize to JSON
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        // Decode and provide the error message from the server
+        final errorResponse = jsonDecode(response.body);
+        throw Exception('Failed to check user: ${errorResponse['message'] ?? response.body}');
+      }
+    } catch (e) {
+      // Catch network or other exceptions
+      throw Exception('Failed to check user: $e');
     }
   }
 

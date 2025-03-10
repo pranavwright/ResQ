@@ -34,6 +34,7 @@ dependencies:
 
   # persistent storage
   shared_preferences: ^2.2.0
+  firebase_auth: ^5.5.1
 
 
 
