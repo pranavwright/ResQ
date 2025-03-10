@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 // Import the house donation form
 import 'house_donation_form.dart';
-import '../utils/auth/auth_service.dart';
+import '../utlis/auth/auth_service.dart';
 
 class StatDashboard extends StatelessWidget {
   @override

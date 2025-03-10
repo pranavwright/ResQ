@@ -14,6 +14,8 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
   final TextEditingController _moneyAmountController = TextEditingController();
   final TextEditingController _foodTypeController = TextEditingController();
   final TextEditingController _foodQtyController = TextEditingController();
+  final TextEditingController _medicineTypeController = TextEditingController();
+  final TextEditingController _medicineQtyController = TextEditingController();
   final TextEditingController _otherDonationController = TextEditingController();
 
   // Form key for validation
@@ -23,7 +25,7 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
   String? _selectedDonationType;
 
   // Donation types
-  final List<String> _donationTypes = ['Money', 'Food', 'Other'];
+  final List<String> _donationTypes = ['Money', 'Food', 'Medicine', 'Other'];
 
   void _submitDonationRequest() {
     if (_formKey.currentState!.validate()) {
@@ -41,6 +43,10 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
         case 'Food':
           donationRequest['Food Type'] = _foodTypeController.text.trim();
           donationRequest['Food Quantity'] = _foodQtyController.text.trim();
+          break;
+        case 'Medicine':
+          donationRequest['Medicine Type'] = _medicineTypeController.text.trim();
+          donationRequest['Medicine Quantity'] = _medicineQtyController.text.trim();
           break;
         case 'Other':
           donationRequest['Other Donation Details'] = _otherDonationController.text.trim();
@@ -65,6 +71,8 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
       _moneyAmountController.clear();
       _foodTypeController.clear();
       _foodQtyController.clear();
+      _medicineTypeController.clear();
+      _medicineQtyController.clear();
       _otherDonationController.clear();
     });
   }
@@ -141,6 +149,40 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
             ),
           ],
         );
+      case 'Medicine':
+        return Column(
+          children: [
+            TextFormField(
+              controller: _medicineTypeController,
+              decoration: const InputDecoration(
+                labelText: 'Medicine Type',
+                border: OutlineInputBorder(),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please specify medicine type';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _medicineQtyController,
+              decoration: const InputDecoration(
+                labelText: 'Medicine Quantity',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter medicine quantity';
+                }
+                return null;
+              },
+            ),
+          ],
+        );
       case 'Other':
         return TextFormField(
           controller: _otherDonationController,
@@ -148,7 +190,7 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
             labelText: 'Other Donation Details',
             border: OutlineInputBorder(),
           ),
-          maxLines: 3,
+          // Removed maxLines: 3 to make it a single-line input
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Please describe your donation';
@@ -244,6 +286,8 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
     _moneyAmountController.dispose();
     _foodTypeController.dispose();
     _foodQtyController.dispose();
+    _medicineTypeController.dispose();
+    _medicineQtyController.dispose();
     _otherDonationController.dispose();
     super.dispose();
   }

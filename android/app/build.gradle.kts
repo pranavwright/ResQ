@@ -11,17 +11,18 @@ plugins {
 android {
     namespace = "com.wright.realsq"
     compileSdk = flutter.compileSdkVersion
+    // Replace this line with the specific version
     ndkVersion = "27.0.12077973"
-
+    
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
-
+    
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
-
+    
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.wright.realsq"
@@ -32,7 +33,7 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
-
+    
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.

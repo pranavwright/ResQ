@@ -10,7 +10,6 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -98,6 +97,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       ),
                     ),
                     const Spacer(),
+                    // Logout Button
                     IconButton(
                       icon: const Icon(Icons.logout),
                       onPressed: _logout, 
@@ -115,7 +115,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   children: [
                     buildNavItem(Icons.people, 'Families'),
                     buildNavItem(Icons.home_work, 'Camp Status'),
-                    buildNavItem(Icons.announcement, 'Role Based\nNotice Board', isSelected: true),
+                    buildNavItem(
+                      Icons.announcement,
+                      'Role Based\nNotice Board',
+                      isSelected: true,
+                    ),
                     buildNavItem(Icons.assignment_ind, 'Role Creation'),
                   ],
                 ),
@@ -130,10 +134,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Overview',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -193,9 +194,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           color: statusColors[selectedStatus]!,
                           barWidth: 3,
                           dotData: const FlDotData(show: false),
-                          belowBarData: BarAreaData(
-                            show: false,
-                          ),
+                          belowBarData: BarAreaData(show: false),
                         ),
                       ],
                     ),
@@ -228,26 +227,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          color: Colors.black,
-        ),
+        Icon(icon, color: Colors.black),
         const SizedBox(height: 4),
         Text(
           label,
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
         ),
         const SizedBox(height: 4),
-        if (isSelected)
-          Container(
-            height: 2,
-            width: 40,
-            color: Colors.green,
-          ),
+        if (isSelected) Container(height: 2, width: 40, color: Colors.green),
       ],
     );
   }
