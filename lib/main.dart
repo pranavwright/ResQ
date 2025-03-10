@@ -19,11 +19,10 @@ import 'screens/volunteer_dashboard.dart';
 import 'screens/donation_request_form.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-// import 'package:flutter_web_plugins/flutter_web_plugins.dart';
+import 'screens/profile_setup.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // setUrlStrategy(PathUrlStrategy());
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await AuthService().loadAuthState();
   runApp(const MyApp());
@@ -31,10 +30,6 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
-  Future<List<String>> _fetchRoles() async {
-    return AuthService().getCurrentUserRoles();
-  }
 
   Widget getDashboardForRole(List<String> roles) {
     if (roles.contains('superadmin')) return SuperAdminDashboard();
@@ -44,12 +39,15 @@ class MyApp extends StatelessWidget {
     if (roles.contains('collectionpointadmin')) return CollectionPointDashboard();
     if (roles.contains('campadmin')) return CampAdminRequestScreen();
     if (roles.contains('collectionpointvolunteer')) return VolunteerDashboard();
-    return HomeScreen(); // Default screen if no specific role is found
+    return HomeScreen();
   }
 
   @override
   Widget build(BuildContext context) {
-    List<String> roles = AuthService().getCurrentUserRoles();
+    final authService = AuthService();
+    final isAuthenticated = authService.isAuthenticated;
+    final isProfileCompleted = authService.isProfileCompleted;
+    List<String> roles = authService.getCurrentUserRoles();
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -59,15 +57,9 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/':
-            (context) =>
-                const AuthRoute(requiresAuth: false, child: LoginScreen()),
-        '/otp':
-            (context) =>
-                const AuthRoute(requiresAuth: false, child: OtpScreen()),
-
-        '/app':
-            (context) => AuthRoute(
+        '/': (context) => const AuthRoute(requiresAuth: false, child: LoginScreen()),
+        '/otp': (context) => const AuthRoute(requiresAuth: false, child: OtpScreen()),
+        '/app': (context) => AuthRoute(
               requiredRoles: [
                 'stat',
                 'admin',
@@ -79,121 +71,20 @@ class MyApp extends StatelessWidget {
               ],
               child: getDashboardForRole(roles),
             ),
-
-        '/families':
-            (context) => const AuthRoute(
-              requiredRoles: ['admin', 'familySurvey'],
-              child: FamiliesScreen(),
-            ),
-
-        '/camp-status':
-            (context) => const AuthRoute(
-              requiredRoles: ['admin', 'campAdmin'],
-              child: CampStatusScreen(),
-            ),
-
-        '/notice-board':
-            (context) => const AuthRoute(
-              requiredRoles: ['admin'],
-              child: RoleCreationScreen(),
-            ),
-
-        '/create-notice':
-            (context) => const AuthRoute(
-              requiredRoles: ['admin'],
-              child: CreateNoticeScreen(),
-            ),
-
+        '/families': (context) => const AuthRoute(requiredRoles: ['admin', 'familySurvey'], child: FamiliesScreen()),
+        '/camp-status': (context) => const AuthRoute(requiredRoles: ['admin', 'campadmin'], child: CampStatusScreen()),
+        '/notice-board': (context) => const AuthRoute(requiredRoles: ['admin'], child: RoleCreationScreen()),
+        '/create-notice': (context) => const AuthRoute(requiredRoles: ['admin'], child: CreateNoticeScreen()),
+        '/home': (context) => const AuthRoute(requiresAuth: false, child: HomeScreen()),
         '/public-donation': (context) => DonationRequestPage(),
-
-        // accessible to all authenticated users
-        '/home': (context) => const AuthRoute(child: HomeScreen()),
+        '/profile-setup': (context) => AuthRoute(
+            requiresAuth: true,
+            // redirect: isProfileCompleted ? '/app' : null,
+            child: ProfileSetupScreen(roles: roles, token: authService.getToken().toString())),
       },
-      onUnknownRoute:
-          (settings) => MaterialPageRoute(
-            builder:
-                (context) =>
-                    const Scaffold(body: Center(child: Text('Page Not Found'))),
-    return FutureBuilder<List<String>>(
-      future: _fetchRoles(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const MaterialApp(
-            home: Scaffold(body: Center(child: CircularProgressIndicator())),
-          );
-        }
-
-        final authService = AuthService();
-        final isAuthenticated = authService.isAuthenticated;
-        final isProfileCompleted = authService.isProfileCompleted;
-      List<String> roles = snapshot.data ?? [];
-// Provide an empty list as the default value// Fixed null-aware operator
-
-        return MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            primarySwatch: Colors.blue,
-            primaryColor: _getPrimaryColor(),
-          ),
-          initialRoute: '/', // Set the initial route to '/'
-          routes: {
-            // Public Routes
-            '/': (context) => const AuthRoute(requiresAuth: false, child: LoginScreen()), // Login route
-            '/otp': (context) => const AuthRoute(requiresAuth: false, child: OtpScreen()),
-
-            // Protected Routes
-            '/app': (context) => AuthRoute(
-                  requiredRoles: [
-                    'stat', 'admin', 'kas', 'superadmin',
-                    'collectionpointadmin', 'campadmin', 'collectionpointvolunteer',
-                  ],
-                  child: getDashboardForRole(roles),
-                ),
-            '/families': (context) => const AuthRoute(
-                  requiredRoles: ['admin', 'familySurvey'],
-                  child: FamiliesScreen(),
-                ),
-            '/camp-status': (context) => const AuthRoute(
-                  requiredRoles: ['admin', 'campadmin'],
-                  child: CampStatusScreen(),
-                ),
-            '/notice-board': (context) => const AuthRoute(
-                  requiredRoles: ['admin'],
-                  child: RoleCreationScreen(),
-                ),
-            '/create-notice': (context) => const AuthRoute(
-                  requiredRoles: ['admin'],
-                  child: CreateNoticeScreen(),
-                ),
-            '/home': (context) => const AuthRoute(requiresAuth: false, child: HomeScreen()),
-            '/public-donation': (context) => DonationRequestPage(),
-           '/profile-setup': (context) => FutureBuilder<String?>(
-      future: AuthService().getToken(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        } 
-        if (!snapshot.hasData || snapshot.data == null) {
-          // Handle the case where the token is not available
-          return const Scaffold(body: Center(child: Text('Token not found')));
-        }
-        return AuthRoute(
-          requiresAuth: true,
-          child: ProfileSetupScreen(
-            token: snapshot.data!, // Pass the token here
-            roles: roles, 
-          ),
-        );
-      },
-    ),
-          },
-          onUnknownRoute: (settings) => MaterialPageRoute(
-            builder: (context) => const Scaffold(
-              body: Center(child: Text('404 - Page Not Found')),
-            ),
-          ),
-        );
-      },
+      onUnknownRoute: (settings) => MaterialPageRoute(
+        builder: (context) => const Scaffold(body: Center(child: Text('404 - Page Not Found'))),
+      ),
     );
   }
 
@@ -201,6 +92,7 @@ class MyApp extends StatelessWidget {
     try {
       return Platform.isAndroid ? Colors.green : Colors.blue;
     } catch (e) {
+      debugPrint('Error getting platform color: $e');
       return Colors.blue;
     }
   }

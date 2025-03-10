@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../utlis/auth/auth_service.dart';
+import '../utils/auth/auth_service.dart';
 
 
 class CampAdminRequestScreen extends StatefulWidget {

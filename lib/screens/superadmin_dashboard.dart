@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:resq/screens/login_screen.dart';
+import 'package:resq/utils/auth/auth_service.dart';
 
 void main() {
   runApp(DisasterManagementApp());
@@ -177,7 +179,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     String location = '';
     String description = '';
     String severity = 'Medium';
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -233,12 +235,15 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                   DropdownButtonFormField<String>(
                     decoration: InputDecoration(labelText: 'Severity'),
                     value: severity,
-                    items: ['Low', 'Medium', 'High', 'Critical']
-                        .map((label) => DropdownMenuItem(
-                              value: label,
-                              child: Text(label),
-                            ))
-                        .toList(),
+                    items:
+                        ['Low', 'Medium', 'High', 'Critical']
+                            .map(
+                              (label) => DropdownMenuItem(
+                                value: label,
+                                child: Text(label),
+                              ),
+                            )
+                            .toList(),
                     onChanged: (value) {
                       severity = value!;
                     },
@@ -259,7 +264,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
               onPressed: () {
                 if (formKey.currentState!.validate()) {
                   formKey.currentState!.save();
-                  
+
                   setState(() {
                     disasters.add(
                       Disaster(
@@ -274,7 +279,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                     );
                     _updateScreens();
                   });
-                  
+
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Disaster created successfully')),
@@ -288,6 +293,15 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     );
   }
 
+  void _logout() {
+    AuthService().logout().then((_) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+        (Route<dynamic> route) => false,
+      );
+    });
+  }
+
   void _showAddAdminDialog() {
     final formKey = GlobalKey<FormState>();
     String name = '';
@@ -295,7 +309,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     String phone = '';
     String role = 'Field Coordinator';
     List<String> selectedDisasterIds = [];
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -347,12 +361,20 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                       DropdownButtonFormField<String>(
                         decoration: InputDecoration(labelText: 'Role'),
                         value: role,
-                        items: ['Field Coordinator', 'Resource Manager', 'Communications Officer', 'Medical Coordinator']
-                            .map((label) => DropdownMenuItem(
-                                  value: label,
-                                  child: Text(label),
-                                ))
-                            .toList(),
+                        items:
+                            [
+                                  'Field Coordinator',
+                                  'Resource Manager',
+                                  'Communications Officer',
+                                  'Medical Coordinator',
+                                ]
+                                .map(
+                                  (label) => DropdownMenuItem(
+                                    value: label,
+                                    child: Text(label),
+                                  ),
+                                )
+                                .toList(),
                         onChanged: (value) {
                           setState(() {
                             role = value!;
@@ -360,8 +382,13 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                         },
                       ),
                       SizedBox(height: 20),
-                      Text('Assign to Disasters:', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ...disasters.where((d) => d.isActive).map(
+                      Text(
+                        'Assign to Disasters:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      ...disasters
+                          .where((d) => d.isActive)
+                          .map(
                             (disaster) => CheckboxListTile(
                               title: Text(disaster.name),
                               subtitle: Text(disaster.type),
@@ -393,14 +420,18 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                   onPressed: () {
                     if (formKey.currentState!.validate()) {
                       formKey.currentState!.save();
-                      
+
                       if (selectedDisasterIds.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Please assign at least one disaster')),
+                          SnackBar(
+                            content: Text(
+                              'Please assign at least one disaster',
+                            ),
+                          ),
                         );
                         return;
                       }
-                      
+
                       setState(() {
                         admins.add(
                           Admin(
@@ -413,7 +444,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                           ),
                         );
                       });
-                      
+
                       Navigator.of(context).pop();
                       _updateScreens();
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -424,7 +455,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                 ),
               ],
             );
-          }
+          },
         );
       },
     );
@@ -439,7 +470,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
           IconButton(
             icon: Icon(Icons.logout),
             onPressed: () {
-              // Handle logout
+              _logout();
             },
           ),
         ],
@@ -451,10 +482,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
             icon: Icon(Icons.warning_amber),
             label: 'Disasters',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Admins',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Admins'),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.red,
@@ -508,139 +536,177 @@ class DisasterManagementScreen extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: disasters.isEmpty
-              ? Center(child: Text('No disasters created yet'))
-              : ListView.builder(
-                  itemCount: disasters.length,
-                  itemBuilder: (context, index) {
-                    final disaster = disasters[index];
-                    return Card(
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: ExpansionTile(
-                        title: Row(
-                          children: [
-                            Icon(
-                              disaster.isActive ? Icons.warning_amber : Icons.history,
-                              color: disaster.isActive ? Colors.red : Colors.grey,
-                            ),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                disaster.name,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: disaster.isActive ? null : Colors.grey,
-                                ),
-                              ),
-                            ),
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: disaster.isActive
-                                    ? (disaster.severity == 'Critical'
+          child:
+              disasters.isEmpty
+                  ? Center(child: Text('No disasters created yet'))
+                  : ListView.builder(
+                    itemCount: disasters.length,
+                    itemBuilder: (context, index) {
+                      final disaster = disasters[index];
+                      return Card(
+                        margin: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: ExpansionTile(
+                          title: Row(
+                            children: [
+                              Icon(
+                                disaster.isActive
+                                    ? Icons.warning_amber
+                                    : Icons.history,
+                                color:
+                                    disaster.isActive
                                         ? Colors.red
-                                        : disaster.severity == 'High'
-                                            ? Colors.orange
-                                            : disaster.severity == 'Medium'
-                                                ? Colors.yellow
-                                                : Colors.green)
-                                    : Colors.grey,
-                                borderRadius: BorderRadius.circular(12),
+                                        : Colors.grey,
                               ),
-                              child: Text(
-                                disaster.severity,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: disaster.severity == 'Medium' || disaster.severity == 'Low'
-                                      ? Colors.black
-                                      : Colors.white,
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  disaster.name,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        disaster.isActive ? null : Colors.grey,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                        subtitle: Text(
-                          '${disaster.type} • ${disaster.location} • ${disaster.dateOccurred.toLocal().toString().split(' ')[0]}',
-                          style: TextStyle(
-                            color: disaster.isActive ? null : Colors.grey,
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      disaster.isActive
+                                          ? (disaster.severity == 'Critical'
+                                              ? Colors.red
+                                              : disaster.severity == 'High'
+                                              ? Colors.orange
+                                              : disaster.severity == 'Medium'
+                                              ? Colors.yellow
+                                              : Colors.green)
+                                          : Colors.grey,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  disaster.severity,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color:
+                                        disaster.severity == 'Medium' ||
+                                                disaster.severity == 'Low'
+                                            ? Colors.black
+                                            : Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Description:',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                SizedBox(height: 4),
-                                Text(disaster.description),
-                                SizedBox(height: 16),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    OutlinedButton.icon(
-                                      icon: Icon(Icons.visibility),
-                                      label: Text('View Details'),
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => DisasterDetailScreen(disaster: disaster),
-                                          ),
-                                        );
-                                      },
+                          subtitle: Text(
+                            '${disaster.type} • ${disaster.location} • ${disaster.dateOccurred.toLocal().toString().split(' ')[0]}',
+                            style: TextStyle(
+                              color: disaster.isActive ? null : Colors.grey,
+                            ),
+                          ),
+                          children: [
+                            Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Description:',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                    if (disaster.isActive)
-                                      ElevatedButton.icon(
-                                        icon: Icon(Icons.block),
-                                        label: Text('Deactivate'),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.red,
-                                          foregroundColor: Colors.white,
-                                        ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(disaster.description),
+                                  SizedBox(height: 16),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      OutlinedButton.icon(
+                                        icon: Icon(Icons.visibility),
+                                        label: Text('View Details'),
                                         onPressed: () {
-                                          showDialog(
-                                            context: context,
-                                            builder: (context) => AlertDialog(
-                                              title: Text('Confirm Deactivation'),
-                                              content: Text(
-                                                'Are you sure you want to deactivate this disaster? '
-                                                'Once deactivated, its details will still be visible but cannot be modified.',
-                                              ),
-                                              actions: [
-                                                TextButton(
-                                                  child: Text('Cancel'),
-                                                  onPressed: () => Navigator.pop(context),
-                                                ),
-                                                ElevatedButton(
-                                                  child: Text('Deactivate'),
-                                                  style: ElevatedButton.styleFrom(
-                                                    backgroundColor: Colors.red,
-                                                    foregroundColor: Colors.white,
-                                                  ),
-                                                  onPressed: () {
-                                                    onDeactivateDisaster(disaster.id);
-                                                    Navigator.pop(context);
-                                                  },
-                                                ),
-                                              ],
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder:
+                                                  (context) =>
+                                                      DisasterDetailScreen(
+                                                        disaster: disaster,
+                                                      ),
                                             ),
                                           );
                                         },
                                       ),
-                                  ],
-                                ),
-                              ],
+                                      if (disaster.isActive)
+                                        ElevatedButton.icon(
+                                          icon: Icon(Icons.block),
+                                          label: Text('Deactivate'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red,
+                                            foregroundColor: Colors.white,
+                                          ),
+                                          onPressed: () {
+                                            showDialog(
+                                              context: context,
+                                              builder:
+                                                  (context) => AlertDialog(
+                                                    title: Text(
+                                                      'Confirm Deactivation',
+                                                    ),
+                                                    content: Text(
+                                                      'Are you sure you want to deactivate this disaster? '
+                                                      'Once deactivated, its details will still be visible but cannot be modified.',
+                                                    ),
+                                                    actions: [
+                                                      TextButton(
+                                                        child: Text('Cancel'),
+                                                        onPressed:
+                                                            () => Navigator.pop(
+                                                              context,
+                                                            ),
+                                                      ),
+                                                      ElevatedButton(
+                                                        child: Text(
+                                                          'Deactivate',
+                                                        ),
+                                                        style:
+                                                            ElevatedButton.styleFrom(
+                                                              backgroundColor:
+                                                                  Colors.red,
+                                                              foregroundColor:
+                                                                  Colors.white,
+                                                            ),
+                                                        onPressed: () {
+                                                          onDeactivateDisaster(
+                                                            disaster.id,
+                                                          );
+                                                          Navigator.pop(
+                                                            context,
+                                                          );
+                                                        },
+                                                      ),
+                                                    ],
+                                                  ),
+                                            );
+                                          },
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
         ),
       ],
     );
@@ -649,15 +715,13 @@ class DisasterManagementScreen extends StatelessWidget {
 
 class DisasterDetailScreen extends StatelessWidget {
   final Disaster disaster;
-  
+
   DisasterDetailScreen({required this.disaster});
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(disaster.name),
-      ),
+      appBar: AppBar(title: Text(disaster.name)),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16),
         child: Column(
@@ -672,7 +736,9 @@ class DisasterDetailScreen extends StatelessWidget {
                     Row(
                       children: [
                         Icon(
-                          disaster.isActive ? Icons.warning_amber : Icons.history,
+                          disaster.isActive
+                              ? Icons.warning_amber
+                              : Icons.history,
                           color: disaster.isActive ? Colors.red : Colors.grey,
                           size: 28,
                         ),
@@ -687,17 +753,21 @@ class DisasterDetailScreen extends StatelessWidget {
                           ),
                         ),
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
-                            color: disaster.isActive
-                                ? (disaster.severity == 'Critical'
-                                    ? Colors.red
-                                    : disaster.severity == 'High'
+                            color:
+                                disaster.isActive
+                                    ? (disaster.severity == 'Critical'
+                                        ? Colors.red
+                                        : disaster.severity == 'High'
                                         ? Colors.orange
                                         : disaster.severity == 'Medium'
-                                            ? Colors.yellow
-                                            : Colors.green)
-                                : Colors.grey,
+                                        ? Colors.yellow
+                                        : Colors.green)
+                                    : Colors.grey,
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Text(
@@ -705,9 +775,11 @@ class DisasterDetailScreen extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: disaster.severity == 'Medium' || disaster.severity == 'Low'
-                                  ? Colors.black
-                                  : Colors.white,
+                              color:
+                                  disaster.severity == 'Medium' ||
+                                          disaster.severity == 'Low'
+                                      ? Colors.black
+                                      : Colors.white,
                             ),
                           ),
                         ),
@@ -715,23 +787,31 @@ class DisasterDetailScreen extends StatelessWidget {
                     ),
                     SizedBox(height: 16),
                     _detailRow(Icons.category, 'Type', disaster.type),
-                    _detailRow(Icons.location_on, 'Location', disaster.location),
+                    _detailRow(
+                      Icons.location_on,
+                      'Location',
+                      disaster.location,
+                    ),
                     _detailRow(
                       Icons.calendar_today,
                       'Date Occurred',
                       disaster.dateOccurred.toLocal().toString().split(' ')[0],
                     ),
-                    _detailRow(Icons.info, 'Status', disaster.isActive ? 'Active' : 'Deactivated'),
+                    _detailRow(
+                      Icons.info,
+                      'Status',
+                      disaster.isActive ? 'Active' : 'Deactivated',
+                    ),
                     SizedBox(height: 16),
                     Text(
                       'Description:',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                     SizedBox(height: 8),
-                    Text(
-                      disaster.description,
-                      style: TextStyle(fontSize: 16),
-                    ),
+                    Text(disaster.description, style: TextStyle(fontSize: 16)),
                   ],
                 ),
               ),
@@ -817,16 +897,10 @@ class DisasterDetailScreen extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
                 ),
                 SizedBox(height: 2),
-                Text(
-                  value,
-                  style: TextStyle(fontSize: 16),
-                ),
+                Text(value, style: TextStyle(fontSize: 16)),
               ],
             ),
           ),
@@ -852,19 +926,10 @@ class DisasterDetailScreen extends StatelessWidget {
             SizedBox(width: 8),
             Text(
               title,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             Spacer(),
-            Text(
-              date,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 14,
-              ),
-            ),
+            Text(date, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
           ],
         ),
         Padding(
@@ -874,10 +939,7 @@ class DisasterDetailScreen extends StatelessWidget {
             padding: EdgeInsets.only(left: 16),
             decoration: BoxDecoration(
               border: Border(
-                left: BorderSide(
-                  color: Colors.grey[300]!,
-                  width: 1,
-                ),
+                left: BorderSide(color: Colors.grey[300]!, width: 1),
               ),
             ),
             child: Padding(
@@ -924,127 +986,178 @@ class AdminManagementScreen extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: admins.isEmpty
-              ? Center(child: Text('No admins added yet'))
-              : ListView.builder(
-                  itemCount: admins.length,
-                  itemBuilder: (context, index) {
-                    final admin = admins[index];
-                    final assignedDisasters = disasters
-                        .where((d) => admin.assignedDisasterIds.contains(d.id))
-                        .toList();
-                    
-                    return Card(
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: ExpansionTile(
-                        leading: CircleAvatar(
-                          backgroundColor: Colors.red[100],
-                          child: Text(
-                            admin.name.split(' ').map((s) => s[0]).take(2).join('').toUpperCase(),
-                            style: TextStyle(color: Colors.red[900]),
-                          ),
+          child:
+              admins.isEmpty
+                  ? Center(child: Text('No admins added yet'))
+                  : ListView.builder(
+                    itemCount: admins.length,
+                    itemBuilder: (context, index) {
+                      final admin = admins[index];
+                      final assignedDisasters =
+                          disasters
+                              .where(
+                                (d) => admin.assignedDisasterIds.contains(d.id),
+                              )
+                              .toList();
+
+                      return Card(
+                        margin: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
                         ),
-                        title: Text(
-                          admin.name,
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text('${admin.role} • ${admin.email}'),
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _adminDetailRow(Icons.email, 'Email', admin.email),
-                                _adminDetailRow(Icons.phone, 'Phone', admin.phone),
-                                _adminDetailRow(Icons.work, 'Role', admin.role),
-                                SizedBox(height: 16),
-                                Text(
-                                  'Assigned Disasters:',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                SizedBox(height: 8),
-                                if (assignedDisasters.isEmpty)
-                                  Text('No disasters assigned')
-                                else
-                                  ...assignedDisasters.map(
-                                    (disaster) => Padding(
-                                      padding: EdgeInsets.symmetric(vertical: 4),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            disaster.isActive ? Icons.warning_amber : Icons.history,
-                                            color: disaster.isActive ? Colors.red : Colors.grey,
-                                            size: 16,
-                                          ),
-                                          SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              disaster.name,
-                                              style: TextStyle(
-                                                color: disaster.isActive ? null : Colors.grey,
-                                              ),
-                                            ),
-                                          ),
-                                          Container(
-                                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: disaster.isActive
-                                                  ? (disaster.severity == 'Critical'
-                                                      ? Colors.red
-                                                      : disaster.severity == 'High'
-                                                          ? Colors.orange
-                                                          : disaster.severity == 'Medium'
-                                                              ? Colors.yellow
-                                                              : Colors.green)
-                                                  : Colors.grey,
-                                              borderRadius: BorderRadius.circular(10),
-                                            ),
-                                            child: Text(
-                                              disaster.severity,
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                color: disaster.severity == 'Medium' || disaster.severity == 'Low'
-                                                    ? Colors.black
-                                                    : Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                SizedBox(height: 16),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    OutlinedButton.icon(
-                                      icon: Icon(Icons.edit),
-                                      label: Text('Edit'),
-                                      onPressed: () {
-                                        // Edit admin functionality
-                                      },
-                                    ),
-                                    OutlinedButton.icon(
-                                      icon: Icon(Icons.delete),
-                                      label: Text('Deactivate'),
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: Colors.red,
-                                      ),
-                                      onPressed: () {
-                                        // Deactivate admin functionality
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ],
+                        child: ExpansionTile(
+                          leading: CircleAvatar(
+                            backgroundColor: Colors.red[100],
+                            child: Text(
+                              admin.name
+                                  .split(' ')
+                                  .map((s) => s[0])
+                                  .take(2)
+                                  .join('')
+                                  .toUpperCase(),
+                              style: TextStyle(color: Colors.red[900]),
                             ),
                           ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                          title: Text(
+                            admin.name,
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text('${admin.role} • ${admin.email}'),
+                          children: [
+                            Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _adminDetailRow(
+                                    Icons.email,
+                                    'Email',
+                                    admin.email,
+                                  ),
+                                  _adminDetailRow(
+                                    Icons.phone,
+                                    'Phone',
+                                    admin.phone,
+                                  ),
+                                  _adminDetailRow(
+                                    Icons.work,
+                                    'Role',
+                                    admin.role,
+                                  ),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'Assigned Disasters:',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(height: 8),
+                                  if (assignedDisasters.isEmpty)
+                                    Text('No disasters assigned')
+                                  else
+                                    ...assignedDisasters.map(
+                                      (disaster) => Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: 4,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              disaster.isActive
+                                                  ? Icons.warning_amber
+                                                  : Icons.history,
+                                              color:
+                                                  disaster.isActive
+                                                      ? Colors.red
+                                                      : Colors.grey,
+                                              size: 16,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                disaster.name,
+                                                style: TextStyle(
+                                                  color:
+                                                      disaster.isActive
+                                                          ? null
+                                                          : Colors.grey,
+                                                ),
+                                              ),
+                                            ),
+                                            Container(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: 6,
+                                                vertical: 2,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color:
+                                                    disaster.isActive
+                                                        ? (disaster.severity ==
+                                                                'Critical'
+                                                            ? Colors.red
+                                                            : disaster
+                                                                    .severity ==
+                                                                'High'
+                                                            ? Colors.orange
+                                                            : disaster
+                                                                    .severity ==
+                                                                'Medium'
+                                                            ? Colors.yellow
+                                                            : Colors.green)
+                                                        : Colors.grey,
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
+                                              child: Text(
+                                                disaster.severity,
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  color:
+                                                      disaster.severity ==
+                                                                  'Medium' ||
+                                                              disaster.severity ==
+                                                                  'Low'
+                                                          ? Colors.black
+                                                          : Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  SizedBox(height: 16),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      OutlinedButton.icon(
+                                        icon: Icon(Icons.edit),
+                                        label: Text('Edit'),
+                                        onPressed: () {
+                                          // Edit admin functionality
+                                        },
+                                      ),
+                                      OutlinedButton.icon(
+                                        icon: Icon(Icons.delete),
+                                        label: Text('Deactivate'),
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: Colors.red,
+                                        ),
+                                        onPressed: () {
+                                          // Deactivate admin functionality
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
         ),
       ],
     );
@@ -1064,10 +1177,7 @@ class AdminManagementScreen extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
                 ),
                 Text(value),
               ],
