@@ -10,7 +10,6 @@ class AuthService {
 
   bool _isAuthenticated = false;
   List<String> _userRoles = [];
-  bool _isProfileCompleted = false;
   
   // Caching to improve performance
   String? _cachedToken;
@@ -20,7 +19,6 @@ class AuthService {
 
   bool get isAuthenticated => _isAuthenticated;
   List<String> get userRoles => List.from(_userRoles);
-  bool get isProfileCompleted => _isProfileCompleted;
 
   // Load authentication state at startup - optimized with parallel reads
   Future<void> loadAuthState() async {
@@ -37,6 +35,7 @@ class AuthService {
       
       // print('AuthService: Loaded Token -> $token');
       print('AuthService: Loaded Roles -> $rolesString');
+      // print('AuthService: Loaded Profile Completed -> $profileCompleted');
 
       // Update cache
       _cachedToken = token;
@@ -44,18 +43,15 @@ class AuthService {
       if (token != null) {
         _isAuthenticated = true;
         _userRoles = rolesString != null ? rolesString.split(',') : [];
-        _isProfileCompleted = profileCompleted == 'true';
       } else {
         _isAuthenticated = false;
         _userRoles = [];
-        _isProfileCompleted = false;
       }
     } catch (e) {
       print('Error loading auth state: $e');
       // Set default values on error
       _isAuthenticated = false;
       _userRoles = [];
-      _isProfileCompleted = false;
     }
   }
 
@@ -91,7 +87,6 @@ class AuthService {
     // Reset state
     _userRoles = [];
     _isAuthenticated = false;
-    _isProfileCompleted = false;
   }
 
   Future<String?> getToken() async {

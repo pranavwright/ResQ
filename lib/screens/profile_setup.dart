@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:resq/utils/http/token_http.dart';
 import '../utils/auth/auth_service.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
@@ -55,9 +56,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     try {
       // Here you would normally upload the image to your server
       // and update the user profile with the email
+      await TokenHttp().put('/auth/updateUser',{
+        'email': _emailController.text,
+        'profileImagePath': _profileImage!.path,
+      });
       
-      // Mock API call for uploading profile picture
-      await Future.delayed(Duration(seconds: 1));
       
       // Save user profile data locally
       await AuthService().saveUserProfile(

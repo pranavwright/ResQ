@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:resq/utils/http/auth_http.dart';
 import 'package:resq/utils/http/token_less_http.dart';
 import '../utils/auth/auth_service.dart';
-import '../constants/api_constants.dart';
 
 class OtpScreen extends StatefulWidget {
   const OtpScreen({super.key});
@@ -152,6 +151,7 @@ class _OtpScreenState extends State<OtpScreen> {
       final response = await tokenLessHttp.post('/auth/verifyFirebaseToken', {
         'firebaseToken': firebaseToken, 
       });
+      print(response);
       
       // Extract token and roles based on backend response
       final jwtToken = response['jwtToken']; // Changed to match backend response field
@@ -174,7 +174,7 @@ class _OtpScreenState extends State<OtpScreen> {
       } else {
         Navigator.pushNamedAndRemoveUntil(
           context,
-          '/complete-profile',
+          '/profile-setup',
           (route) => false,
         );
       }

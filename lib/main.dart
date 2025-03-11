@@ -9,6 +9,7 @@ import 'package:resq/screens/foodand_health.dart';
 import 'package:resq/screens/helthnew.dart';
 import 'package:resq/screens/incom_andlose.dart';
 import 'package:resq/screens/kudumbasree.dart';
+import 'package:resq/screens/otp_screen.dart';
 import 'package:resq/screens/personal_loan.dart';
 import 'package:resq/screens/shelter.dart';
 import 'package:resq/screens/skill.dart';
@@ -33,8 +34,13 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/profile_setup.dart';
 import 'screens/add_famili.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_web_plugins/url_strategy.dart';
 
 void main() async {
+  if (kIsWeb) {
+    setUrlStrategy(null);
+  }
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await AuthService().loadAuthState();
@@ -49,18 +55,27 @@ class MyApp extends StatelessWidget {
     if (roles.contains('admin')) return AdminDashboard();
     if (roles.contains('stat')) return StatDashboard();
     if (roles.contains('kas')) return KasDashboard();
-    if (roles.contains('collectionpointadmin')) return CollectionPointDashboard();
+    if (roles.contains('collectionpointadmin'))
+      return CollectionPointDashboard();
     if (roles.contains('campadmin')) return CampAdminRequestScreen();
     if (roles.contains('collectionpointvolunteer')) return VolunteerDashboard();
-    return HomeScreen();
+    return Home();
   }
 
   @override
   Widget build(BuildContext context) {
     final authService = AuthService();
     final isAuthenticated = authService.isAuthenticated;
-    final isProfileCompleted = authService.isProfileCompleted;
     List<String> roles = authService.getCurrentUserRoles();
+    final completedProfile = authService.getUserProfile() != null;
+
+
+    String initialRoute;
+    if (kIsWeb) {
+      initialRoute = isAuthenticated? completedProfile? '/app' : 'profile-setup' : '/';
+    } else {
+      initialRoute = isAuthenticated ? completedProfile? '/app' : 'profile-setup'  : '/';
+    }
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -68,11 +83,16 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         primaryColor: _getPrimaryColor(),
       ),
-      initialRoute: '/',
+      initialRoute: initialRoute,
       routes: {
-        '/': (context) => const AuthRoute(requiresAuth: false, child: LoginScreen()),
-        '/otp': (context) => const AuthRoute(requiresAuth: false, child: OtpScreen()),
-        '/app': (context) => AuthRoute(
+        '/':
+            (context) =>
+                const AuthRoute(requiresAuth: false, child: LoginScreen()),
+        '/otp':
+            (context) =>
+                const AuthRoute(requiresAuth: false, child: OtpScreen()),
+        '/app':
+            (context) => AuthRoute(
               requiredRoles: [
                 'stat',
                 'admin',
@@ -84,44 +104,68 @@ class MyApp extends StatelessWidget {
               ],
               child: getDashboardForRole(roles),
             ),
-        '/families': (context) => const AuthRoute(requiredRoles: ['admin', 'familySurvey'], child: FamiliesScreen()),
-        '/camp-status': (context) => const AuthRoute(requiredRoles: ['admin', 'campadmin'], child: CampStatusScreen()),
-        '/notice-board': (context) => const AuthRoute(requiredRoles: ['admin'], child: RoleCreationScreen()),
-        '/create-notice': (context) => const AuthRoute(requiredRoles: ['admin'], child: CreateNoticeScreen()),
-        '/home': (context) => const AuthRoute(requiresAuth: false, child: HomeScreen()),
+        '/families':
+            (context) => const AuthRoute(
+              requiredRoles: ['admin', 'familySurvey'],
+              child: FamiliesScreen(),
+            ),
+        '/camp-status':
+            (context) => const AuthRoute(
+              requiredRoles: ['admin', 'campadmin'],
+              child: CampStatusScreen(),
+            ),
+        '/notice-board':
+            (context) => const AuthRoute(
+              requiredRoles: ['admin'],
+              child: RoleCreationScreen(),
+            ),
+        '/create-notice':
+            (context) => const AuthRoute(
+              requiredRoles: ['admin'],
+              child: CreateNoticeScreen(),
+            ),
+        '/home':
+            (context) => const AuthRoute(requiresAuth: false, child: Home()),
         '/public-donation': (context) => DonationRequestPage(),
-         '/families': (context) => FamiliesScreen(),
-        '/camp-status': (context) => CampStatusScreen(),
-        '/create-notice': (context) => CreateNoticeScreen(),
-        '/foodand-health': (context) => FoodandHealth(),  
-         '/shelter':(context)=>Shelter(),
-         '/education-livilehood':(context)=>EducationLivielhoood(),
-         '/agriculture':(context)=>Agriculture(),
-         '/social':(context)=>Social(),
-         '/personal-loan':(context)=>PersonalLoan(),
-         '/special':(context)=>SpecialCategory(),
-         '/kudumbasree':(context)=>Kudumbasree(),
-         '/assistance':(context)=>AssistanceSupport(),
-         '/incomandlose':(context)=>IncomAndlose(),
-         '/emp-status':(context)=>EmpStatus(),
-         '/add-members':(context)=>AddMembers(),
-         '/helthnew':(context)=>HealthNew(),
-         '/skill':(context)=>Skill(),
-         '/home':(context)=>Home()
-        '/profile-setup': (context) => AuthRoute(
-            requiresAuth: true,
-            // redirect: isProfileCompleted ? '/app' : null,
-            child: ProfileSetupScreen(roles: roles, token: authService.getToken().toString())),
+        '/foodand-health': (context) => FoodandHealth(),
+        '/shelter': (context) => Shelter(),
+        '/education-livilehood': (context) => EducationLivielhoood(),
+        '/agriculture': (context) => Agriculture(),
+        '/social': (context) => Social(),
+        '/personal-loan': (context) => PersonalLoan(),
+        '/special': (context) => SpecialCategory(),
+        '/kudumbasree': (context) => Kudumbasree(),
+        '/assistance': (context) => AssistanceSupport(),
+        '/incomandlose': (context) => IncomAndlose(),
+        '/emp-status': (context) => EmpStatus(),
+        '/add-members': (context) => AddMembers(),
+        '/helthnew': (context) => HealthNew(),
+        '/skill': (context) => Skill(),
+        '/root': (context) => Home(),
+        '/add-famili': (context) => AddFamilies(),
+        '/profile-setup':
+            (context) => AuthRoute(
+              requiresAuth: true,
+              // redirect: isProfileCompleted ? '/app' : null,
+              child: ProfileSetupScreen(
+                roles: roles,
+                token: authService.getToken().toString(),
+              ),
+            ),
       },
-      onUnknownRoute: (settings) => MaterialPageRoute(
-        builder: (context) => const Scaffold(body: Center(child: Text('404 - Page Not Found'))),
-      ),
+      onUnknownRoute:
+          (settings) => MaterialPageRoute(
+            builder:
+                (context) => const Scaffold(
+                  body: Center(child: Text('404 - Page Not Found')),
+                ),
+          ),
     );
   }
 
   Color _getPrimaryColor() {
     try {
-      return Platform.isAndroid ? Colors.green : Colors.blue;
+      return kIsWeb ? Colors.green : Colors.blue;
     } catch (e) {
       debugPrint('Error getting platform color: $e');
       return Colors.blue;
