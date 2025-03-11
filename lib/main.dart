@@ -43,12 +43,18 @@ void main() async {
   }
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await AuthService().loadAuthState();
+  final authService = AuthService();
+  await authService.loadAuthState();
+  
+  print("App initialized with auth state: ${authService.isAuthenticated}");
+  print("User roles: ${authService.userRoles}");
+  
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+  
 
   Widget getDashboardForRole(List<String> roles) {
     if (roles.contains('superadmin')) return SuperAdminDashboard();
@@ -69,13 +75,9 @@ class MyApp extends StatelessWidget {
     List<String> roles = authService.getCurrentUserRoles();
     final completedProfile = authService.getUserProfile() != null;
 
+    print("${completedProfile} ${authService.getUserProfile()} ");
 
-    String initialRoute;
-    if (kIsWeb) {
-      initialRoute = isAuthenticated? completedProfile? '/app' : 'profile-setup' : '/';
-    } else {
-      initialRoute = isAuthenticated ? completedProfile? '/app' : 'profile-setup'  : '/';
-    }
+    String initialRoute = isAuthenticated ? completedProfile? '/app' : 'profile-setup'  : '/';
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,

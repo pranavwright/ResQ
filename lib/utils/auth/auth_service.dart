@@ -20,40 +20,41 @@ class AuthService {
   bool get isAuthenticated => _isAuthenticated;
   List<String> get userRoles => List.from(_userRoles);
 
-  // Load authentication state at startup - optimized with parallel reads
-  Future<void> loadAuthState() async {
-    try {
-      // Read all values in parallel instead of sequentially
-      final futures = await Future.wait([
-        _storage.read(key: 'auth_token'),
-        _storage.read(key: 'user_roles'),
-      ]);
-      
-      final token = futures[0];
-      final rolesString = futures[1];
-      final profileCompleted = futures[2];
-      
-      // print('AuthService: Loaded Token -> $token');
-      print('AuthService: Loaded Roles -> $rolesString');
-      // print('AuthService: Loaded Profile Completed -> $profileCompleted');
+  
+Future<void> loadAuthState() async {
+  try {
+    // Read all values in parallel instead of sequentially
+    final futures = await Future.wait([
+      _storage.read(key: 'auth_token'),
+      _storage.read(key: 'user_roles'),
+      // Remove this third item or add the proper key
+      // _storage.read(key: 'profile_completed'), 
+    ]);
+    
+    final token = futures[0];
+    final rolesString = futures[1];
+    // Don't try to access futures[2] if you only have 2 items
+    
+    print('AuthService: Loaded Token -> $token');
+    print('AuthService: Loaded Roles -> $rolesString');
 
-      // Update cache
-      _cachedToken = token;
+    // Update cache
+    _cachedToken = token;
 
-      if (token != null) {
-        _isAuthenticated = true;
-        _userRoles = rolesString != null ? rolesString.split(',') : [];
-      } else {
-        _isAuthenticated = false;
-        _userRoles = [];
-      }
-    } catch (e) {
-      print('Error loading auth state: $e');
-      // Set default values on error
+    if (token != null) {
+      _isAuthenticated = true;
+      _userRoles = rolesString != null ? rolesString.split(',') : [];
+    } else {
       _isAuthenticated = false;
       _userRoles = [];
     }
+  } catch (e) {
+    print('Error loading auth state: $e');
+    // Set default values on error
+    _isAuthenticated = false;
+    _userRoles = [];
   }
+}
 
   Future<void> login(String token, List<String> roles) async {
     // Update storage

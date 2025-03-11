@@ -63,7 +63,7 @@ Future<Map<String, dynamic>> checkPhoneNumber({
     final response = await http.post(
       Uri.parse('$baseUrl/auth/verifyFirebaseToken'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'token': token}),
+      body: jsonEncode({'firebaseToken': token}),
     );
 
     if (response.statusCode == 200) {

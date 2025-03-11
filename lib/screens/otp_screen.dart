@@ -134,59 +134,62 @@ class _OtpScreenState extends State<OtpScreen> {
   }
   
   // Sign in with credential and verify with backend
-  Future<void> _signInWithCredential(PhoneAuthCredential credential) async {
-    try {
-      // Sign in to Firebase
-      final userCredential = await _auth.signInWithCredential(credential);
-      
-      // Get Firebase token
-      final firebaseToken = await userCredential.user?.getIdToken();
-      
-      if (firebaseToken == null) {
-        throw Exception('Failed to get Firebase token');
-      }
-      
-      // Verify token with your backend - Use tokenLessHttp since we don't have a JWT yet
-      final tokenLessHttp = TokenLessHttp();
-      final response = await tokenLessHttp.post('/auth/verifyFirebaseToken', {
-        'firebaseToken': firebaseToken, 
-      });
-      print(response);
-      
-      // Extract token and roles based on backend response
-      final jwtToken = response['jwtToken']; // Changed to match backend response field
-      final roles = List<String>.from(response['roles'] ?? []);
-      
-      // Save authentication state
-      await AuthService().login(jwtToken, roles);
-      
-      // Navigate to appropriate screen
-      if (!mounted) return;
-      
-      // Navigate based on whether user has a profile photo
-      final hasPhoto = response['photoUrl'] != null;
-      if (hasPhoto) {
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/app',
-          (route) => false,
-        );
-      } else {
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/profile-setup',
-          (route) => false,
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Authentication failed: $e')),
-        );
-      }
-      setState(() => _isLoading = false);
+  
+Future<void> _signInWithCredential(PhoneAuthCredential credential) async {
+  try {
+    final userCredential = await _auth.signInWithCredential(credential);
+    
+    final firebaseToken = await userCredential.user?.getIdToken();
+    
+    if (firebaseToken == null) {
+      throw Exception('Failed to get Firebase token');
     }
+    
+    final tokenLessHttp = TokenLessHttp();
+    final response = await tokenLessHttp.post('/auth/verifyFirebaseToken', {
+      'firebaseToken': firebaseToken, 
+    });
+    
+    if (response['jwtToken'] == null) {
+      throw Exception('Invalid response from server: JWT token is missing');
+    }
+    
+    final jwtToken = response['jwtToken'];
+    final roles = List<String>.from(response['roles'] ?? []);
+    
+    print("Saving auth state with token: $jwtToken and roles: $roles");
+    
+    await AuthService().login(jwtToken, roles);
+    
+    final savedToken = await AuthService().getToken();
+    print("Saved token: $savedToken");
+    
+    if (!mounted) return;
+    
+    final hasPhoto = response['photoUrl'] != null && response['photoUrl'] != '';
+    if (hasPhoto) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/app',
+        (route) => false,
+      );
+    } else {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/profile-setup',
+        (route) => false,
+      );
+    }
+  } catch (e) {
+    print("Authentication error: $e");
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Authentication failed: $e')),
+      );
+    }
+    setState(() => _isLoading = false);
   }
+}
 
   @override
   Widget build(BuildContext context) {
