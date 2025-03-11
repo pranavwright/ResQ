@@ -138,6 +138,13 @@ Future<void> loadAuthState() async {
     };
   }
 
+  Future<bool> isProfileComplete() async {
+    // Check if email and profile image path are set
+    final profileImagePath = await _storage.read(key: 'profile_image_path');
+    
+    return profileImagePath != null;
+  }
+
 
   // Get user profile data - optimized with caching
   Future<Map<String, String?>> getUserProfile() async {

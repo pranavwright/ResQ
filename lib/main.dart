@@ -26,7 +26,7 @@ import 'utils/auth/auth_service.dart';
 import 'screens/stat_dashboard.dart';
 import 'screens/campadmin_dashboard.dart';
 import 'screens/kas_dashboard.dart';
-import 'screens/superadmin_dashboard.dart';
+import 'screens/superAdmin_dashboard.dart';
 import 'screens/collectionpoint_dashboard.dart';
 import 'screens/volunteer_dashboard.dart';
 import 'screens/donation_request_form.dart';
@@ -42,22 +42,36 @@ void main() async {
     setUrlStrategy(null);
   }
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  try {
+    // Add error handling around Firebase initialization
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print("Firebase initialized successfully");
+  } catch (e) {
+    print("Error initializing Firebase: $e");
+    // Continue with the app, but Firebase features won't work
+  }
+
   final authService = AuthService();
-  await authService.loadAuthState();
-  
+  try {
+    await authService.loadAuthState();
+    print("Auth state loaded: ${authService.isAuthenticated}");
+  } catch (e) {
+    print("Error loading auth state: $e");
+  }
+
   print("App initialized with auth state: ${authService.isAuthenticated}");
   print("User roles: ${authService.userRoles}");
-  
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-  
 
   Widget getDashboardForRole(List<String> roles) {
-    if (roles.contains('superadmin')) return SuperAdminDashboard();
+    if (roles.contains('superAdmin')) return SuperAdminDashboard();
     if (roles.contains('admin')) return AdminDashboard();
     if (roles.contains('stat')) return StatDashboard();
     if (roles.contains('kas')) return KasDashboard();
@@ -72,24 +86,42 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final authService = AuthService();
     final isAuthenticated = authService.isAuthenticated;
-    List<String> roles = authService.getCurrentUserRoles();
-    final completedProfile = authService.getUserProfile() != null;
+    final List<String> roles = authService.getCurrentUserRoles();
+    bool completedProfile = false;
+    if (isAuthenticated) {
+      authService.isProfileComplete().then((isComplete) {
+        completedProfile = isComplete;
+        print("Profile completion status: $completedProfile");
+      });
+    }
 
-    print("${completedProfile} ${authService.getUserProfile()} ");
+    String initialRoute =
+        isAuthenticated
+            ? '/profile-setup'
+            : kIsWeb
+            ? '/'
+            : '/otp';
 
-    String initialRoute = isAuthenticated ? completedProfile? '/app' : 'profile-setup'  : '/';
+    print("Authentication status: $isAuthenticated");
+
+    print("User roles: $roles");
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+
       theme: ThemeData(
         primarySwatch: Colors.blue,
+
         primaryColor: _getPrimaryColor(),
       ),
+
       initialRoute: initialRoute,
+
       routes: {
         '/':
             (context) =>
                 const AuthRoute(requiresAuth: false, child: LoginScreen()),
+
         '/otp':
             (context) =>
                 const AuthRoute(requiresAuth: false, child: OtpScreen()),
@@ -97,64 +129,93 @@ class MyApp extends StatelessWidget {
             (context) => AuthRoute(
               requiredRoles: [
                 'stat',
+
                 'admin',
+
                 'kas',
-                'superadmin',
+
+                'superAdmin',
+
                 'collectionpointadmin',
+
                 'campadmin',
+
                 'collectionpointvolunteer',
               ],
+
               child: getDashboardForRole(roles),
             ),
+
         '/families':
             (context) => const AuthRoute(
               requiredRoles: ['admin', 'familySurvey'],
+
               child: FamiliesScreen(),
             ),
+
         '/camp-status':
             (context) => const AuthRoute(
               requiredRoles: ['admin', 'campadmin'],
+
               child: CampStatusScreen(),
             ),
+
         '/notice-board':
             (context) => const AuthRoute(
               requiredRoles: ['admin'],
+
               child: RoleCreationScreen(),
             ),
+
         '/create-notice':
             (context) => const AuthRoute(
               requiredRoles: ['admin'],
+
               child: CreateNoticeScreen(),
             ),
+
         '/home':
             (context) => const AuthRoute(requiresAuth: false, child: Home()),
+
         '/public-donation': (context) => DonationRequestPage(),
+
         '/foodand-health': (context) => FoodandHealth(),
+
         '/shelter': (context) => Shelter(),
+
         '/education-livilehood': (context) => EducationLivielhoood(),
+
         '/agriculture': (context) => Agriculture(),
+
         '/social': (context) => Social(),
+
         '/personal-loan': (context) => PersonalLoan(),
+
         '/special': (context) => SpecialCategory(),
+
         '/kudumbasree': (context) => Kudumbasree(),
+
         '/assistance': (context) => AssistanceSupport(),
+
         '/incomandlose': (context) => IncomAndlose(),
+
         '/emp-status': (context) => EmpStatus(),
+
         '/add-members': (context) => AddMembers(),
+
         '/helthnew': (context) => HealthNew(),
+
         '/skill': (context) => Skill(),
+
         '/root': (context) => Home(),
+
         '/add-famili': (context) => AddFamilies(),
+
         '/profile-setup':
-            (context) => AuthRoute(
-              requiresAuth: true,
-              // redirect: isProfileCompleted ? '/app' : null,
-              child: ProfileSetupScreen(
-                roles: roles,
-                token: authService.getToken().toString(),
-              ),
-            ),
+            (context) =>
+                AuthRoute(requiresAuth: true, child: ProfileSetupScreen()),
       },
+
       onUnknownRoute:
           (settings) => MaterialPageRoute(
             builder:
@@ -170,6 +231,7 @@ class MyApp extends StatelessWidget {
       return kIsWeb ? Colors.green : Colors.blue;
     } catch (e) {
       debugPrint('Error getting platform color: $e');
+
       return Colors.blue;
     }
   }
