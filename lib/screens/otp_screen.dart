@@ -195,9 +195,11 @@ Future<void> _signInWithCredential(PhoneAuthCredential credential) async {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isOtpSent ? 'Verify OTP' : 'Phone Login'),
-        centerTitle: true,
-      ),
+  title: Text(_isOtpSent ? 'Verify OTP' : 'Phone Login'),
+  centerTitle: true,
+  automaticallyImplyLeading: false, // Removes the back button
+),
+
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(20.0),

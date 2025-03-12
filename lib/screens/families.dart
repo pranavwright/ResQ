@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'family_data_download.dart'; // Import the new screen
 
 class FamiliesScreen extends StatefulWidget {
   const FamiliesScreen({super.key});
@@ -16,7 +17,7 @@ class _FamiliesScreenState extends State<FamiliesScreen> {
   ];
 
   List<Map<String, String>> filteredFamilies = [];
-  String selectedAgeCategory = '';  // Store selected age category for filtering
+  String selectedAgeCategory = '';
 
   @override
   void initState() {
@@ -30,7 +31,6 @@ class _FamiliesScreenState extends State<FamiliesScreen> {
     setState(() {
       filteredFamilies = families
           .where((family) {
-            // Filter based on the search query and the selected age category
             bool matchesQuery = family['House Name']!.toLowerCase().contains(query) ||
                 family['Location']!.toLowerCase().contains(query);
             bool matchesAgeCategory = selectedAgeCategory.isEmpty || family['Age Category'] == selectedAgeCategory;
@@ -46,7 +46,131 @@ class _FamiliesScreenState extends State<FamiliesScreen> {
     super.dispose();
   }
 
-  // Show filter dialog to select the age category
+  void _navigateToDownloadScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => FamilyTableScreen()),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Families'),
+        backgroundColor: Colors.deepPurpleAccent,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.filter_list),
+            onPressed: _showFilterDialog,
+          ),
+          IconButton(
+            icon: Icon(Icons.download),
+            onPressed: _navigateToDownloadScreen, // Navigate to download page
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: searchController,
+              decoration: InputDecoration(
+                labelText: 'Search',
+                hintText: 'Search by House Name or Location',
+                prefixIcon: Icon(Icons.search, color: Colors.deepPurpleAccent),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide(color: Colors.deepPurpleAccent),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide(color: Colors.deepPurpleAccent, width: 2),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Card(
+                elevation: 5,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Table(
+                  border: TableBorder.all(color: Colors.grey.shade300, width: 1),
+                  columnWidths: {
+                    0: FixedColumnWidth(100),
+                    1: FixedColumnWidth(150),
+                    2: FixedColumnWidth(150),
+                    3: FixedColumnWidth(100),
+                  },
+                  children: [
+                    TableRow(
+                      decoration: BoxDecoration(color: Colors.deepPurpleAccent),
+                      children: [
+                        _buildHeaderCell('Family ID'),
+                        _buildHeaderCell('House Name'),
+                        _buildHeaderCell('Location'),
+                        _buildHeaderCell('Status'),
+                      ],
+                    ),
+                    ...filteredFamilies.map((family) {
+                      return TableRow(
+                        children: [
+                          _buildTableCell(family['Family ID']!),
+                          _buildTableCell(family['House Name']!),
+                          _buildTableCell(family['Location']!),
+                          _buildTableCell(family['Status']!, isStatus: true),
+                        ],
+                      );
+                    }).toList(),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: _navigateToDownloadScreen,
+            icon: Icon(Icons.download),
+            label: Text("Download Family Data"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepPurpleAccent,
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+          SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderCell(String text) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Text(
+        text,
+        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16),
+      ),
+    );
+  }
+
+  Widget _buildTableCell(String text, {bool isStatus = false}) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 14,
+          color: isStatus ? (text == 'Active' ? Colors.green : Colors.red) : Colors.black,
+        ),
+      ),
+    );
+  }
+
   void _showFilterDialog() {
     showDialog(
       context: context,
@@ -63,11 +187,11 @@ class _FamiliesScreenState extends State<FamiliesScreen> {
                   setState(() {
                     selectedAgeCategory = newValue ?? '';
                     filteredFamilies = families;
-                    _filterFamilies();  // Apply filtering after selection
+                    _filterFamilies();
                   });
-                  Navigator.pop(context);  // Close the dialog
+                  Navigator.pop(context);
                 },
-                items: <String>['', 'Adult', 'Senior'] // Define the available categories
+                items: <String>['', 'Adult', 'Senior']
                     .map<DropdownMenuItem<String>>((String value) {
                   return DropdownMenuItem<String>(
                     value: value,
@@ -79,133 +203,6 @@ class _FamiliesScreenState extends State<FamiliesScreen> {
           ),
         );
       },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Families'),
-        backgroundColor: Colors.deepPurpleAccent,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.filter_list),
-            onPressed: _showFilterDialog,  // Show the filter dialog
-          ),
-        ],
-      ),
-      body: Container(
-        color: Colors.white, // Set the background color to white
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Search bar with modern styling
-            TextField(
-              controller: searchController,
-              decoration: InputDecoration(
-                labelText: 'Search',
-                hintText: 'Search by House Name or Location',
-                prefixIcon: Icon(Icons.search, color: Colors.deepPurpleAccent),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                  borderSide: BorderSide(color: Colors.deepPurpleAccent),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                  borderSide: BorderSide(color: Colors.deepPurpleAccent, width: 2),
-                ),
-              ),
-            ),
-            SizedBox(height: 20), // Space between search bar and table
-            Expanded(
-              child: SingleChildScrollView(
-                child: Card(
-                  elevation: 5, // Add shadow to the card
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Table(
-                    border: TableBorder.all(
-                      color: Colors.grey.shade300,
-                      width: 1,
-                    ),
-                    columnWidths: {
-                      0: FixedColumnWidth(100),
-                      1: FixedColumnWidth(150),
-                      2: FixedColumnWidth(150),
-                      3: FixedColumnWidth(100),
-                    },
-                    children: [
-                      // Table Header
-                      TableRow(
-                        decoration: BoxDecoration(
-                          color: Colors.deepPurpleAccent,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        children: [
-                          _buildHeaderCell('Family ID'),
-                          _buildHeaderCell('House Name'),
-                          _buildHeaderCell('Location'),
-                          _buildHeaderCell('Status'),
-                        ],
-                      ),
-                      // Table Content (Filtered Rows)
-                      ...filteredFamilies.map((family) {
-                        return TableRow(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          children: [
-                            _buildTableCell(family['Family ID']!),
-                            _buildTableCell(family['House Name']!),
-                            _buildTableCell(family['Location']!),
-                            _buildTableCell(family['Status']!, isStatus: true),
-                          ],
-                        );
-                      }).toList(),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeaderCell(String text) {
-    return TableCell(
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            fontSize: 16,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTableCell(String text, {bool isStatus = false}) {
-    return TableCell(
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: 14,
-            color: isStatus
-                ? (text == 'Active' ? Colors.green : Colors.red)
-                : Colors.black,
-          ),
-        ),
-      ),
     );
   }
 }
