@@ -527,14 +527,32 @@ class DisasterManagementScreen extends StatelessWidget {
                 'Active Disasters (${disasters.where((d) => d.isActive).length})',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              ElevatedButton.icon(
-                icon: Icon(Icons.add),
-                label: Text('Create Disaster'),
-                onPressed: onCreateDisaster,
+              Row(
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/loan-relief');
+                    },
+                    icon: const Icon(Icons.account_balance),
+                    label: const Text('Loan Relief'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue[800],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    icon: Icon(Icons.add),
+                    label: Text('Create Disaster'),
+                    onPressed: onCreateDisaster,
+                  ),
+                ],
               ),
             ],
           ),
         ),
+      
         Expanded(
           child:
               disasters.isEmpty

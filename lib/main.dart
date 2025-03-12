@@ -36,6 +36,7 @@ import 'screens/profile_setup.dart';
 import 'screens/add_famili.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:resq/screens/loan_relief_upload.dart';
 
 void main() async {
   if (kIsWeb) {
@@ -57,12 +58,11 @@ class MyApp extends StatelessWidget {
   
 
   Widget getDashboardForRole(List<String> roles) {
-    if (roles.contains('superadmin')) return SuperAdminDashboard();
+    if (roles.contains('superAdmin')) return SuperAdminDashboard();
     if (roles.contains('admin')) return AdminDashboard();
     if (roles.contains('stat')) return StatDashboard();
     if (roles.contains('kas')) return KasDashboard();
-    if (roles.contains('collectionpointadmin'))
-      return CollectionPointDashboard();
+    if (roles.contains('collectionpointadmin')) return CollectionPointDashboard();
     if (roles.contains('campadmin')) return CampAdminRequestScreen();
     if (roles.contains('collectionpointvolunteer')) return VolunteerDashboard();
     return Home();
@@ -72,12 +72,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final authService = AuthService();
     final isAuthenticated = authService.isAuthenticated;
-    List<String> roles = authService.getCurrentUserRoles();
+    List<String> roles = authService.getCurrentUserRoles()??[];
     final completedProfile = authService.getUserProfile() != null;
 
-    print("${completedProfile} ${authService.getUserProfile()} ");
+    String initialRoute = isAuthenticated ? completedProfile? '/app' : 'profile-setup'  : kIsWeb ? '/' : '/otp';
 
-    String initialRoute = isAuthenticated ? completedProfile? '/app' : 'profile-setup'  : '/';
+    print(initialRoute);
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -154,6 +154,10 @@ class MyApp extends StatelessWidget {
                 token: authService.getToken().toString(),
               ),
             ),
+            '/loan-relief': (context) => AuthRoute(
+      requiredRoles: ['admin', 'kas', 'superadmin', 'campadmin'], // Adjust roles as needed
+              child: LoanReliefUploadScreen(),
+),
       },
       onUnknownRoute:
           (settings) => MaterialPageRoute(
