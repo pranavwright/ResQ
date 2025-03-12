@@ -202,10 +202,7 @@ class MyApp extends StatelessWidget {
             (context) => AuthRoute(
               requiresAuth: true,
               // redirect: isProfileCompleted ? '/app' : null,
-              child: ProfileSetupScreen(
-                roles: roles,
-                token: authService.getToken().toString(),
-              ),
+              child: ProfileSetupScreen( ),
             ),
             '/loan-relief': (context) => AuthRoute(
       requiredRoles: ['admin', 'kas', 'superadmin', 'campadmin'], // Adjust roles as needed
