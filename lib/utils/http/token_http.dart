@@ -5,7 +5,6 @@ import 'package:http_parser/http_parser.dart';
 import '../../constants/api_constants.dart';
 import '../auth/auth_service.dart';
 
-
 class TokenHttp {
   final String baseUrl = ApiConstants.baseUrl;
 
@@ -17,18 +16,34 @@ class TokenHttp {
     };
   }
 
+  Future<Map<String, String>> _getFileHeaders() async {
+    final token = await AuthService().getToken() ?? "token";
+    return {
+      'Content-Type': 'multipart/form-data',
+      'Authorization': 'Bearer $token',
+    };
+  }
+
   Future<Map<String, dynamic>> get(String endpoint) async {
     final headers = await _getHeaders();
-    final response = await http.get(Uri.parse('$baseUrl$endpoint'), headers: headers);
+    final response = await http.get(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: headers,
+    );
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw Exception('GET request failed: ${response.statusCode}, ${response.body}');
+      throw Exception(
+        'GET request failed: ${response.statusCode}, ${response.body}',
+      );
     }
   }
 
-  Future<Map<String, dynamic>> post(String endpoint, Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> post(
+    String endpoint,
+    Map<String, dynamic> data,
+  ) async {
     final headers = await _getHeaders();
     final response = await http.post(
       Uri.parse('$baseUrl$endpoint'),
@@ -39,11 +54,16 @@ class TokenHttp {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return jsonDecode(response.body);
     } else {
-      throw Exception('POST request failed: ${response.statusCode}, ${response.body}');
+      throw Exception(
+        'POST request failed: ${response.statusCode}, ${response.body}',
+      );
     }
   }
 
-  Future<Map<String, dynamic>> put(String endpoint, Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> put(
+    String endpoint,
+    Map<String, dynamic> data,
+  ) async {
     final headers = await _getHeaders();
     final response = await http.put(
       Uri.parse('$baseUrl$endpoint'),
@@ -54,18 +74,71 @@ class TokenHttp {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw Exception('PUT request failed: ${response.statusCode}, ${response.body}');
+      throw Exception(
+        'PUT request failed: ${response.statusCode}, ${response.body}',
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> putWithFileUpload({
+    required String endpoint,
+    required File file,
+    required String fieldName,
+    String? fileName,
+    Map<String, dynamic>? additionalFields,
+  }) async {
+    final token = await AuthService().getToken() ?? "token";
+    final uri = Uri.parse('$baseUrl$endpoint');
+
+    final request = http.MultipartRequest('PUT', uri);
+
+    request.headers['Authorization'] = 'Bearer $token';
+
+    final fileStream = http.ByteStream(file.openRead());
+    final fileLength = await file.length();
+
+    final multipartFile = http.MultipartFile(
+      fieldName,
+      fileStream,
+      fileLength,
+      filename: fileName ?? file.path.split('/').last,
+    );
+
+    request.files.add(multipartFile);
+
+    // Add additional fields if provided
+    if (additionalFields != null) {
+      additionalFields.forEach((key, value) {
+        request.fields[key] = value.toString();
+      });
+    }
+
+    // Send the request
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception(
+        'PUT with file upload failed: ${response.statusCode}, ${response.body}',
+      );
     }
   }
 
   Future<Map<String, dynamic>> delete(String endpoint) async {
     final headers = await _getHeaders();
-    final response = await http.delete(Uri.parse('$baseUrl$endpoint'), headers: headers);
+    final response = await http.delete(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: headers,
+    );
 
     if (response.statusCode == 200 || response.statusCode == 204) {
       return response.body.isEmpty ? {} : jsonDecode(response.body);
     } else {
-      throw Exception('DELETE request failed: ${response.statusCode}, ${response.body}');
+      throw Exception(
+        'DELETE request failed: ${response.statusCode}, ${response.body}',
+      );
     }
   }
 
@@ -78,7 +151,10 @@ class TokenHttp {
     Map<String, String>? additionalFields,
   }) async {
     final token = await AuthService().getToken() ?? "token";
-    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$endpoint'));
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl$endpoint'),
+    );
     request.headers['Authorization'] = 'Bearer $token';
 
     final fileStream = http.ByteStream(file.openRead());
@@ -100,7 +176,9 @@ class TokenHttp {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return jsonDecode(response.body);
     } else {
-      throw Exception('File upload failed: ${response.statusCode}, ${response.body}');
+      throw Exception(
+        'File upload failed: ${response.statusCode}, ${response.body}',
+      );
     }
   }
 
@@ -110,7 +188,10 @@ class TokenHttp {
     Map<String, String>? additionalFields,
   }) async {
     final token = await AuthService().getToken() ?? "token";
-    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$endpoint'));
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl$endpoint'),
+    );
     request.headers['Authorization'] = 'Bearer $token';
 
     for (var fileData in files) {
@@ -122,13 +203,15 @@ class TokenHttp {
       final fileStream = http.ByteStream(file.openRead());
       final fileLength = await file.length();
 
-      request.files.add(http.MultipartFile(
-        fieldName,
-        fileStream,
-        fileLength,
-        filename: fileName,
-        contentType: MediaType.parse(contentType),
-      ));
+      request.files.add(
+        http.MultipartFile(
+          fieldName,
+          fileStream,
+          fileLength,
+          filename: fileName,
+          contentType: MediaType.parse(contentType),
+        ),
+      );
     }
 
     if (additionalFields != null) request.fields.addAll(additionalFields);
@@ -138,7 +221,9 @@ class TokenHttp {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return jsonDecode(response.body);
     } else {
-      throw Exception('Multiple file upload failed: ${response.statusCode}, ${response.body}');
+      throw Exception(
+        'Multiple file upload failed: ${response.statusCode}, ${response.body}',
+      );
     }
   }
 }

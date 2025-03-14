@@ -32,7 +32,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         _completedProfile = isComplete;
         _userRoles = roles;
       });
-      if(isComplete) {
+      if (isComplete) {
         Navigator.pushNamedAndRemoveUntil(context, '/app', (route) => false);
       }
       print("Profile completion status: $_completedProfile");
@@ -52,9 +52,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   Future<void> _saveProfile() async {
     if (_emailController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please enter your email')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Please enter your email')));
       return;
     }
 
@@ -71,15 +71,20 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
     try {
       // You can replace this with your actual backend upload logic
-      await TokenHttp().put('/auth/updateUser', {
-        'email': _emailController.text,
-        'photoUrl': _profileImage!.path,
-      });
+      final file = File(_profileImage!.path);
+
+      // Call the API with proper parameters
+      final response = await TokenHttp().putWithFileUpload(
+        endpoint: '/auth/updateUser',
+        file: file,
+        fieldName: 'photoUrl',
+        additionalFields: {'email': _emailController.text},
+      );
 
       // Save to local secure storage
       await _authService.saveUserProfile(
         email: _emailController.text,
-        profileImagePath: _profileImage!.path,
+        profileImagePath: response['photoUrl'],
       );
 
       // Navigate to dashboard
@@ -102,87 +107,98 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         title: Text('Complete Your Profile'),
         automaticallyImplyLeading: false,
       ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(height: 20),
-                  Text(
-                    'Set Up Your Profile',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    'Please complete your profile to continue',
-                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                  ),
-                  SizedBox(height: 30),
-
-                  // Profile Picture Selection
-                  GestureDetector(
-                    onTap: _pickImage,
-                    child: Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        shape: BoxShape.circle,
-                        image: _profileImage != null
-                            ? DecorationImage(
-                                image: FileImage(_profileImage!),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
-                      ),
-                      child: _profileImage == null
-                          ? Icon(Icons.add_a_photo,
-                              size: 40, color: Colors.grey[800])
-                          : null,
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    'Tap to select profile picture',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                  SizedBox(height: 30),
-
-                  // Email Input
-                  TextField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      labelText: 'Email Address',
-                      hintText: 'Enter your email',
-                      prefixIcon: Icon(Icons.email),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+      body:
+          _isLoading
+              ? Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(height: 20),
+                    Text(
+                      'Set Up Your Profile',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  SizedBox(height: 40),
+                    SizedBox(height: 10),
+                    Text(
+                      'Please complete your profile to continue',
+                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                    ),
+                    SizedBox(height: 30),
 
-                  // Save Button
-                  ElevatedButton(
-                    onPressed: _saveProfile,
-                    style: ElevatedButton.styleFrom(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                    // Profile Picture Selection
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          shape: BoxShape.circle,
+                          image:
+                              _profileImage != null
+                                  ? DecorationImage(
+                                    image: FileImage(_profileImage!),
+                                    fit: BoxFit.cover,
+                                  )
+                                  : null,
+                        ),
+                        child:
+                            _profileImage == null
+                                ? Icon(
+                                  Icons.add_a_photo,
+                                  size: 40,
+                                  color: Colors.grey[800],
+                                )
+                                : null,
                       ),
                     ),
-                    child: Text(
-                      'Save & Continue',
-                      style: TextStyle(fontSize: 18),
+                    SizedBox(height: 10),
+                    Text(
+                      'Tap to select profile picture',
+                      style: TextStyle(color: Colors.grey[600]),
                     ),
-                  ),
-                ],
+                    SizedBox(height: 30),
+
+                    // Email Input
+                    TextField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                        labelText: 'Email Address',
+                        hintText: 'Enter your email',
+                        prefixIcon: Icon(Icons.email),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 40),
+
+                    // Save Button
+                    ElevatedButton(
+                      onPressed: _saveProfile,
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 50,
+                          vertical: 15,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Text(
+                        'Save & Continue',
+                        style: TextStyle(fontSize: 18),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
     );
   }
 }
