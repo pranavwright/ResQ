@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:resq/screens/campadmin_dashboard.dart';
 import 'package:resq/screens/camprole_creation.dart';
 import 'package:resq/screens/collection_point.dart';
+import 'package:resq/screens/create_notice.dart';
+import 'family_data_download.dart';
 import 'login_screen.dart';
 import '../utils/auth/auth_service.dart';
 
@@ -78,68 +81,99 @@ class _AdminDashboardState extends State<AdminDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Admin Dashboard'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _logout,
+          ),
+        ],
+      ),
+      drawer: MediaQuery.of(context).size.width < 800 // Hamburger menu for smaller screen sizes (mobile)
+          ? Drawer(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  const DrawerHeader(child: Text('Admin Menu')),
+                  buildDrawerItem(Icons.people, 'Families', () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const FamilyDataScreen()),
+                    );
+                    print("Families tapped");
+                  }),
+                  buildDrawerItem(Icons.home_work, 'Camp Status', () {
+                     Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const CampAdminRequestScreen()),
+                    );
+                    // Add navigation for Camp Status
+                    print("Camp Status tapped");
+                  }),
+                  buildDrawerItem(Icons.announcement, 'Role Based Notice Board', () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const CreateNoticeScreen()),
+                    );
+                    // Add navigation for Role Based Notice Board
+                    print("Role Based Notice Board tapped");
+                  }),
+                  buildDrawerItem(Icons.assignment_ind, 'Role Creation', () {
+                    // Navigate to Role Creation Screen when clicked
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const CamproleCreation()),
+                    );
+                     print("camprole creation");
+                  }),
+                  buildDrawerItem(Icons.add_location, 'Add Collection Points', () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const CollectionPoint()),
+                    );
+                     print("collection ponit");
+                  }),
+                ],
+              ),
+            )
+          : null, // No Drawer on Web/Desktop
       body: SafeArea(
         child: Container(
           color: Colors.white,
           child: Column(
             children: [
-              // Admin Header
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    const Icon(Icons.menu),
-                    const Spacer(),
-                    const Text(
-                      'Admin',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.logout),
-                      onPressed: _logout,
-                      tooltip: 'Logout',
-                    ),
-                  ],
-                ),
-              ),
-
-              // Navigation Icons
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    buildNavItem(Icons.people, 'Families'),
-                    buildNavItem(Icons.home_work, 'Camp Status'),
-                    buildNavItem(
-                      Icons.announcement,
-                      'Role Based\nNotice Board',
-                      
-                    ),
-                    buildNavItem(Icons.assignment_ind, 'Role Creation', onTap: () {
-                      // Navigate to Role Creation Screen when clicked
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const CamproleCreation()),
-                      );
-                    }),
-                    buildNavItem(Icons.add_location, 'Add Collection Points', onTap: () {
+              // Show navigation bar on Web/Desktop
+              if (MediaQuery.of(context).size.width >= 800)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      buildNavItem(Icons.people, 'Families', () {
+                        print("Families tapped");
+                      }),
+                      buildNavItem(Icons.home_work, 'Camp Status', () {
+                        print("Camp Status tapped");
+                      }),
+                      buildNavItem(Icons.announcement, 'Role Based Notice Board', () {
+                        print("Role Based Notice Board tapped");
+                      }),
+                      buildNavItem(Icons.assignment_ind, 'Role Creation', () {
                         Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const CollectionPoint()),
+                          context,
+                          MaterialPageRoute(builder: (context) => const CamproleCreation()),
                         );
-                      // Navigate to Add Collection Points screen or handle logic
-                      // You can replace this with the relevant action or screen
-                      print("Add Collection Points tapped");
-                    }),
-                  ],
+                      }),
+                      buildNavItem(Icons.add_location, 'Add Collection Points', () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const CollectionPoint()),
+                        );
+                      }),
+                    ],
+                  ),
                 ),
-              ),
 
               const Divider(),
 
@@ -237,7 +271,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget buildNavItem(IconData icon, String label, {bool isSelected = false, VoidCallback? onTap}) {
+  Widget buildNavItem(IconData icon, String label, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -251,7 +285,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
             style: TextStyle(fontSize: 12, color: Colors.grey[600]),
           ),
           const SizedBox(height: 4),
-          if (isSelected) Container(height: 2, width: 40, color: Colors.green),
         ],
       ),
     );
@@ -286,6 +319,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget buildDrawerItem(IconData icon, String label, VoidCallback onTap) {
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(label),
+      onTap: onTap,
     );
   }
 }
