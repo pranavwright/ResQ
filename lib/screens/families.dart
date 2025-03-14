@@ -49,7 +49,7 @@ class _FamiliesScreenState extends State<FamiliesScreen> {
   void _navigateToDownloadScreen() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => FamilyTableScreen()),
+      MaterialPageRoute(builder: (context) => FamilyDataScreen()),
     );
   }
 
