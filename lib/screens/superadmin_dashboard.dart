@@ -529,18 +529,7 @@ class DisasterManagementScreen extends StatelessWidget {
               ),
               Row(
                 children: [
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/loan-relief');
-                    },
-                    icon: const Icon(Icons.account_balance),
-                    label: const Text('Loan Relief'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[800],
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                    ),
-                  ),
+                  
                   SizedBox(width: 8),
                   ElevatedButton.icon(
                     icon: Icon(Icons.add),

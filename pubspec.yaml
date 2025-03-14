@@ -12,6 +12,9 @@ dependencies:
     sdk: flutter
   flutter_web_plugins:
     sdk: flutter
+  google_fonts: ^5.0.0
+
+
 
   # Firebase
 
@@ -42,6 +45,8 @@ dependencies:
   
   excel: ^2.0.0
 
+
+
   # Persistent Storage
   shared_preferences: ^2.2.2
 
@@ -66,6 +71,9 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
 
+
+  
+
 flutter:
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
@@ -73,7 +81,7 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/
+    - ./assets/images/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
