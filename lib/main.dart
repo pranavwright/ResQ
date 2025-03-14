@@ -37,6 +37,7 @@ import 'screens/add_famili.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:resq/screens/loan_relief_upload.dart';
+import 'package:resq/screens/family_data_download.dart';
 
 void main() async {
   if (kIsWeb) {
@@ -76,7 +77,7 @@ class MyApp extends StatelessWidget {
     if (roles.contains('admin')) return AdminDashboard();
     if (roles.contains('stat')) return StatDashboard();
     if (roles.contains('kas')) return KasDashboard();
-    if (roles.contains('collectionpointadmin')) return CollectionPointDashboard();
+    if (roles.contains('collectionpointadmin')) return  CollectionPointDashboard();
     if (roles.contains('campadmin')) return CampAdminRequestScreen();
     if (roles.contains('collectionpointvolunteer')) return VolunteerDashboard();
     return Home();
@@ -89,7 +90,9 @@ class MyApp extends StatelessWidget {
     List<String> roles = authService.getCurrentUserRoles()??[];
     final completedProfile = authService.getUserProfile() != null;
 
-    String initialRoute = isAuthenticated ? completedProfile? '/app' : 'profile-setup'  : kIsWeb ? '/' : '/otp';
+    // String initialRoute = isAuthenticated ? completedProfile? '/app' : 'profile-setup'  : kIsWeb ? '/' : '/otp';
+
+    String initialRoute = '/test-family';
 
     print(initialRoute);
 
@@ -208,6 +211,7 @@ class MyApp extends StatelessWidget {
       requiredRoles: ['admin', 'kas', 'superadmin', 'campadmin'], // Adjust roles as needed
               child: LoanReliefUploadScreen(),
 ),
+'/test-family': (context) => FamilyDataScreen(),
       },
 
       onUnknownRoute:

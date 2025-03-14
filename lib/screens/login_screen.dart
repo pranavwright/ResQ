@@ -47,6 +47,16 @@ class LoginScreen extends StatelessWidget {
                   : 'Not running on Android ❌',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
+                      // ...existing code...
+            // ElevatedButton(
+            //   onPressed: () => Navigator.pushNamed(context, '/loan-relief'),
+            //   style: ElevatedButton.styleFrom(
+            //     backgroundColor: Colors.grey,  // Different color to distinguish test button
+            //     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            //   ),
+            //   child: Text('Test Loan Relief Screen'),  // Move child outside of styleFrom
+            // ),
+            // ...existing code...
           ],
         ),
       ),
