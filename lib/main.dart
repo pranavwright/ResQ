@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:resq/downloading.dart';
 import 'package:resq/home.dart';
 import 'package:resq/screens/add_members.dart';
 import 'package:resq/screens/agriculture.dart';
@@ -8,7 +9,9 @@ import 'package:resq/screens/emp_status.dart';
 import 'package:resq/screens/foodand_health.dart';
 import 'package:resq/screens/helthnew.dart';
 import 'package:resq/screens/incom_andlose.dart';
+import 'package:resq/screens/items_list.dart';
 import 'package:resq/screens/kudumbasree.dart';
+import 'package:resq/screens/mian_home.dart';
 import 'package:resq/screens/otp_screen.dart';
 import 'package:resq/screens/personal_loan.dart';
 import 'package:resq/screens/shelter.dart';
@@ -41,7 +44,7 @@ import 'package:resq/screens/family_data_download.dart';
 
 void main() async {
   if (kIsWeb) {
-    setUrlStrategy(null);
+    setUrlStrategy(PathUrlStrategy());
   }
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -77,7 +80,8 @@ class MyApp extends StatelessWidget {
     if (roles.contains('admin')) return AdminDashboard();
     if (roles.contains('stat')) return StatDashboard();
     if (roles.contains('kas')) return KasDashboard();
-    if (roles.contains('collectionpointadmin')) return  CollectionPointDashboard();
+    if (roles.contains('collectionpointadmin'))
+      return CollectionPointDashboard();
     if (roles.contains('campadmin')) return CampAdminRequestScreen();
     if (roles.contains('collectionpointvolunteer')) return VolunteerDashboard();
     return Home();
@@ -113,13 +117,11 @@ class MyApp extends StatelessWidget {
       initialRoute: initialRoute,
 
       routes: {
-        '/':
-            (context) =>
-                const AuthRoute(requiresAuth: false, child: LoginScreen()),
+        '/': (context) => AuthRoute(requiresAuth: false, child: MainHome()),
 
         '/otp':
             (context) =>
-                const AuthRoute(requiresAuth: false, child: FamiliesScreen()),
+                const AuthRoute(requiresAuth: false, child: OtpScreen()),
         '/app':
             (context) => AuthRoute(
               requiredRoles: [
@@ -140,6 +142,12 @@ class MyApp extends StatelessWidget {
 
               child: getDashboardForRole(roles),
             ),
+        '/disaster':
+            (context) =>
+                const AuthRoute(requiresAuth: false, child: ItemsList()),
+        '/download':
+            (context) =>
+                const AuthRoute(requiresAuth: false, child: Downloading()),
 
         '/families':
             (context) => const AuthRoute(
@@ -221,8 +229,8 @@ class MyApp extends StatelessWidget {
                 'campadmin',
               ], // Adjust roles as needed
               child: LoanReliefUploadScreen(),
-),
-'/test-family': (context) => FamilyDataScreen(),
+            ),
+        '/test-family': (context) => FamilyDataScreen(),
       },
 
       onUnknownRoute:
