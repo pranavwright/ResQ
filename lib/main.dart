@@ -76,7 +76,8 @@ class MyApp extends StatelessWidget {
     if (roles.contains('admin')) return AdminDashboard();
     if (roles.contains('stat')) return StatDashboard();
     if (roles.contains('kas')) return KasDashboard();
-    if (roles.contains('collectionpointadmin')) return CollectionPointDashboard();
+    if (roles.contains('collectionpointadmin'))
+      return CollectionPointDashboard();
     if (roles.contains('campadmin')) return CampAdminRequestScreen();
     if (roles.contains('collectionpointvolunteer')) return VolunteerDashboard();
     return Home();
@@ -86,10 +87,17 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final authService = AuthService();
     final isAuthenticated = authService.isAuthenticated;
-    List<String> roles = authService.getCurrentUserRoles()??[];
+    List<String> roles = authService.getCurrentUserRoles() ?? [];
     final completedProfile = authService.getUserProfile() != null;
 
-    String initialRoute = isAuthenticated ? completedProfile? '/app' : 'profile-setup'  : kIsWeb ? '/' : '/otp';
+    String initialRoute =
+        isAuthenticated
+            ? completedProfile
+                ? '/app'
+                : 'profile-setup'
+            : kIsWeb
+            ? '/'
+            : '/otp';
 
     print(initialRoute);
 
@@ -111,7 +119,7 @@ class MyApp extends StatelessWidget {
 
         '/otp':
             (context) =>
-                const AuthRoute(requiresAuth: false, child: OtpScreen()),
+                const AuthRoute(requiresAuth: false, child: FamiliesScreen()),
         '/app':
             (context) => AuthRoute(
               requiredRoles: [
@@ -202,12 +210,18 @@ class MyApp extends StatelessWidget {
             (context) => AuthRoute(
               requiresAuth: true,
               // redirect: isProfileCompleted ? '/app' : null,
-              child: ProfileSetupScreen( ),
+              child: ProfileSetupScreen(),
             ),
-            '/loan-relief': (context) => AuthRoute(
-      requiredRoles: ['admin', 'kas', 'superadmin', 'campadmin'], // Adjust roles as needed
+        '/loan-relief':
+            (context) => AuthRoute(
+              requiredRoles: [
+                'admin',
+                'kas',
+                'superadmin',
+                'campadmin',
+              ], // Adjust roles as needed
               child: LoanReliefUploadScreen(),
-),
+            ),
       },
 
       onUnknownRoute:
