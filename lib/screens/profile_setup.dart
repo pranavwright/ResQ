@@ -83,8 +83,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
       // Save to local secure storage
       await _authService.saveUserProfile(
-        email: _emailController.text,
-        profileImagePath: response['photoUrl'],
+        email:
+            _emailController
+                .text, // assuming this is the email input from the user
+        profileImagePath:
+            response['photoUrl'], // assuming this is the photo URL returned in response
       );
 
       // Navigate to dashboard

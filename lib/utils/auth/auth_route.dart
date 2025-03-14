@@ -1,56 +1,58 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
-
 class AuthRoute extends StatelessWidget {
   final Widget child;
   final bool requiresAuth;
-  final List<String> requiredRoles;
-  final String unauthorizedRedirect;
+  final List<String>? requiredRoles;
+  final String? redirect;
 
   const AuthRoute({
-    super.key,
+    Key? key,
     required this.child,
     this.requiresAuth = true,
-    this.requiredRoles = const [],
-    this.unauthorizedRedirect = '/profile-setup',
-  });
+    this.requiredRoles,
+    this.redirect,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final authService = AuthService();
-    final bool isAuthenticated = authService.isAuthenticated;
+    final isAuthenticated = authService.isAuthenticated;
+    final userRoles = authService.getCurrentUserRoles();
+    
+    print("AuthRoute - Path: ${ModalRoute.of(context)?.settings.name}, Auth required: $requiresAuth, Is authenticated: $isAuthenticated");
+    
+    if (redirect != null) {
+      print("Redirecting to: $redirect");
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushReplacementNamed(redirect!);
+      });
+      return Container(); // Placeholder while redirecting
+    }
 
-    // If authentication is required and user is not authenticated, redirect to login
     if (requiresAuth && !isAuthenticated) {
-      Future.microtask(() {
-        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+      print("Authentication required but not authenticated. Redirecting to login.");
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushReplacementNamed(kIsWeb ? '/' : '/otp');
       });
-      return Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return Container(); // Placeholder while redirecting
     }
 
-    // If user is authenticated and trying to access login/otp screens, redirect to dashboard
-    if (isAuthenticated && !requiresAuth) {
-      Future.microtask(() {
-        Navigator.of(context).pushNamedAndRemoveUntil(unauthorizedRedirect, (route) => false);
-      });
-      return Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+    if (requiredRoles != null && requiredRoles!.isNotEmpty) {
+      final hasRequiredRole = requiredRoles!.any((role) => userRoles.contains(role));
+      
+      print("Required roles: $requiredRoles, User roles: $userRoles, Has required role: $hasRequiredRole");
+      
+      if (!hasRequiredRole) {
+        print("User does not have required role. Redirecting to app home.");
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.of(context).pushReplacementNamed('/app');
+        });
+        return Container(); // Placeholder while redirecting
+      }
     }
 
-    // If route requires specific roles and user doesn't have them, redirect to dashboard
-    if (requiredRoles.isNotEmpty && !authService.hasAnyRole(requiredRoles)) {
-      Future.microtask(() {
-        Navigator.of(context).pushNamedAndRemoveUntil(unauthorizedRedirect, (route) => false);
-      });
-      return Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    // Normal case: return the requested screen
     return child;
   }
 }

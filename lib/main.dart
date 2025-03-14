@@ -46,14 +46,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    // Add error handling around Firebase initialization
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
     print("Firebase initialized successfully");
   } catch (e) {
     print("Error initializing Firebase: $e");
-    // Continue with the app, but Firebase features won't work
   }
 
   final authService = AuthService();
@@ -92,7 +90,7 @@ class MyApp extends StatelessWidget {
 
     String initialRoute =
         isAuthenticated
-            ? 'profile-setup'
+            ? '/profile-setup'
             : kIsWeb
             ? '/'
             : '/otp';
@@ -116,10 +114,8 @@ class MyApp extends StatelessWidget {
                 const AuthRoute(requiresAuth: false, child: LoginScreen()),
 
         '/otp':
-            (context) => const AuthRoute(
-              requiresAuth: false,
-              child: OtpScreen(),
-            ),
+            (context) =>
+                const AuthRoute(requiresAuth: false, child: OtpScreen()),
         '/app':
             (context) => AuthRoute(
               requiredRoles: [
