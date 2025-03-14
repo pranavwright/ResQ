@@ -13,11 +13,9 @@ class FamilyDataScreen extends StatefulWidget {
 }
 
 class _FamilyDataScreenState extends State<FamilyDataScreen> {
-  // Mock data for families and individuals
   List<Map<String, dynamic>> allFamilies = [];
   List<Map<String, dynamic>> filteredFamilies = [];
 
-  // Filter controllers for families
   final TextEditingController _minIncomeController = TextEditingController();
   final TextEditingController _maxIncomeController = TextEditingController();
   String? _selectedAddress;
@@ -26,7 +24,6 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
   bool? _outsideDamagedArea;
   bool? _receivedAllowance;
 
-  // Filter controllers for individuals
   String? _selectedName;
   String? _selectedStatus;
   RangeValues _ageRange = const RangeValues(0, 100);
@@ -41,7 +38,6 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
   bool? _needsAssistiveDevices;
   String? _selectedRehabOption;
 
-  // Dropdown options
   final List<String> addresses = ['Address 1', 'Address 2', 'Address 3'];
   final List<String> residences = ['Residence 1', 'Residence 2', 'Residence 3'];
   final List<String> wards = ['Ward 1', 'Ward 2', 'Ward 3', 'Ward 4', 'Ward 5'];
@@ -77,14 +73,11 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
   @override
   void initState() {
     super.initState();
-    // Generate mock data
     _generateMockData();
-    // Initialize filtered data
     filteredFamilies = List.from(allFamilies);
   }
 
   void _generateMockData() {
-    // Generate 20 families with random individuals
     for (int i = 0; i < 20; i++) {
       final family = {
         'id': 'FAM${100 + i}',
@@ -97,7 +90,6 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
         'individuals': <Map<String, dynamic>>[],
       };
 
-      // Add 2-5 individuals to each family
       final memberCount = 2 + (i % 4);
       for (int j = 0; j < memberCount; j++) {
         (family['individuals'] as List<Map<String, dynamic>>).add({
@@ -123,161 +115,112 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
 
   void _applyFilters() {
     setState(() {
-      filteredFamilies =
-          allFamilies.where((family) {
-            // Apply family level filters
-            final int totalIncome = family['totalIncome'] as int;
-            final minIncome =
-                _minIncomeController.text.isEmpty
-                    ? 0
-                    : int.parse(_minIncomeController.text);
-            final maxIncome =
-                _maxIncomeController.text.isEmpty
-                    ? double.infinity.toInt()
-                    : int.parse(_maxIncomeController.text);
+      filteredFamilies = allFamilies.where((family) {
+        final int totalIncome = family['totalIncome'] as int;
+        final minIncome = _minIncomeController.text.isEmpty
+            ? 0
+            : int.parse(_minIncomeController.text);
+        final maxIncome = _maxIncomeController.text.isEmpty
+            ? double.infinity.toInt()
+            : int.parse(_maxIncomeController.text);
 
-            bool matchesFamily = true;
+        bool matchesFamily = true;
+        if (totalIncome < minIncome || totalIncome > maxIncome) {
+          matchesFamily = false;
+        }
+        if (_selectedAddress != null && family['address'] != _selectedAddress) {
+          matchesFamily = false;
+        }
+        if (_selectedResidence != null &&
+            family['currentResidence'] != _selectedResidence) {
+          matchesFamily = false;
+        }
+        if (_selectedWard != null && family['wardNumber'] != _selectedWard) {
+          matchesFamily = false;
+        }
+        if (_outsideDamagedArea != null &&
+            family['outsideDamagedArea'] != _outsideDamagedArea) {
+          matchesFamily = false;
+        }
+        if (_receivedAllowance != null &&
+            family['receivedAllowance'] != _receivedAllowance) {
+          matchesFamily = false;
+        }
 
-            // Check income range
-            if (totalIncome < minIncome || totalIncome > maxIncome) {
-              matchesFamily = false;
-            }
+        if (!matchesFamily) {
+          return false;
+        }
 
-            // Check address
-            if (_selectedAddress != null &&
-                family['address'] != _selectedAddress) {
-              matchesFamily = false;
-            }
+        List<Map<String, dynamic>> individuals =
+            List<Map<String, dynamic>>.from(family['individuals']);
+        bool hasMatchingIndividual = false;
 
-            // Check current residence
-            if (_selectedResidence != null &&
-                family['currentResidence'] != _selectedResidence) {
-              matchesFamily = false;
-            }
+        for (var individual in individuals) {
+          bool matchesIndividual = true;
 
-            // Check ward number
-            if (_selectedWard != null &&
-                family['wardNumber'] != _selectedWard) {
-              matchesFamily = false;
-            }
+          if (_selectedName != null &&
+              !individual['name']
+                  .toString()
+                  .toLowerCase()
+                  .contains(_selectedName!.toLowerCase())) {
+            matchesIndividual = false;
+          }
+          if (_selectedStatus != null &&
+              individual['status'] != _selectedStatus) {
+            matchesIndividual = false;
+          }
 
-            // Check if outside damaged area
-            if (_outsideDamagedArea != null &&
-                family['outsideDamagedArea'] != _outsideDamagedArea) {
-              matchesFamily = false;
-            }
+          final int age = individual['age'] as int;
+          if (age < _ageRange.start || age > _ageRange.end) {
+            matchesIndividual = false;
+          }
+          if (_selectedGender != null && individual['gender'] != _selectedGender) {
+            matchesIndividual = false;
+          }
+          if (_selectedEducation != null &&
+              individual['educationSource'] != _selectedEducation) {
+            matchesIndividual = false;
+          }
+          if (_selectedIncomeSource != null &&
+              individual['incomeSource'] != _selectedIncomeSource) {
+            matchesIndividual = false;
+          }
+          if (_selectedSkill != null && individual['skills'] != _selectedSkill) {
+            matchesIndividual = false;
+          }
+          if (_needsEmploymentAssistance != null &&
+              individual['needsEmploymentAssistance'] !=
+                  _needsEmploymentAssistance) {
+            matchesIndividual = false;
+          }
+          if (_hasHealthIssue != null &&
+              individual['hasHealthIssue'] != _hasHealthIssue) {
+            matchesIndividual = false;
+          }
+          if (_isBedridden != null && individual['isBedridden'] != _isBedridden) {
+            matchesIndividual = false;
+          }
+          if (_needsCounselling != null &&
+              individual['needsCounselling'] != _needsCounselling) {
+            matchesIndividual = false;
+          }
+          if (_needsAssistiveDevices != null &&
+              individual['needsAssistiveDevices'] != _needsAssistiveDevices) {
+            matchesIndividual = false;
+          }
+          if (_selectedRehabOption != null &&
+              individual['preferredRehabOption'] != _selectedRehabOption) {
+            matchesIndividual = false;
+          }
 
-            // Check if received allowance
-            if (_receivedAllowance != null &&
-                family['receivedAllowance'] != _receivedAllowance) {
-              matchesFamily = false;
-            }
+          if (matchesIndividual) {
+            hasMatchingIndividual = true;
+            break;
+          }
+        }
 
-            // If the family doesn't match, return false immediately
-            if (!matchesFamily) {
-              return false;
-            }
-
-            // Apply individual level filters
-            List<Map<String, dynamic>> individuals =
-                List<Map<String, dynamic>>.from(family['individuals']);
-            bool hasMatchingIndividual = false;
-
-            for (var individual in individuals) {
-              bool matchesIndividual = true;
-
-              // Check name
-              if (_selectedName != null &&
-                  !individual['name'].toString().toLowerCase().contains(
-                    _selectedName!.toLowerCase(),
-                  )) {
-                matchesIndividual = false;
-              }
-
-              // Check status
-              if (_selectedStatus != null &&
-                  individual['status'] != _selectedStatus) {
-                matchesIndividual = false;
-              }
-
-              // Check age range
-              final int age = individual['age'] as int;
-              if (age < _ageRange.start || age > _ageRange.end) {
-                matchesIndividual = false;
-              }
-
-              // Check gender
-              if (_selectedGender != null &&
-                  individual['gender'] != _selectedGender) {
-                matchesIndividual = false;
-              }
-
-              // Check education source
-              if (_selectedEducation != null &&
-                  individual['educationSource'] != _selectedEducation) {
-                matchesIndividual = false;
-              }
-
-              // Check income source
-              if (_selectedIncomeSource != null &&
-                  individual['incomeSource'] != _selectedIncomeSource) {
-                matchesIndividual = false;
-              }
-
-              // Check skills
-              if (_selectedSkill != null &&
-                  individual['skills'] != _selectedSkill) {
-                matchesIndividual = false;
-              }
-
-              // Check employment assistance
-              if (_needsEmploymentAssistance != null &&
-                  individual['needsEmploymentAssistance'] !=
-                      _needsEmploymentAssistance) {
-                matchesIndividual = false;
-              }
-
-              // Check health issues
-              if (_hasHealthIssue != null &&
-                  individual['hasHealthIssue'] != _hasHealthIssue) {
-                matchesIndividual = false;
-              }
-
-              // Check if bedridden
-              if (_isBedridden != null &&
-                  individual['isBedridden'] != _isBedridden) {
-                matchesIndividual = false;
-              }
-
-              // Check if needs counselling
-              if (_needsCounselling != null &&
-                  individual['needsCounselling'] != _needsCounselling) {
-                matchesIndividual = false;
-              }
-
-              // Check if needs assistive devices
-              if (_needsAssistiveDevices != null &&
-                  individual['needsAssistiveDevices'] !=
-                      _needsAssistiveDevices) {
-                matchesIndividual = false;
-              }
-
-              // Check preferred rehab option
-              if (_selectedRehabOption != null &&
-                  individual['preferredRehabOption'] != _selectedRehabOption) {
-                matchesIndividual = false;
-              }
-
-              // If at least one individual matches all filters, the family should be included
-              if (matchesIndividual) {
-                hasMatchingIndividual = true;
-                break;
-              }
-            }
-
-            // Only include families that have at least one matching individual
-            return hasMatchingIndividual;
-          }).toList();
+        return hasMatchingIndividual;
+      }).toList();
     });
   }
 
@@ -311,7 +254,6 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
 
   Future<void> _generateAndDownloadExcel() async {
     try {
-      // Request storage permission
       var status = await Permission.storage.request();
       if (!status.isGranted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -322,11 +264,9 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
         return;
       }
 
-      // Create Excel file
       final excel = Excel.createExcel();
       final Sheet sheet = excel['Families Data'];
 
-      // Add headers
       final List<String> headers = [
         'Family ID',
         'Address',
@@ -352,7 +292,6 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
 
       sheet.appendRow(headers);
 
-      // Add data
       for (var family in filteredFamilies) {
         for (var individual in family['individuals']) {
           final List<dynamic> row = [
@@ -381,20 +320,16 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
         }
       }
 
-      // Get download directory
       final directory =
           await getExternalStorageDirectory() ??
-          await getApplicationDocumentsDirectory();
+              await getApplicationDocumentsDirectory();
       final String filePath =
           '${directory.path}/family_data_${DateTime.now().millisecondsSinceEpoch}.xlsx';
 
-      // Save the Excel file
       final List<int>? excelBytes = excel.encode();
       if (excelBytes != null) {
         final File file = File(filePath);
         await file.writeAsBytes(excelBytes);
-
-        // Show download success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Excel file downloaded to: $filePath')),
         );
@@ -419,10 +354,11 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
           ),
         ],
       ),
+
+      // Removed the Expanded from the column's child and only keep a single scroll view for the entire screen.
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Filter Panel
             ExpansionTile(
               title: const Text(
                 'Filters',
@@ -439,8 +375,6 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
-
-                      // Income Range
                       Row(
                         children: [
                           Expanded(
@@ -467,8 +401,6 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-
-                      // Address, Residence, Ward
                       Row(
                         children: [
                           Expanded(
@@ -554,8 +486,6 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-
-                      // Outside damaged area and allowance received
                       Row(
                         children: [
                           Expanded(
@@ -617,15 +547,12 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 24),
                       const Text(
                         'Individual Filters',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
-
-                      // Name, Status, Age, Gender
                       TextField(
                         decoration: const InputDecoration(
                           labelText: 'Search by Name',
@@ -639,7 +566,6 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-
                       Row(
                         children: [
                           Expanded(
@@ -698,8 +624,6 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-
-                      // Age Range Slider
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -723,8 +647,6 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
                           ),
                         ],
                       ),
-
-                      // Education, Income Source, Skills
                       Row(
                         children: [
                           Expanded(
@@ -810,8 +732,6 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-
-                      // Special needs filters
                       Row(
                         children: [
                           Expanded(
@@ -874,7 +794,6 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-
                       Row(
                         children: [
                           Expanded(
@@ -937,7 +856,6 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-
                       Row(
                         children: [
                           Expanded(
@@ -997,10 +915,7 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 24),
-
-                      // Filter action buttons
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -1020,8 +935,6 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
                 ),
               ],
             ),
-
-            // Results count and download button
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Row(
@@ -1039,31 +952,26 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
                 ],
               ),
             ),
-
-            // Data Table
-            Expanded(
-              child: SingleChildScrollView(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columns: const [
-                      DataColumn(label: Text('Family ID')),
-                      DataColumn(label: Text('Address')),
-                      DataColumn(label: Text('Ward')),
-                      DataColumn(label: Text('Income')),
-                      DataColumn(label: Text('Member')),
-                      DataColumn(label: Text('Status')),
-                      DataColumn(label: Text('Age')),
-                      DataColumn(label: Text('Gender')),
-                      DataColumn(label: Text('Education')),
-                      DataColumn(label: Text('Income Source')),
-                      DataColumn(label: Text('Skills')),
-                      DataColumn(label: Text('Health Issues')),
-                      DataColumn(label: Text('Rehab Option')),
-                    ],
-                    rows: _buildDataTableRows(),
-                  ),
-                ),
+            // Removed Expanded; just use a SingleChildScrollView horizontally for the DataTable.
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                columns: const [
+                  DataColumn(label: Text('Family ID')),
+                  DataColumn(label: Text('Address')),
+                  DataColumn(label: Text('Ward')),
+                  DataColumn(label: Text('Income')),
+                  DataColumn(label: Text('Member')),
+                  DataColumn(label: Text('Status')),
+                  DataColumn(label: Text('Age')),
+                  DataColumn(label: Text('Gender')),
+                  DataColumn(label: Text('Education')),
+                  DataColumn(label: Text('Income Source')),
+                  DataColumn(label: Text('Skills')),
+                  DataColumn(label: Text('Health Issues')),
+                  DataColumn(label: Text('Rehab Option')),
+                ],
+                rows: _buildDataTableRows(),
               ),
             ),
           ],
@@ -1074,10 +982,8 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
 
   List<DataRow> _buildDataTableRows() {
     final List<DataRow> rows = [];
-
     for (var family in filteredFamilies) {
       bool isFirstMember = true;
-
       for (var individual in family['individuals']) {
         rows.add(
           DataRow(
@@ -1100,11 +1006,9 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
             ],
           ),
         );
-
         isFirstMember = false;
       }
     }
-
     return rows;
   }
 
@@ -1116,7 +1020,6 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
   }
 }
 
-// Main application for testing
 class PostDisasterApp extends StatelessWidget {
   const PostDisasterApp({Key? key}) : super(key: key);
 
@@ -1131,8 +1034,4 @@ class PostDisasterApp extends StatelessWidget {
       home: const FamilyDataScreen(),
     );
   }
-}
-
-void main() {
-  runApp(const PostDisasterApp());
 }
