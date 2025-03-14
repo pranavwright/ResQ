@@ -77,7 +77,8 @@ class MyApp extends StatelessWidget {
     if (roles.contains('admin')) return AdminDashboard();
     if (roles.contains('stat')) return StatDashboard();
     if (roles.contains('kas')) return KasDashboard();
-    if (roles.contains('collectionpointadmin')) return  CollectionPointDashboard();
+    if (roles.contains('collectionpointadmin'))
+      return CollectionPointDashboard();
     if (roles.contains('campadmin')) return CampAdminRequestScreen();
     if (roles.contains('collectionpointvolunteer')) return VolunteerDashboard();
     return Home();
@@ -88,13 +89,10 @@ class MyApp extends StatelessWidget {
     final authService = AuthService();
     final isAuthenticated = authService.isAuthenticated;
     List<String> roles = authService.getCurrentUserRoles() ?? [];
-    final completedProfile = authService.getUserProfile() != null;
 
     String initialRoute =
         isAuthenticated
-            ? completedProfile
-                ? '/app'
-                : 'profile-setup'
+            ? 'profile-setup'
             : kIsWeb
             ? '/'
             : '/otp';
@@ -118,8 +116,10 @@ class MyApp extends StatelessWidget {
                 const AuthRoute(requiresAuth: false, child: LoginScreen()),
 
         '/otp':
-            (context) =>
-                const AuthRoute(requiresAuth: false, child: FamiliesScreen()),
+            (context) => const AuthRoute(
+              requiresAuth: false,
+              child: OtpScreen(),
+            ),
         '/app':
             (context) => AuthRoute(
               requiredRoles: [
@@ -221,8 +221,8 @@ class MyApp extends StatelessWidget {
                 'campadmin',
               ], // Adjust roles as needed
               child: LoanReliefUploadScreen(),
-),
-'/test-family': (context) => FamilyDataScreen(),
+            ),
+        '/test-family': (context) => FamilyDataScreen(),
       },
 
       onUnknownRoute:

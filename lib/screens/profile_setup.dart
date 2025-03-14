@@ -32,6 +32,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         _completedProfile = isComplete;
         _userRoles = roles;
       });
+      if(isComplete) {
+        Navigator.pushNamedAndRemoveUntil(context, '/app', (route) => false);
+      }
       print("Profile completion status: $_completedProfile");
     }
   }
@@ -70,7 +73,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       // You can replace this with your actual backend upload logic
       await TokenHttp().put('/auth/updateUser', {
         'email': _emailController.text,
-        'profileImagePath': _profileImage!.path,
+        'photoUrl': _profileImage!.path,
       });
 
       // Save to local secure storage

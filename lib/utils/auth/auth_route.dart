@@ -12,7 +12,7 @@ class AuthRoute extends StatelessWidget {
     required this.child,
     this.requiresAuth = true,
     this.requiredRoles = const [],
-    this.unauthorizedRedirect = '/app',
+    this.unauthorizedRedirect = '/profile-setup',
   });
 
   @override
