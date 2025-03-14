@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:resq/screens/familysurvay_home.dart';
 
 class AssistanceSupport extends StatefulWidget {
   const AssistanceSupport({super.key});
@@ -19,11 +20,11 @@ class _AssistanceSupportState extends State<AssistanceSupport> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-           Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/kudumbasree',
-                    (route) => false,
-                  ); // Pops the current screen and goes back to the previous screen
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/kudumbasree',
+              (route) => false,
+            ); // Pops the current screen and goes back to the previous screen
           },
         ),
       ),
@@ -85,13 +86,20 @@ class _AssistanceSupportState extends State<AssistanceSupport> {
             ElevatedButton(
               onPressed: () {
                 // Action to be performed when the button is pressed
-                // For now, let's just show a snackbar as a placeholder
+                // For now, show a snackbar and navigate to the next screen
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(_selectedAnswer == 'Yes'
                         ? 'Assistance request submitted! Details: ${_detailsController.text}'
                         : 'Assistance request submitted!'),
                   ),
+                );
+
+                // Navigate to the ConfirmationPage after the form is submitted
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const FamilysurvayHome()),
                 );
               },
               child: const Text('Submit'),
