@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:resq/screens/camprole_creation.dart';
+import 'package:resq/screens/collection_point.dart';
 import 'login_screen.dart';
 import '../utils/auth/auth_service.dart';
 
@@ -34,7 +36,6 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   String selectedStatus = 'Alive';
 
-  // Sample data for each status
   final Map<String, List<FlSpot>> statusData = {
     'Alive': [
       const FlSpot(0, 0),
@@ -96,11 +97,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    
                     const Spacer(),
-                    // Logout Button
                     IconButton(
                       icon: const Icon(Icons.logout),
-                      onPressed: _logout, 
+                      onPressed: _logout,
                       tooltip: 'Logout',
                     ),
                   ],
@@ -118,16 +119,30 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     buildNavItem(
                       Icons.announcement,
                       'Role Based\nNotice Board',
-                      isSelected: true,
+                      
                     ),
-                    buildNavItem(Icons.assignment_ind, 'Role Creation'),
+                    buildNavItem(Icons.assignment_ind, 'Role Creation', onTap: () {
+                      // Navigate to Role Creation Screen when clicked
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const CamproleCreation()),
+                      );
+                    }),
+                    buildNavItem(Icons.add_location, 'Add Collection Points', onTap: () {
+                        Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const CollectionPoint()),
+                        );
+                      // Navigate to Add Collection Points screen or handle logic
+                      // You can replace this with the relevant action or screen
+                      print("Add Collection Points tapped");
+                    }),
                   ],
                 ),
               ),
 
               const Divider(),
 
-              // Overview Title
               const Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Align(
@@ -202,7 +217,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 ),
               ),
 
-              // Status Toggles
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
@@ -223,20 +237,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget buildNavItem(IconData icon, String label, {bool isSelected = false}) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: Colors.black),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-        ),
-        const SizedBox(height: 4),
-        if (isSelected) Container(height: 2, width: 40, color: Colors.green),
-      ],
+  Widget buildNavItem(IconData icon, String label, {bool isSelected = false, VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.black),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 4),
+          if (isSelected) Container(height: 2, width: 40, color: Colors.green),
+        ],
+      ),
     );
   }
 
