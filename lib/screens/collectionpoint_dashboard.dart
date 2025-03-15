@@ -1,433 +1,1002 @@
 import 'package:flutter/material.dart';
-// Import your existing dependencies here
+import 'package:intl/intl.dart'; // For date formatting
+import 'package:url_launcher/url_launcher.dart';
 
 class CollectionPointDashboard extends StatefulWidget {
   const CollectionPointDashboard({Key? key}) : super(key: key);
 
   @override
-  _CollectionPointDashboardState createState() => _CollectionPointDashboardState();
+  _CollectionPointDashboardState createState() =>
+      _CollectionPointDashboardState();
 }
 
-class _CollectionPointDashboardState extends State<CollectionPointDashboard> {
-  // Add these properties to your existing dashboard state
-  List<Map<String, dynamic>> donations = [];
-  bool isLoading = true;
-  
-  // Controllers for editing donation details
+class _CollectionPointDashboardState extends State<CollectionPointDashboard>
+    with SingleTickerProviderStateMixin {
+  // Tab controller
+  late TabController _tabController;
+
+  // Data lists
+  List<Map<String, dynamic>> inventory = [];
+  List<Map<String, dynamic>> donationRequests = [];
+  List<Map<String, dynamic>> campRequests = [];
+
+  // Loading states
+  bool isLoadingInventory = true;
+  bool isLoadingDonations = true;
+  bool isLoadingCampRequests = true;
+
+  // Controllers for editing
   final TextEditingController _roomController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _timeController = TextEditingController();
-  
+  final TextEditingController _statusController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
-    // Keep your existing initState code
-    
-    // Add this to load donations data
-    _loadDonations();
+    _tabController = TabController(length: 3, vsync: this);
+
+    // Load data for all tabs
+    _loadInventory();
+    _loadDonationRequests();
+    _loadCampRequests();
   }
-  
-  // Method to load donations data from your backend
-  Future<void> _loadDonations() async {
+
+  // Method to load inventory data
+  Future<void> _loadInventory() async {
     setState(() {
-      isLoading = true;
+      isLoadingInventory = true;
     });
-    
+
     try {
-      // Replace this with your actual API call to fetch donations
-      // For now, we'll use mock data
-      await Future.delayed(const Duration(seconds: 1)); // Simulate network delay
-      
+      // Replace with actual API call
+      await Future.delayed(const Duration(seconds: 1));
+
       setState(() {
-        donations = [
+        inventory = [
+          {
+            'id': 'INV001',
+            'item': 'Blankets',
+            'quantity': 50,
+            'room': 'Room A1',
+          },
+          {
+            'id': 'INV002',
+            'item': 'Water Bottles (1L)',
+            'quantity': 200,
+            'room': 'Room B2',
+          },
+          {
+            'id': 'INV003',
+            'item': 'First Aid Kits',
+            'quantity': 30,
+            'room': 'Room C3',
+          },
+          {
+            'id': 'INV004',
+            'item': 'Food Packets',
+            'quantity': 150,
+            'room': 'Room D4',
+          },
+        ];
+        isLoadingInventory = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoadingInventory = false;
+      });
+      _showErrorSnackBar('Error loading inventory: $e');
+    }
+  }
+
+  // Method to load donation requests
+  Future<void> _loadDonationRequests() async {
+    setState(() {
+      isLoadingDonations = true;
+    });
+
+    try {
+      // Replace with actual API call
+      await Future.delayed(const Duration(seconds: 1));
+
+      setState(() {
+        donationRequests = [
           {
             'id': 'DON001',
-            'camp_id': 'CAMP123',
-            'camp_name': 'Relief Camp Alpha',
-            'item_name': 'Blankets',
-            'requested_quantity': 50,
-            'allotted_quantity': 30,
-            'room_number': '',
-            'pickup_date': '',
-            'pickup_time': '',
-            'status': 'Pending',
-            'donor_name': 'John Doe',
-            'donation_date': '10-03-2025',
+            'donor': 'John Doe',
+            'contact_info': '+1-555-123-4567',
+            'item': 'Blankets',
+            'quantity': 50,
+            'arriving_date': '16-03-2025',
+            'arriving_time': '10:00 AM',
+            'status': 'Scheduled',
+            'room': 'Room A1',
           },
           {
             'id': 'DON002',
-            'camp_id': 'CAMP456',
-            'camp_name': 'Shelter Beta',
-            'item_name': 'Water Bottles (1L)',
-            'requested_quantity': 200,
-            'allotted_quantity': 200,
-            'room_number': 'Room A1',
-            'pickup_date': '15-03-2025',
-            'pickup_time': '10:00 AM',
-            'status': 'Ready for Pickup',
-            'donor_name': 'Community Aid Group',
-            'donation_date': '09-03-2025',
+            'donor': 'Community Aid Group',
+            'contact_info': 'contact@communityaid.org',
+            'item': 'Water Bottles (1L)',
+            'quantity': 200,
+            'arriving_date': '15-03-2025',
+            'arriving_time': '2:00 PM',
+            'status': 'Arrived',
+            'room': 'Room B2',
           },
           {
             'id': 'DON003',
-            'camp_id': 'CAMP789',
-            'camp_name': 'Medical Camp',
-            'item_name': 'First Aid Kits',
-            'requested_quantity': 80,
-            'allotted_quantity': 50,
-            'room_number': 'Room 219',
-            'pickup_date': '14-03-2025',
-            'pickup_time': '2:00 PM',
-            'status': 'Ready for Pickup',
-            'donor_name': 'Local Hospital',
-            'donation_date': '11-03-2025',
-          },
-          {
-            'id': 'DON004',
-            'camp_id': 'CAMP123',
-            'camp_name': 'Relief Camp Alpha',
-            'item_name': 'Food Packets',
-            'requested_quantity': 300,
-            'allotted_quantity': 0,
-            'room_number': '',
-            'pickup_date': '',
-            'pickup_time': '',
-            'status': 'Pending',
-            'donor_name': 'Food Relief NGO',
-            'donation_date': '12-03-2025',
+            'donor': 'Local Hospital',
+            'contact_info': '+1-555-789-0123',
+            'item': 'First Aid Kits',
+            'quantity': 30,
+            'arriving_date': '17-03-2025',
+            'arriving_time': '11:30 AM',
+            'status': 'Scheduled',
+            'room': '', // Empty room to test editable condition
           },
         ];
-        isLoading = false;
+        isLoadingDonations = false;
       });
     } catch (e) {
       setState(() {
-        isLoading = false;
+        isLoadingDonations = false;
       });
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading donations: $e')),
-      );
+      _showErrorSnackBar('Error loading donation requests: $e');
     }
   }
-  
-  // Method to update donation details
-  Future<void> _updateDonation(Map<String, dynamic> donation) async {
+
+  // Method to load camp requests
+  Future<void> _loadCampRequests() async {
+    setState(() {
+      isLoadingCampRequests = true;
+    });
+
     try {
-      // Replace with your actual API call to update the donation
-      await Future.delayed(const Duration(milliseconds: 500)); // Simulate network delay
-      
-      // Update local state
+      // Replace with actual API call
+      await Future.delayed(const Duration(seconds: 1));
+
       setState(() {
-        final index = donations.indexWhere((d) => d['id'] == donation['id']);
-        if (index != -1) {
-          donations[index] = donation;
-        }
+        campRequests = [
+          {
+            'id': 'CR001',
+            'camp': 'Relief Camp Alpha',
+            'camp_contact': '+1-555-987-6543',
+            'pickup_date': '18-03-2025',
+            'pickup_time': '9:00 AM',
+            'status': 'Pending',
+            'items': [
+              {
+                'item': 'Blankets',
+                'quantity': 20,
+                'id': 'INV001',
+                'room': 'Room A1',
+              },
+              {
+                'item': 'Water Bottles (1L)',
+                'quantity': 50,
+                'id': 'INV002',
+                'room': 'Room B2',
+              },
+            ],
+          },
+          {
+            'id': 'CR002',
+            'camp': 'Medical Camp Beta',
+            'camp_contact': '+1-555-456-7890',
+            'pickup_date': '19-03-2025',
+            'pickup_time': '11:00 AM',
+            'status': 'Scheduled',
+            'items': [
+              {
+                'item': 'First Aid Kits',
+                'quantity': 10,
+                'id': 'INV003',
+                'room': 'Room C3',
+              },
+              {
+                'item': 'Food Packets',
+                'quantity': 30,
+                'id': 'INV004',
+                'room': 'Room D4',
+              },
+            ],
+          },
+          {
+            'id': 'CR003',
+            'camp': 'Shelter Gamma',
+            'camp_contact': '+1-555-234-5678',
+            'pickup_date': '20-03-2025',
+            'pickup_time': '2:30 PM',
+            'status': 'Pending',
+            'items': [
+              {
+                'item': 'Blankets',
+                'quantity': 15,
+                'id': 'INV001',
+                'room': 'Room A1',
+              },
+              {
+                'item': 'Food Packets',
+                'quantity': 40,
+                'id': 'INV004',
+                'room': 'Room D4',
+              },
+            ],
+          },
+        ];
+        isLoadingCampRequests = false;
       });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Donation updated successfully')),
-      );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error updating donation: $e')),
-      );
+      setState(() {
+        isLoadingCampRequests = false;
+      });
+      _showErrorSnackBar('Error loading camp requests: $e');
     }
   }
-  
-  // Method to show dialog for assigning room and adjusting quantity
-  void _showDonationDetailsDialog(Map<String, dynamic> donation) {
-    // Initialize controllers with current values
-    _roomController.text = donation['room_number'] ?? '';
-    _quantityController.text = donation['allotted_quantity'].toString();
-    _dateController.text = donation['pickup_date'] ?? '';
-    _timeController.text = donation['pickup_time'] ?? '';
-    
+
+  // Utility method to show error messages
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  // Method to show inventory item edit dialog - MODIFIED to only allow room editing
+  void _showInventoryItemDialog(Map<String, dynamic> item) {
+    _roomController.text = item['room'] ?? '';
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Manage Donation - ${donation['id']}'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Display donation information
-              Text('Item: ${donation['item_name']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Text('Camp: ${donation['camp_name']}'),
-              const SizedBox(height: 8),
-              Text('Requested Quantity: ${donation['requested_quantity']}'),
-              const SizedBox(height: 16),
-              
-              // Room number input
-              TextField(
-                controller: _roomController,
-                decoration: const InputDecoration(
-                  labelText: 'Room Number',
-                  hintText: 'e.g., Room A1, Room 219',
-                  border: OutlineInputBorder(),
-                ),
+      builder:
+          (context) => AlertDialog(
+            title: Text('Edit Inventory Item - ${item['id']}'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'ID: ${item['id']}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text('Item: ${item['item']}'),
+                  const SizedBox(height: 8),
+                  Text('Quantity: ${item['quantity']}'),
+                  const SizedBox(height: 16),
+
+                  // Room input (only editable field)
+                  TextField(
+                    controller: _roomController,
+                    decoration: const InputDecoration(
+                      labelText: 'Storage Room',
+                      hintText: 'e.g., Room A1, Room 219',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              
-              // Quantity adjustment
-              TextField(
-                controller: _quantityController,
-                decoration: InputDecoration(
-                  labelText: 'Allotted Quantity',
-                  hintText: 'Maximum: ${donation['requested_quantity']}',
-                  border: const OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
               ),
-              const SizedBox(height: 16),
-              
-              // Pickup date
-              TextField(
-                controller: _dateController,
-                decoration: const InputDecoration(
-                  labelText: 'Pickup Date',
-                  hintText: 'DD-MM-YYYY',
-                  border: OutlineInputBorder(),
-                  suffixIcon: Icon(Icons.calendar_today),
-                ),
-                readOnly: true,
-                onTap: () async {
-                  final DateTime? pickedDate = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(const Duration(days: 30)),
+              ElevatedButton(
+                onPressed: () {
+                  // Update inventory item room only
+                  setState(() {
+                    final index = inventory.indexWhere(
+                      (i) => i['id'] == item['id'],
+                    );
+                    if (index != -1) {
+                      inventory[index]['room'] = _roomController.text;
+                    }
+                  });
+
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Inventory item room updated'),
+                    ),
                   );
-                  
-                  if (pickedDate != null) {
-                    setState(() {
-                      _dateController.text = '${pickedDate.day.toString().padLeft(2, '0')}-'
-                        '${pickedDate.month.toString().padLeft(2, '0')}-'
-                        '${pickedDate.year}';
-                    });
-                  }
                 },
-              ),
-              const SizedBox(height: 16),
-              
-              // Pickup time
-              TextField(
-                controller: _timeController,
-                decoration: const InputDecoration(
-                  labelText: 'Pickup Time',
-                  hintText: 'HH:MM AM/PM',
-                  border: OutlineInputBorder(),
-                  suffixIcon: Icon(Icons.access_time),
-                ),
-                readOnly: true,
-                onTap: () async {
-                  final TimeOfDay? pickedTime = await showTimePicker(
-                    context: context,
-                    initialTime: TimeOfDay.now(),
-                  );
-                  
-                  if (pickedTime != null) {
-                    final hour = pickedTime.hourOfPeriod;
-                    final minute = pickedTime.minute;
-                    final period = pickedTime.period == DayPeriod.am ? 'AM' : 'PM';
-                    
-                    setState(() {
-                      _timeController.text = '${hour == 0 ? 12 : hour}:${minute.toString().padLeft(2, '0')} $period';
-                    });
-                  }
-                },
+                child: const Text('Save'),
               ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              // Update donation details
-              final updatedDonation = Map<String, dynamic>.from(donation);
-              updatedDonation['room_number'] = _roomController.text;
-              updatedDonation['allotted_quantity'] = int.tryParse(_quantityController.text) ?? 0;
-              updatedDonation['pickup_date'] = _dateController.text;
-              updatedDonation['pickup_time'] = _timeController.text;
-              
-              // Update status if all required fields are filled
-              if (_roomController.text.isNotEmpty && 
-                  _dateController.text.isNotEmpty && 
-                  _timeController.text.isNotEmpty &&
-                  updatedDonation['allotted_quantity'] > 0) {
-                updatedDonation['status'] = 'Ready for Pickup';
-              } else {
-                updatedDonation['status'] = 'Pending';
-              }
-              
-              _updateDonation(updatedDonation);
-              Navigator.pop(context);
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
     );
   }
-  
-  // Add this widget to your existing build method where appropriate
-  Widget _buildDonationsManagementSection() {
-    return Card(
-      elevation: 4,
-      margin: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              'Donations Management',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Manage donation storage and pickup schedules',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Refresh'),
-                  onPressed: _loadDonations,
-                ),
-              ],
-            ),
-          ),
-          const Divider(),
-          if (isLoading)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: CircularProgressIndicator(),
-              ),
-            )
-          else if (donations.isEmpty)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text('No donations found'),
-              ),
-            )
-          else
-            SingleChildScrollView(
+
+  void _showDonationRequestDialog(Map<String, dynamic> donation) {
+    _roomController.text = donation['room'] ?? '';
+    _statusController.text = donation['status'] ?? '';
+
+   showDialog(
+  context: context,
+  builder: (context) => AlertDialog(
+    title: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Donation Details - ${donation['id']}'),
+        const SizedBox(height: 4),
+        Text(
+          '${donation['donor']} | ${donation['contact_info']}',
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
+        ),
+      ],
+    ),
+            content: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: DataTable(
                 columns: const [
-                  DataColumn(label: Text('ID')),
-                  DataColumn(label: Text('Item')),
-                  DataColumn(label: Text('Camp')),
-                  DataColumn(label: Text('Requested')),
-                  DataColumn(label: Text('Allotted')),
-                  DataColumn(label: Text('Room')),
-                  DataColumn(label: Text('Pickup Date/Time')),
-                  DataColumn(label: Text('Status')),
-                  DataColumn(label: Text('Actions')),
+                  DataColumn(
+                    label: Text(
+                      'ID',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(
+                      'Item',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(
+                      'Quantity',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                
+                  DataColumn(
+                    label: Text(
+                      'Room',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  
                 ],
-                rows: donations.map((donation) {
-                  return DataRow(
+                rows: [
+                  DataRow(
                     cells: [
-                      DataCell(Text(donation['id'])),
-                      DataCell(Text(donation['item_name'])),
-                      DataCell(Text(donation['camp_name'])),
-                      DataCell(Text(donation['requested_quantity'].toString())),
-                      DataCell(Text(donation['allotted_quantity'].toString())),
+                      DataCell(Text(donation['id'].toString())),
+                      DataCell(Text(donation['item'])),
+                      DataCell(Text(donation['quantity'].toString())),
                       DataCell(
-                        donation['room_number'].isEmpty
-                        ? const Text('Not Assigned', style: TextStyle(color: Colors.red))
-                        : Text(donation['room_number'])
-                      ),
-                      DataCell(
-                        donation['pickup_date'].isEmpty
-                        ? const Text('Not Scheduled', style: TextStyle(color: Colors.red))
-                        : Text('${donation['pickup_date']}\n${donation['pickup_time']}')
-                      ),
-                      DataCell(
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: donation['status'] == 'Ready for Pickup' ? Colors.green.shade100 : Colors.orange.shade100,
-                            borderRadius: BorderRadius.circular(12),
+                        TextField(
+                          controller: _roomController,
+                          decoration: const InputDecoration(
+                            hintText: 'Enter room',
+                            border: InputBorder.none,
                           ),
-                          child: Text(
-                            donation['status'],
-                            style: TextStyle(
-                              color: donation['status'] == 'Ready for Pickup' ? Colors.green.shade800 : Colors.orange.shade800,
-                            ),
-                          ),
-                        ),
-                      ),
-                      DataCell(
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.blue),
-                              tooltip: 'Manage Donation',
-                              onPressed: () => _showDonationDetailsDialog(donation),
-                            ),
-                          ],
+                          enabled:
+                              donation['room'] == null ||
+                              donation['room'].isEmpty,
                         ),
                       ),
                     ],
-                  );
-                }).toList(),
+                  ),
+                ],
               ),
             ),
-          const SizedBox(height: 16),
-        ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final updatedDonation = Map<String, dynamic>.from(donation);
+                  updatedDonation['room'] = _roomController.text;
+                  updatedDonation['status'] = _statusController.text;
+
+                  setState(() {
+                    final index = donationRequests.indexWhere(
+                      (d) => d['id'] == donation['id'],
+                    );
+                    if (index != -1) {
+                      donationRequests[index] = updatedDonation;
+                    }
+                  });
+
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Donation details updated')),
+                  );
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+    );
+  }
+bool isEmail(String contact) {
+  return contact.contains('@') && contact.contains('.');
+}
+
+void _handleContactPress(String contact) {
+  if (isEmail(contact)) {
+    // Launch email
+    launchUrl(Uri.parse('mailto:$contact'));
+  } else {
+    // Launch phone call
+    launchUrl(Uri.parse('tel:$contact'));
+  }
+}
+  // Method to show camp request details dialog
+  void _showCampRequestDialog(Map<String, dynamic> campRequest) {
+    _dateController.text = campRequest['pickup_date'] ?? '';
+    _timeController.text = campRequest['pickup_time'] ?? '';
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text(campRequest['camp']),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Contact: ${campRequest['camp_contact']}'),
+                  const SizedBox(height: 16),
+
+                  // Editable pickup date with date picker
+                  TextField(
+                    controller: _dateController,
+                    decoration: const InputDecoration(
+                      labelText: 'Pickup Date',
+                      hintText: 'DD-MM-YYYY',
+                      border: OutlineInputBorder(),
+                      suffixIcon: Icon(Icons.calendar_today),
+                    ),
+                    readOnly: true, // Make the text field read-only
+                    onTap: () async {
+                      FocusScope.of(context).requestFocus(FocusNode());
+
+                      // Show date picker
+                      final DateTime? picked = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+
+                      if (picked != null) {
+                        // Format date as DD-MM-YYYY
+                        final day = picked.day.toString().padLeft(2, '0');
+                        final month = picked.month.toString().padLeft(2, '0');
+                        final year = picked.year.toString();
+                        _dateController.text = '$day-$month-$year';
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Editable pickup time with time picker
+                  TextField(
+                    controller: _timeController,
+                    decoration: const InputDecoration(
+                      labelText: 'Pickup Time',
+                      hintText: 'HH:MM AM/PM',
+                      border: OutlineInputBorder(),
+                      suffixIcon: Icon(Icons.access_time),
+                    ),
+                    readOnly: true, // Make the text field read-only
+                    onTap: () async {
+                      FocusScope.of(context).requestFocus(FocusNode());
+
+                      // Show time picker
+                      final TimeOfDay? picked = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay.now(),
+                      );
+
+                      if (picked != null) {
+                        // Format time in 12-hour format with AM/PM
+                        final hour =
+                            picked.hourOfPeriod == 0 ? 12 : picked.hourOfPeriod;
+                        final minute = picked.minute.toString().padLeft(2, '0');
+                        final period =
+                            picked.period == DayPeriod.am ? 'AM' : 'PM';
+                        _timeController.text = '$hour:$minute $period';
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Status dropdown
+                  DropdownButtonFormField<String>(
+                    value: campRequest['status'],
+                    decoration: const InputDecoration(
+                      labelText: 'Status',
+                      border: OutlineInputBorder(),
+                    ),
+                    items:
+                        ['Pending', 'Scheduled', 'Completed', 'Canceled'].map((
+                          status,
+                        ) {
+                          return DropdownMenuItem<String>(
+                            value: status,
+                            child: Text(status),
+                          );
+                        }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          campRequest['status'] = value;
+                        });
+                      }
+                    },
+                  ),
+                  const Divider(height: 24),
+                  const Text(
+                    'Requested Items:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // List of items with editable quantities but non-editable rooms
+                  ...List.generate(campRequest['items'].length, (index) {
+                    final item = campRequest['items'][index];
+                    final itemController = TextEditingController(
+                      text: item['quantity'].toString(),
+                    );
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Item: ${item['item']}'),
+                          const SizedBox(height: 4),
+                          Text('ID: ${item['id']}'),
+                          const SizedBox(height: 4),
+                          // Display room as text, not editable
+                          Text(
+                            'Room: ${item['room']}',
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Text('Quantity: '),
+                              Expanded(
+                                child: TextField(
+                                  controller: itemController,
+                                  decoration: const InputDecoration(
+                                    isDense: true,
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  onChanged: (value) {
+                                    // Update quantity in the data model
+                                    setState(() {
+                                      campRequest['items'][index]['quantity'] =
+                                          int.tryParse(value) ?? 0;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  // Save the updated values
+                  setState(() {
+                    final index = campRequests.indexWhere(
+                      (c) => c['id'] == campRequest['id'],
+                    );
+                    if (index != -1) {
+                      // Update pickup date and time
+                      campRequests[index]['pickup_date'] = _dateController.text;
+                      campRequests[index]['pickup_time'] = _timeController.text;
+                      // The status and item details are already updated through the state changes
+                    }
+                  });
+
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Camp request updated')),
+                  );
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  // Tab 1: Inventory
+  Widget _buildInventoryTab() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Card(
+        elevation: 4,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Current Inventory',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Refresh'),
+                    onPressed: _loadInventory,
+                  ),
+                ],
+              ),
+            ),
+            const Divider(),
+            if (isLoadingInventory)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (inventory.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('No inventory found'),
+                ),
+              )
+            else
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columns: const [
+                    DataColumn(label: Text('ID')),
+                    DataColumn(label: Text('Item')),
+                    DataColumn(label: Text('Quantity')),
+                    DataColumn(label: Text('Room')),
+                    DataColumn(label: Text('Actions')),
+                  ],
+                  rows:
+                      inventory.map((item) {
+                        return DataRow(
+                          cells: [
+                            DataCell(Text(item['id'])),
+                            DataCell(Text(item['item'])),
+                            DataCell(Text(item['quantity'].toString())),
+                            DataCell(Text(item['room'])),
+                            DataCell(
+                              IconButton(
+                                icon: const Icon(Icons.edit),
+                                onPressed: () => _showInventoryItemDialog(item),
+                                tooltip: 'Edit Room',
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                ),
+              ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }
-  
+
+  // Tab 2: Donation Requests
+  Widget _buildDonationRequestsTab() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Card(
+        elevation: 4,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Donation Requests',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Refresh'),
+                    onPressed: _loadDonationRequests,
+                  ),
+                ],
+              ),
+            ),
+            const Divider(),
+            if (isLoadingDonations)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (donationRequests.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('No donation requests found'),
+                ),
+              )
+            else
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columns: const [
+                    DataColumn(label: Text('ID')),
+                    DataColumn(label: Text('Donor')),
+                    DataColumn(label: Text('Contact Info')),
+                    // DataColumn(label: Text('Item')),
+                    // DataColumn(label: Text('Room')),
+                    DataColumn(label: Text('Arriving Date/Time')),
+                    DataColumn(label: Text('Status')),
+                  ],
+                  rows:
+                      donationRequests.map((donation) {
+                        return DataRow(
+                          onSelectChanged:
+                              (_) => _showDonationRequestDialog(donation),
+                          cells: [
+                            DataCell(Text(donation['id'])),
+                            DataCell(Text(donation['donor'])),
+                            DataCell(
+  InkWell(
+    onTap: () => _handleContactPress(donation['contact_info']),
+    child: Text(
+      donation['contact_info'],
+      style: TextStyle(
+        color: Colors.blue,
+        decoration: TextDecoration.underline,
+      ),
+    ),
+  ),
+),
+                            // DataCell(Text(donation['item'])),
+                            // DataCell(
+                            //   donation['room'] != null &&
+                            //           donation['room'].isNotEmpty
+                            //       ? Text(donation['room'])
+                            //       : const Text(
+                            //         'Not assigned',
+                            //         style: TextStyle(color: Colors.red),
+                            //       ),
+                            // ),
+                            DataCell(
+                              Text(
+                                '${donation['arriving_date']}\n${donation['arriving_time']}',
+                              ),
+                            ),
+                            DataCell(
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _getStatusColor(donation['status']),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  donation['status'],
+                                  style: TextStyle(
+                                    color: _getStatusTextColor(
+                                      donation['status'],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                ),
+              ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Helper method to get status color
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'Arrived':
+        return Colors.green.shade100;
+      case 'Dispatched':
+        return Colors.blue.shade100;
+      default:
+        return Colors.orange.shade100;
+    }
+  }
+
+  // Helper method to get status text color
+  Color _getStatusTextColor(String status) {
+    switch (status) {
+      case 'Arrived':
+        return Colors.green.shade800;
+      case 'Dispatched':
+        return Colors.blue.shade800;
+      default:
+        return Colors.orange.shade800;
+    }
+  }
+
+  // Tab 3: Camp Requests
+  Widget _buildCampRequestsTab() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Card(
+        elevation: 4,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Camp Requests',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Refresh'),
+                    onPressed: _loadCampRequests,
+                  ),
+                ],
+              ),
+            ),
+            const Divider(),
+            if (isLoadingCampRequests)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (campRequests.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('No camp requests found'),
+                ),
+              )
+            else
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columns: const [
+                    DataColumn(label: Text('ID')),
+                    DataColumn(label: Text('Camp')),
+                    DataColumn(label: Text('Pickup Date/Time')),
+                    DataColumn(label: Text('Status')),
+                    DataColumn(label: Text('Items')),
+                  ],
+                  rows:
+                      campRequests.map((request) {
+                        return DataRow(
+                          onSelectChanged:
+                              (_) => _showCampRequestDialog(request),
+                          cells: [
+                            DataCell(Text(request['id'])),
+                            DataCell(Text(request['camp'])),
+                            DataCell(
+                              Text(
+                                '${request['pickup_date']}\n${request['pickup_time']}',
+                              ),
+                            ),
+                            DataCell(
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      request['status'] == 'Scheduled'
+                                          ? Colors.green.shade100
+                                          : Colors.orange.shade100,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  request['status'],
+                                  style: TextStyle(
+                                    color:
+                                        request['status'] == 'Scheduled'
+                                            ? Colors.green.shade800
+                                            : Colors.orange.shade800,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            DataCell(Text('${request['items'].length} items')),
+                          ],
+                        );
+                      }).toList(),
+                ),
+              ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Collection Point Dashboard'),
-        // Your existing AppBar code
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Keep your existing dashboard widgets here
-            
-            // Add the donations management section
-            _buildDonationsManagementSection(),
-            
-            // Any other existing sections
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Inventory'),
+            Tab(text: 'Donation Requests'),
+            Tab(text: 'Camp Requests'),
           ],
         ),
       ),
-      // Keep your existing bottom navigation or drawer if present
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // Tab 1: Inventory
+          SingleChildScrollView(child: _buildInventoryTab()),
+
+          // Tab 2: Donation Requests
+          SingleChildScrollView(child: _buildDonationRequestsTab()),
+
+          // Tab 3: Camp Requests
+          SingleChildScrollView(child: _buildCampRequestsTab()),
+        ],
+      ),
     );
   }
-  
+
   @override
   void dispose() {
+    _tabController.dispose();
     _roomController.dispose();
     _quantityController.dispose();
     _dateController.dispose();
     _timeController.dispose();
+    _statusController.dispose();
     super.dispose();
   }
 }

@@ -39,8 +39,11 @@ import 'screens/profile_setup.dart';
 import 'screens/add_famili.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_web_plugins/url_strategy.dart';
-import 'package:resq/screens/loan_relief_upload.dart';
 import 'package:resq/screens/family_data_download.dart';
+import 'package:resq/screens/loan_relief_upload.dart' as loan_relief;
+import 'package:resq/screens/profile_updation.dart';
+import 'package:resq/screens/donations_screen.dart';
+import 'package:resq/screens/verification_volunteer_dashboard.dart';
 
 void main() async {
   if (kIsWeb) {
@@ -76,7 +79,7 @@ class MyApp extends StatelessWidget {
   Widget getDashboardForRole(List<String> roles) {
     if (roles.contains('superAdmin')) return SuperAdminDashboard();
     if (roles.contains('admin')) return AdminDashboard();
-    if (roles.contains('stat')) return StatDashboard();
+    if (roles.contains('stat')) return DashboardScreen();
     if (roles.contains('kas')) return KasDashboard();
     if (roles.contains('collectionpointadmin')) return CollectionPointDashboard();
     if (roles.contains('campadmin')) return CampAdminRequestScreen();
@@ -216,15 +219,17 @@ class MyApp extends StatelessWidget {
             ),
         '/loan-relief':
             (context) => AuthRoute(
-              requiredRoles: [
-                'admin',
-                'kas',
-                'superadmin',
-                'campadmin',
-              ], // Adjust roles as needed
-              child: LoanReliefUploadScreen(),
+              requiredRoles: ['admin', 'kas', 'superadmin', 'campadmin'],
+              child:
+                  loan_relief.LoanReliefUploadScreen(), // Add the prefix here
             ),
         '/test-family': (context) => FamilyDataScreen(),
+        '/test-collectionpoint': (context) => CollectionPointDashboard(),
+        '/test-statistics': (context) => DashboardScreen(),
+        '/test-profile': (context) => ProfileUpdateScreen(),
+        '/donations': (context) => const DonationsScreen(),
+        '/verification-volunteer':
+            (context) => const VerificationVolunteerDashboard(),
       },
 
       onUnknownRoute:
