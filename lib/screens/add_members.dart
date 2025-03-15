@@ -56,10 +56,30 @@ class _AddMembersState extends State<AddMembers> {
 
   // Function to navigate to the next screen
   void _goNext() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const FoodandHealth()), // Navigate to the NextPage
-    );
+    // Collecting data from the form
+    List<Map<String, String>> collectedMemberData = [];
+    for (var memberDetails in memberDetailsList) {
+      collectedMemberData.add({
+        'Name': memberDetails['Name:']!.text,
+        'Age': memberDetails['Age:']!.text,
+        'Gender': memberDetails['Gender:'],
+        'Position': memberDetails['Position on the family:']!.text,
+        'Marital Status': memberDetails['Material status:'],
+        'L/D/M': memberDetails['L/D/M:']!.text,
+        'Adhaar No': memberDetails['Adhaar No:']!.text,
+      });
+    }
+
+    // Printing the collected data
+    print("Collected Family Member Data:");
+    for (var member in collectedMemberData) {
+      print("Name: ${member['Name']}, Age: ${member['Age']}, Gender: ${member['Gender']}, "
+          "Position: ${member['Position']}, Marital Status: ${member['Marital Status']}, "
+          "L/D/M: ${member['L/D/M']}, Adhaar No: ${member['Adhaar No']}");
+    }
+
+    // Navigate to the next page (FoodandHealth)
+    Navigator.pushNamed(context, '/food-and-health', arguments: collectedMemberData);
   }
 
   @override
@@ -126,10 +146,7 @@ class _AddMembersState extends State<AddMembers> {
                               border: OutlineInputBorder(),
                             ),
                             items: ['Male', 'Female']
-                                .map((gender) => DropdownMenuItem<String>(
-                                      value: gender,
-                                      child: Text(gender),
-                                    ))
+                                .map((gender) => DropdownMenuItem<String>(value: gender, child: Text(gender)))
                                 .toList(),
                             onChanged: (newValue) {
                               setState(() {
@@ -157,10 +174,7 @@ class _AddMembersState extends State<AddMembers> {
                               border: OutlineInputBorder(),
                             ),
                             items: ['Single', 'Married', 'Divorced']
-                                .map((status) => DropdownMenuItem<String>(
-                                      value: status,
-                                      child: Text(status),
-                                    ))
+                                .map((status) => DropdownMenuItem<String>(value: status, child: Text(status)))
                                 .toList(),
                             onChanged: (newValue) {
                               setState(() {

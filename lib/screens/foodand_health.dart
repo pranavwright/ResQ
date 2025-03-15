@@ -12,10 +12,44 @@ class _FoodandHealthState extends State<FoodandHealth> {
   String? _angawadiCenterStatus;
   String? _foodAssistanceStatus;
   String? _nutritionDisruptionStatus;
-  // New Variables for the radio buttons
   // New variable for the family insurance question
   String? _familyInsuranceStatus;
   String? _insuranceDetails;
+
+  // Variables for TextField inputs
+  TextEditingController _childrenEnrolledController = TextEditingController();
+  TextEditingController _malnutritionChildrenController = TextEditingController();
+  TextEditingController _pregnantWomenController = TextEditingController();
+  TextEditingController _lactatingWomenController = TextEditingController();
+  TextEditingController _foodAssistanceDurationController = TextEditingController();
+  TextEditingController _foodAssistanceReasonController = TextEditingController();
+
+  @override
+  void dispose() {
+    // Dispose the controllers to avoid memory leaks
+    _childrenEnrolledController.dispose();
+    _malnutritionChildrenController.dispose();
+    _pregnantWomenController.dispose();
+    _lactatingWomenController.dispose();
+    _foodAssistanceDurationController.dispose();
+    _foodAssistanceReasonController.dispose();
+    super.dispose();
+  }
+
+  void _printCollectedData() {
+    print("Food and Health Data:");
+    print("Anganwadi Center Damaged: $_angawadiCenterStatus");
+    print("Food Assistance Sufficient: $_foodAssistanceStatus");
+    print("Nutrition Disruption: $_nutritionDisruptionStatus");
+    print("Family Insurance: $_familyInsuranceStatus");
+    print("Family Insurance Details: $_insuranceDetails");
+    print("Children Enrolled in Anganwadi: ${_childrenEnrolledController.text}");
+    print("Malnutrition Children: ${_malnutritionChildrenController.text}");
+    print("Pregnant Women: ${_pregnantWomenController.text}");
+    print("Lactating Women: ${_lactatingWomenController.text}");
+    print("Food Assistance Duration: ${_foodAssistanceDurationController.text}");
+    print("Food Assistance Reason: ${_foodAssistanceReasonController.text}");
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,11 +59,11 @@ class _FoodandHealthState extends State<FoodandHealth> {
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pushNamedAndRemoveUntil(
+            Navigator.pushNamed(
                   context,
                   '/add-members',
-                  (route) => false,
-                );// This will navigate to the previous screen
+                  arguments: {}
+                );
           },
         ),
       ),
@@ -53,46 +87,48 @@ class _FoodandHealthState extends State<FoodandHealth> {
 
                 // TextFields with basic questions
                 TextField(
+                  controller: _childrenEnrolledController,
                   decoration: InputDecoration(
                     labelText: 'Total number of children enrolled in Anganwadi centers',
-                    border: OutlineInputBorder(), // Added outline border
+                    border: OutlineInputBorder(),
                   ),
                 ),
                 SizedBox(height: 10),
                 TextField(
+                  controller: _malnutritionChildrenController,
                   decoration: InputDecoration(
                     labelText: 'Are there any children with malnutrition?',
-                    border: OutlineInputBorder(), // Added outline border
+                    border: OutlineInputBorder(),
                   ),
                 ),
                 SizedBox(height: 10),
                 TextField(
+                  controller: _pregnantWomenController,
                   decoration: InputDecoration(
                     labelText: 'Pregnant women in the family',
-                    border: OutlineInputBorder(), // Added outline border
+                    border: OutlineInputBorder(),
                   ),
                 ),
                 SizedBox(height: 10),
                 TextField(
+                  controller: _lactatingWomenController,
                   decoration: InputDecoration(
                     labelText: 'Lactating women in the family',
-                    border: OutlineInputBorder(), // Added outline border
+                    border: OutlineInputBorder(),
                   ),
                 ),
                 SizedBox(height: 10),
                 TextField(
+                  controller: _foodAssistanceDurationController,
                   decoration: InputDecoration(
                     labelText: 'How long do you need food assistance?',
-                    border: OutlineInputBorder(), // Added outline border
+                    border: OutlineInputBorder(),
                   ),
                 ),
                 SizedBox(height: 20),
 
                 // Radio Buttons for the three questions
-                Text(
-                  'Is the Anganwadi center damaged?',
-                  style: TextStyle(fontSize: 16),
-                ),
+                Text('Is the Anganwadi center damaged?'),
                 Row(
                   children: [
                     Radio<String>(
@@ -119,10 +155,7 @@ class _FoodandHealthState extends State<FoodandHealth> {
                 ),
                 SizedBox(height: 20),
 
-                Text(
-                  'Is the present food assistance sufficient?',
-                  style: TextStyle(fontSize: 16),
-                ),
+                Text('Is the present food assistance sufficient?'),
                 Row(
                   children: [
                     Radio<String>(
@@ -147,15 +180,15 @@ class _FoodandHealthState extends State<FoodandHealth> {
                     Text('No'),
                   ],
                 ),
-                // Conditionally showing the TextField when "No" is selected for food assistance
-                if (_foodAssistanceStatus == 'No') 
+                if (_foodAssistanceStatus == 'No')
                   Column(
                     children: [
                       SizedBox(height: 10),
                       TextField(
+                        controller: _foodAssistanceReasonController,
                         decoration: InputDecoration(
                           labelText: 'Please explain why the current food assistance is insufficient',
-                          border: OutlineInputBorder(), // Added outline border
+                          border: OutlineInputBorder(),
                         ),
                       ),
                     ],
@@ -163,10 +196,7 @@ class _FoodandHealthState extends State<FoodandHealth> {
                 
                 SizedBox(height: 20),
 
-                Text(
-                  'Is there any disruption in government nutrition services to children, adolescent girls, pregnant women, and lactating mothers?',
-                  style: TextStyle(fontSize: 16),
-                ),
+                Text('Is there any disruption in government nutrition services?'),
                 Row(
                   children: [
                     Radio<String>(
@@ -193,15 +223,7 @@ class _FoodandHealthState extends State<FoodandHealth> {
                 ),
                 SizedBox(height: 20),
 
-                // Heading "HEALTH"
-               
-                SizedBox(height: 20),
-
-                // Family Insurance Radio Button
-                Text(
-                  'Do you have any family insurance?',
-                  style: TextStyle(fontSize: 16),
-                ),
+                Text('Do you have any family insurance?'),
                 Row(
                   children: [
                     Radio<String>(
@@ -226,16 +248,14 @@ class _FoodandHealthState extends State<FoodandHealth> {
                     Text('No'),
                   ],
                 ),
-
-                // Conditionally showing the TextField when "Yes" is selected for family insurance
-                if (_familyInsuranceStatus == 'Yes') 
+                if (_familyInsuranceStatus == 'Yes')
                   Column(
                     children: [
                       SizedBox(height: 10),
                       TextField(
                         decoration: InputDecoration(
                           labelText: 'Please specify your family insurance details',
-                          border: OutlineInputBorder(), // Added outline border
+                          border: OutlineInputBorder(),
                         ),
                         onChanged: (value) {
                           setState(() {
@@ -248,15 +268,14 @@ class _FoodandHealthState extends State<FoodandHealth> {
                 
                 SizedBox(height: 20),
 
-                // Next Button to navigate to the next page
                 ElevatedButton(
                   onPressed: () {
+                    _printCollectedData(); // Call the print function
                     Navigator.pushNamedAndRemoveUntil(
                       context,
                       '/helthnew',
                       (route) => false,
                     );
-                    // Implement your action here (e.g., submit the data)
                   },
                   child: const Text("Next"),
                 ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class AddFamilies extends StatefulWidget {
   const AddFamilies({super.key});
@@ -8,33 +9,21 @@ class AddFamilies extends StatefulWidget {
 }
 
 class _AddFamiliesState extends State<AddFamilies> {
-  bool isYellowChecked = false;
-  bool isWhiteChecked = false;
-  bool isPinkChecked = false;
-
-  String? householdHead = "General"; // Default value is "General"
+  String? selectedRationCardCategory = 'Yellow'; // Default selection for Ration Card
+  String? householdHead = "General"; 
+  String village = '';
+  String houseNumber = '';
+  String uniqueHouseholdID = '';
+  String householdHeadName = '';
+  String address = '';
+  String contactNo = '';
+  String rationCardNo = '';
 
   // List to hold each family member's details
   List<Map<String, String>> familyMembers = [];
 
   // List of marital status options
   List<String> maritalStatusOptions = ['Single', 'Married', 'Divorced'];
-
-  // Function to add a new family member to the list
-  void addFamilyMember() {
-    setState(() {
-      familyMembers.add({
-        'si.no': '',
-        'name': '',
-        'age': '',
-        'gender': '',
-        'position': '',
-        'materialStatus': maritalStatusOptions[0], // Default to 'Single'
-        'ldm': '',
-        'aadhaar': '',
-      });
-    });
-  }
 
   // Function to handle changes in the family member's input
   void handleInputChange(int index, String key, String value) {
@@ -50,6 +39,50 @@ class _AddFamiliesState extends State<AddFamilies> {
     });
   }
 
+  // Function to collect and print data when 'Next' button is clicked
+  void nextData() {
+    // Storing all the form data in a Map
+    Map<String, dynamic> formData = {
+      'Village/Ward': village,
+      'House Number': houseNumber,
+      'Unique Household ID': uniqueHouseholdID,
+      'Household Head': householdHeadName,
+      'Address': address,
+      'Contact No': contactNo,
+      'Ration Card No': rationCardNo,
+      'Ration Card Category': selectedRationCardCategory,
+      'Household Head Category': householdHead,
+      'Family Members': familyMembers,
+    };
+
+    // Printing all the collected data in the console
+    // print("Collected Form Data:");
+    // print("Village/Ward: $village");
+    // print("House Number: $houseNumber");
+    // print("Unique Household ID: $uniqueHouseholdID");
+    // print("Household Head: $householdHeadName");
+    // print("Address: $address");
+    // print("Contact No: $contactNo");
+    // print("Ration Card No: $rationCardNo");
+    // print("Ration Card Category: $selectedRationCardCategory");
+    // print("Household Head Category: $householdHead");
+
+    // Printing the family members list
+    // print("Family Members:");
+    // for (var member in familyMembers) {
+    //   print("Name: ${member['name']}, Age: ${member['age']}, Gender: ${member['gender']}, "
+    //       "Position: ${member['position']}, Marital Status: ${member['materialStatus']}, "
+    //       "LDM: ${member['ldm']}, Aadhaar: ${member['aadhaar']}");
+    // }
+
+    // Passing the data to the next screen using Navigator
+    Navigator.pushNamed(
+      context,
+      '/add-members',
+      arguments: formData, // Passing the collected data to the next screen
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,10 +93,10 @@ class _AddFamiliesState extends State<AddFamilies> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
             Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/otp',
-                  (route) => false,
-                ); // Pops the current screen and goes back to the previous screen
+              context,
+              '/otp', // Navigate back to OTP screen
+              (route) => false,
+            );
           },
         ),
       ),
@@ -73,55 +106,38 @@ class _AddFamiliesState extends State<AddFamilies> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Household Info Text Fields (village/ward, house number, etc.)
-              _buildTextField('Village/Ward'),
-              const SizedBox(height: 10), // Added space between fields
-              _buildTextField('House Number'),
+              _buildTextField('Village/Ward', (value) => village = value),
               const SizedBox(height: 10),
-              _buildTextField('Unique Household ID'),
+              _buildTextField('House Number', (value) => houseNumber = value),
               const SizedBox(height: 10),
-              _buildTextField('Household Head'),
+              _buildTextField('Unique Household ID', (value) => uniqueHouseholdID = value),
               const SizedBox(height: 10),
-              _buildTextField('Address'),
+              _buildTextField('Household Head', (value) => householdHeadName = value),
               const SizedBox(height: 10),
-              _buildTextField('Contact No'),
+              _buildTextField('Address', (value) => address = value),
               const SizedBox(height: 10),
-              _buildTextField('Ration Card No'),
+              _buildTextField('Contact No', (value) => contactNo = value, isNumber: true),
+              const SizedBox(height: 10),
+              _buildTextField('Ration Card No', (value) => rationCardNo = value, isNumber: true),
               const SizedBox(height: 20),
 
-              // Ration Card Category Checkboxes
+              // Ration Card Category Radio Buttons
               _buildSectionHeader('Ration Card Category:'),
-              _buildCheckbox('Yellow', isYellowChecked, (bool? value) {
-                setState(() {
-                  isYellowChecked = value ?? false;
-                });
-              }),
-              _buildCheckbox('White', isWhiteChecked, (bool? value) {
-                setState(() {
-                  isWhiteChecked = value ?? false;
-                });
-              }),
-              _buildCheckbox('Pink', isPinkChecked, (bool? value) {
-                setState(() {
-                  isPinkChecked = value ?? false;
-                });
-              }),
+              _buildRadioOption('Yellow', selectedRationCardCategory),
+              _buildRadioOption('White', selectedRationCardCategory),
+              _buildRadioOption('Pink', selectedRationCardCategory),
               const SizedBox(height: 20),
 
               // Household Head Radio Buttons
               _buildSectionHeader('Household Head Category:'),
-              _buildRadioOption('General'),
-              _buildRadioOption('Other Backward'),
-              _buildRadioOption('Scheduled Caste'),
-              _buildRadioOption('Scheduled Tribe'),
-              _buildRadioOption('Other'),
+              _buildRadioOption('General', householdHead),
+              _buildRadioOption('Other Backward', householdHead),
+              _buildRadioOption('Scheduled Caste', householdHead),
+              _buildRadioOption('Scheduled Tribe', householdHead),
+              _buildRadioOption('Other', householdHead),
               const SizedBox(height: 20),
 
               // Family Members Input Fields
-              const Text(
-                'Family Members:',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.deepPurple),
-              ),
               const SizedBox(height: 10),
 
               // Dynamically display family members input fields
@@ -132,24 +148,26 @@ class _AddFamiliesState extends State<AddFamilies> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      
+                      _buildTextField('Name', (value) => handleInputChange(index, 'name', value)),
+                      _buildTextField('Age', (value) => handleInputChange(index, 'age', value), isNumber: true),
+                      _buildTextField('Gender', (value) => handleInputChange(index, 'gender', value)),
+                      _buildTextField('Position', (value) => handleInputChange(index, 'position', value)),
+                      _buildMaritalStatusDropdown(index),
+                      _buildTextField('LDM', (value) => handleInputChange(index, 'ldm', value)),
+                      _buildTextField('Aadhaar', (value) => handleInputChange(index, 'aadhaar', value), isNumber: true),
+                      const SizedBox(height: 10),
                     ],
                   );
                 },
               ),
+
               const SizedBox(height: 20),
 
               // Next Button
               ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/add-members',
-                    (route) => false,
-                  );
-                },
+                onPressed: nextData, // Pass data to the next page
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 235, 229, 229), // Changed 'primary' to 'backgroundColor'
+                  backgroundColor: const Color.fromARGB(255, 235, 229, 229),
                 ),
                 child: const Text("Next"),
               ),
@@ -160,14 +178,25 @@ class _AddFamiliesState extends State<AddFamilies> {
     );
   }
 
-  // Function to build a simple text field with custom styling
-  Widget _buildTextField(String label) {
+  // Function to build a simple text field with custom styling and optional number validation
+  Widget _buildTextField(
+    String label,
+    Function(String) onChanged, {
+    bool isNumber = false,
+  }) {
     return TextField(
+      onChanged: onChanged,
+      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+      inputFormatters: isNumber ? [FilteringTextInputFormatter.digitsOnly] : [],
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: const Color.fromARGB(255, 49, 43, 43)), // Attractive label color
-        border: OutlineInputBorder(
-          borderSide: BorderSide(color: const Color.fromARGB(255, 27, 24, 24)), // Border color
+        labelStyle: const TextStyle(
+          color: Color.fromARGB(255, 49, 43, 43),
+        ),
+        border: const OutlineInputBorder(
+          borderSide: BorderSide(
+            color: Color.fromARGB(255, 27, 24, 24),
+          ),
         ),
       ),
     );
@@ -177,35 +206,49 @@ class _AddFamiliesState extends State<AddFamilies> {
   Widget _buildSectionHeader(String title) {
     return Text(
       title,
-      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: Colors.deepPurple,
+      ),
     );
   }
 
-  // Function to build a checkbox option
-  Widget _buildCheckbox(String label, bool value, ValueChanged<bool?> onChanged) {
-    return Row(
-      children: [
-        Checkbox(value: value, onChanged: onChanged),
-        Text(label, style: TextStyle(color: const Color.fromARGB(255, 0, 0, 0))),
-      ],
-    );
-  }
-
-  // Function to build radio button options for Household Head
-  Widget _buildRadioOption(String label) {
+  // Function to build radio button options
+  Widget _buildRadioOption(String label, String? groupValue) {
     return Row(
       children: [
         Radio<String>(
           value: label,
-          groupValue: householdHead,
+          groupValue: groupValue,
           onChanged: (String? value) {
             setState(() {
-              householdHead = value;
+              if (groupValue == selectedRationCardCategory) {
+                selectedRationCardCategory = value; // Update the ration card category
+              } else {
+                householdHead = value; // Update the household head category
+              }
             });
           },
         ),
-        Text(label, style: TextStyle(color: const Color.fromARGB(255, 1, 1, 1))),
+        Text(label),
       ],
+    );
+  }
+
+  // Function to build the marital status dropdown for family members
+  Widget _buildMaritalStatusDropdown(int index) {
+    return DropdownButton<String>(
+      value: familyMembers[index]['materialStatus'],
+      onChanged: (String? newValue) {
+        handleMaritalStatusChange(index, newValue ?? maritalStatusOptions[0]);
+      },
+      items: maritalStatusOptions.map((String value) {
+        return DropdownMenuItem<String>(
+          value: value,
+          child: Text(value),
+        );
+      }).toList(),
     );
   }
 }

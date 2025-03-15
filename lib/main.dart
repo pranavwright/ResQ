@@ -5,6 +5,7 @@ import 'package:resq/screens/agriculture.dart';
 import 'package:resq/screens/assistance_support.dart';
 import 'package:resq/screens/education_livielhoood.dart';
 import 'package:resq/screens/emp_status.dart';
+import 'package:resq/screens/familysurvay_home.dart';
 import 'package:resq/screens/foodand_health.dart';
 import 'package:resq/screens/helthnew.dart';
 import 'package:resq/screens/incom_andlose.dart';
@@ -88,12 +89,12 @@ class MyApp extends StatelessWidget {
     final isAuthenticated = authService.isAuthenticated;
     List<String> roles = authService.getCurrentUserRoles() ?? [];
 
-    String initialRoute =
-        isAuthenticated
-            ? '/profile-setup'
-            : kIsWeb
-            ? '/'
-            : '/otp';
+    String initialRoute =  '/add-famili-home';
+        // isAuthenticated
+        //     ? '/profile-setup'
+        //     : kIsWeb
+        //     ? '/'
+        //     : '/otp';
 
     print(initialRoute);
 
@@ -201,6 +202,7 @@ class MyApp extends StatelessWidget {
         '/root': (context) => Home(),
 
         '/add-famili': (context) => AddFamilies(),
+        '/add-famili-home': (context) => FamilysurvayHome(),
 
         '/profile-setup':
             (context) => AuthRoute(
