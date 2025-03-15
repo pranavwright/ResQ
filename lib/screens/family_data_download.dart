@@ -267,7 +267,7 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
       final excel = Excel.createExcel();
       final Sheet sheet = excel['Families Data'];
 
-      final List<String> headers = [
+      final List<String> headerStrings = [
         'Family ID',
         'Address',
         'Current Residence',
@@ -289,12 +289,13 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
         'Needs Assistive Devices',
         'Preferred Rehab Option',
       ];
-
+      
+      final List<CellValue?> headers = headerStrings.map((header) => TextCellValue(header)).toList();
       sheet.appendRow(headers);
 
       for (var family in filteredFamilies) {
         for (var individual in family['individuals']) {
-          final List<dynamic> row = [
+          final List<dynamic> rowData = [
             family['id'],
             family['address'],
             family['currentResidence'],
@@ -316,6 +317,18 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
             individual['needsAssistiveDevices'] ? 'Yes' : 'No',
             individual['preferredRehabOption'],
           ];
+          // Convert each value to TextCellValue or other appropriate CellValue type
+          final List<CellValue?> row = rowData.map((value) {
+            if (value is int) {
+              return IntCellValue(value);
+            } else if (value is double) {
+              return DoubleCellValue(value);
+            } else if (value is bool) {
+              return TextCellValue(value ? 'Yes' : 'No');
+            } else {
+              return TextCellValue(value.toString());
+            }
+          }).toList();
           sheet.appendRow(row);
         }
       }

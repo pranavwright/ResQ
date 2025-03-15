@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:resq/screens/login_screen.dart';
 import 'package:resq/utils/auth/auth_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:resq/services/apk_service.dart';
+import 'package:resq/utils/http/token_http.dart';
+import 'dart:io';
 
 void main() {
   runApp(DisasterManagementApp());
@@ -136,24 +139,38 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     super.initState();
     _updateScreens();
   }
-
-  void _updateScreens() {
-    setState(() {
-      _screens.clear();
-      _screens.addAll([
-        DisasterManagementScreen(
-          disasters: disasters,
-          onDeactivateDisaster: _deactivateDisaster,
-          onCreateDisaster: _showAddDisasterDialog,
+void _updateScreens() {
+  setState(() {
+    _screens.clear();
+    _screens.addAll([
+      DisasterManagementScreen(
+        disasters: disasters,
+        onDeactivateDisaster: _deactivateDisaster,
+        onCreateDisaster: _showAddDisasterDialog,
+      ),
+      AdminManagementScreen(
+        admins: admins,
+        disasters: disasters,
+        onCreateAdmin: _showAddAdminDialog,
+      ),
+      // Add the App Management Screen
+      SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'App Management',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 16),
+            ApkUploadSection(),
+          ],
         ),
-        AdminManagementScreen(
-          admins: admins,
-          disasters: disasters,
-          onCreateAdmin: _showAddAdminDialog,
-        ),
-      ]);
-    });
-  }
+      ),
+    ]);
+  });
+}
 
   void _onItemTapped(int index) {
     setState(() {
@@ -485,6 +502,11 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
             label: 'Disasters',
           ),
           BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Admins'),
+          BottomNavigationBarItem(
+            // Add this new item
+            icon: Icon(Icons.app_settings_alt),
+            label: 'App Management',
+          ),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.red,
@@ -531,7 +553,6 @@ class DisasterManagementScreen extends StatelessWidget {
               ),
               Row(
                 children: [
-                  
                   SizedBox(width: 8),
                   ElevatedButton.icon(
                     icon: Icon(Icons.add),
@@ -543,7 +564,7 @@ class DisasterManagementScreen extends StatelessWidget {
             ],
           ),
         ),
-      
+
         Expanded(
           child:
               disasters.isEmpty
@@ -722,15 +743,13 @@ class DisasterManagementScreen extends StatelessWidget {
   }
 }
 
-// Add after DisasterManagementScreen build method (around line 522)
 class ApkUploadSection extends StatefulWidget {
   @override
   _ApkUploadSectionState createState() => _ApkUploadSectionState();
 }
 
-// Add after DisasterManagementScreen build method (around line 522)
 class _ApkUploadSectionState extends State<ApkUploadSection> {
-  final ApkService _apkService = ApkService();
+  final TokenHttp _tokenHttp = TokenHttp();
   bool _isUploading = false;
   String? _selectedFileName;
 
@@ -748,13 +767,40 @@ class _ApkUploadSectionState extends State<ApkUploadSection> {
       if (result != null && result.files.isNotEmpty) {
         final file = result.files.first;
         final fileName = 'resq-v${DateTime.now().millisecondsSinceEpoch}.apk';
+        
+        // Create a temporary file from the bytes
+        final tempDir = await getTemporaryDirectory();
+        final tempFile = File('${tempDir.path}/$fileName');
+        
+        if (file.bytes != null) {
+          // Web platform returns bytes
+          await tempFile.writeAsBytes(file.bytes!);
+        } else if (file.path != null) {
+          // Mobile platforms return a file path
+          final originalFile = File(file.path!);
+          await originalFile.copy(tempFile.path);
+        } else {
+          throw Exception("Couldn't access file data");
+        }
 
-        // Upload APK
-        final downloadUrl = await _apkService.uploadApk(
-          fileName,
-          file.bytes!,
+        // Upload APK using TokenHttp
+        final response = await _tokenHttp.uploadFile(
+          endpoint: '/settings/uploadApk',
+          file: tempFile,
+          fieldName: 'apkFile',
+          fileName: fileName,
+          additionalFields: {
+            'version': DateTime.now().millisecondsSinceEpoch.toString(),
+            'appName': 'ResQ',
+          },
         );
 
+        // Clean up the temp file
+        if (await tempFile.exists()) {
+          await tempFile.delete();
+        }
+
+        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('APK uploaded successfully!'),
@@ -765,6 +811,7 @@ class _ApkUploadSectionState extends State<ApkUploadSection> {
         setState(() => _selectedFileName = file.name);
       }
     } catch (e) {
+      print('Error uploading APK: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error uploading APK: $e'),
@@ -775,7 +822,8 @@ class _ApkUploadSectionState extends State<ApkUploadSection> {
       setState(() => _isUploading = false);
     }
   }
-   @override
+
+  @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.all(16),
@@ -799,7 +847,9 @@ class _ApkUploadSectionState extends State<ApkUploadSection> {
               ),
             ElevatedButton.icon(
               onPressed: _isUploading ? null : _pickAndUploadApk,
-              icon: Icon(_isUploading ? Icons.hourglass_empty : Icons.upload_file),
+              icon: Icon(
+                _isUploading ? Icons.hourglass_empty : Icons.upload_file,
+              ),
               label: Text(_isUploading ? 'Uploading...' : 'Upload New APK'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
@@ -812,7 +862,6 @@ class _ApkUploadSectionState extends State<ApkUploadSection> {
     );
   }
 }
-
 
 class DisasterDetailScreen extends StatelessWidget {
   final Disaster disaster;

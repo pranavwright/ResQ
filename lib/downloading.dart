@@ -96,7 +96,7 @@ class _DownloadingState extends State<Downloading> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(15),
                     child: Image.asset(
-                      'assets/images/Untitled-1og (1).jpg',
+                      'assets/images/logo.jpg',
                       width: 250, // Optional width for better image size on web
                       height: 250, // Optional height for better image size on web
                       fit: BoxFit.cover, // To adjust the image aspect ratio

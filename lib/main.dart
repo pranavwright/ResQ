@@ -114,7 +114,7 @@ class MyApp extends StatelessWidget {
       initialRoute: initialRoute,
 
       routes: {
-        '/': (context) => AuthRoute(requiresAuth: false, child: MainHome()),
+        '/': (context) => AuthRoute(requiresAuth: false, child: SuperAdminDashboard()),
 
         '/otp':
             (context) =>
