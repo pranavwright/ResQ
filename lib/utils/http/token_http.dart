@@ -16,14 +16,6 @@ class TokenHttp {
     };
   }
 
-  Future<Map<String, String>> _getFileHeaders() async {
-    final token = await AuthService().getToken() ?? "token";
-    return {
-      'Content-Type': 'multipart/form-data',
-      'Authorization': 'Bearer $token',
-    };
-  }
-
   Future<Map<String, dynamic>> get(String endpoint) async {
     final headers = await _getHeaders();
     final response = await http.get(

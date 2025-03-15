@@ -89,7 +89,7 @@ class AuthService {
 
       _token = token;
 
-      if (token != null && token.isNotEmpty) {
+      if (token != null && token.isNotEmpty && roles.isEmpty) {
         _isAuthenticated = true;
         _userRoles = rolesString?.split(',') ?? [];
         _userProfile = profile;
@@ -97,12 +97,14 @@ class AuthService {
         _isAuthenticated = false;
         _userRoles = [];
         _userProfile = null;
+        await _clearStorage();
       }
     } catch (e) {
       print('Error loading auth state: $e');
       _isAuthenticated = false;
       _userRoles = [];
       _userProfile = null;
+      await _clearStorage();
     }
   }
 

@@ -28,7 +28,7 @@ class AuthRoute extends StatelessWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.of(context).pushReplacementNamed(redirect!);
       });
-      return Container(); // Placeholder while redirecting
+      return Container(); 
     }
 
     if (requiresAuth && !isAuthenticated) {
@@ -36,7 +36,7 @@ class AuthRoute extends StatelessWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.of(context).pushReplacementNamed(kIsWeb ? '/' : '/otp');
       });
-      return Container(); // Placeholder while redirecting
+      return Container(); 
     }
 
     if (requiredRoles != null && requiredRoles!.isNotEmpty) {
