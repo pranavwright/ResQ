@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:resq/downloading.dart';
 import 'package:resq/home.dart';
+import 'package:resq/screens/IdCard.dart';
 import 'package:resq/screens/add_members.dart';
 import 'package:resq/screens/agriculture.dart';
 import 'package:resq/screens/assistance_support.dart';
@@ -93,12 +94,12 @@ class MyApp extends StatelessWidget {
     final isAuthenticated = authService.isAuthenticated;
     List<String> roles = authService.getCurrentUserRoles() ?? [];
 
-    String initialRoute =
-        isAuthenticated
-            ? '/profile-setup'
-            : kIsWeb
-            ? '/'
-            : '/otp';
+    String initialRoute = '/';
+        // isAuthenticated
+        //     ? '/profile-setup'
+        //     : kIsWeb
+        //     ? '/'
+        //     : '/otp';
 
     print(initialRoute);
 
@@ -114,11 +115,11 @@ class MyApp extends StatelessWidget {
       initialRoute: initialRoute,
 
       routes: {
-        '/': (context) => AuthRoute(requiresAuth: false, child: SuperAdminDashboard()),
+        '/': (context) => AuthRoute(requiresAuth: false, child: IDCardScreen()),
 
         '/otp':
             (context) =>
-                const AuthRoute(requiresAuth: false, child: OtpScreen()),
+                 AuthRoute(requiresAuth: false, child: SuperAdminDashboard()),
         '/app':
             (context) => AuthRoute(
               requiredRoles: [
