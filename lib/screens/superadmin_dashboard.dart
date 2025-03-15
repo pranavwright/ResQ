@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:resq/screens/login_screen.dart';
 import 'package:resq/utils/auth/auth_service.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:resq/services/apk_service.dart';
 
 void main() {
   runApp(DisasterManagementApp());
@@ -730,6 +732,98 @@ class DisasterManagementScreen extends StatelessWidget {
     );
   }
 }
+
+// Add after DisasterManagementScreen build method (around line 522)
+class ApkUploadSection extends StatefulWidget {
+  @override
+  _ApkUploadSectionState createState() => _ApkUploadSectionState();
+}
+
+// Add after DisasterManagementScreen build method (around line 522)
+class _ApkUploadSectionState extends State<ApkUploadSection> {
+  final ApkService _apkService = ApkService();
+  bool _isUploading = false;
+  String? _selectedFileName;
+
+  Future<void> _pickAndUploadApk() async {
+    try {
+      setState(() => _isUploading = true);
+
+      // Pick file
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['apk'],
+        allowMultiple: false,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.first;
+        final fileName = 'resq-v${DateTime.now().millisecondsSinceEpoch}.apk';
+
+        // Upload APK
+        final downloadUrl = await _apkService.uploadApk(
+          fileName,
+          file.bytes!,
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('APK uploaded successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        setState(() => _selectedFileName = file.name);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error uploading APK: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isUploading = false);
+    }
+  }
+   @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'App Version Management',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            if (_selectedFileName != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(
+                  'Selected file: $_selectedFileName',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ),
+            ElevatedButton.icon(
+              onPressed: _isUploading ? null : _pickAndUploadApk,
+              icon: Icon(_isUploading ? Icons.hourglass_empty : Icons.upload_file),
+              label: Text(_isUploading ? 'Uploading...' : 'Upload New APK'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 
 class DisasterDetailScreen extends StatelessWidget {
   final Disaster disaster;
