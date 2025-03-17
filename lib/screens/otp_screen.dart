@@ -157,9 +157,9 @@ class _OtpScreenState extends State<OtpScreen> {
       print("Saving auth state with token: $jwtToken and roles: $roles");
 
       await AuthService().login(jwtToken, roles);
-      // await AuthService().loadAuthState();
-      // final savedToken = await AuthService().getToken();
-      // print("Saved token: $savedToken");
+      await AuthService().loadAuthState();
+      final savedToken = await AuthService().getToken();
+      print("Saved token: $savedToken");
 
       if (!mounted) return;
 

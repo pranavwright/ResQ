@@ -34,19 +34,19 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
     try {
       final result = await Connectivity().checkConnectivity();
       setState(() => _isConnected = result != ConnectivityResult.none);
-      
+
       // Subscribe to connectivity changes with debounce
       _subscription = Connectivity().onConnectivityChanged.listen((result) {
         if (mounted) {
           setState(() => _isConnected = result != ConnectivityResult.none);
-          
+
           if (_isConnected && _hasShownDisconnectedMessage) {
             _hasShownDisconnectedMessage = false;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Connection restored')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Connection restored')));
           }
-          
+
           if (!_isConnected) {
             _hasShownDisconnectedMessage = true;
             // Store current route when disconnecting
@@ -64,18 +64,22 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return _isConnected 
-        ? widget.child 
-        : NoNetworkScreen(
-            onRetry: () async {
-              final result = await Connectivity().checkConnectivity();
-              if (result != ConnectivityResult.none && mounted) {
-                setState(() => _isConnected = true);
-                if (_lastRoute.isNotEmpty) {
-                  Navigator.of(context).pushReplacementNamed(_lastRoute);
-                }
-              }
-            },
-          );
+    return MaterialApp(
+      debugShowCheckedModeBanner:false,
+      home:
+          _isConnected
+              ? widget.child
+              : NoNetworkScreen(
+                onRetry: () async {
+                  final result = await Connectivity().checkConnectivity();
+                  if (result != ConnectivityResult.none && mounted) {
+                    setState(() => _isConnected = true);
+                    if (_lastRoute.isNotEmpty) {
+                      Navigator.of(context).pushReplacementNamed(_lastRoute);
+                    }
+                  }
+                },
+              ),
+    );
   }
 }

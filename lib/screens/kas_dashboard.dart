@@ -2,26 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
-void main() {
-  runApp(const MyApp());
-}
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'KAS Dashboard',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.grey[100],
-      ),
-      home: const KasDashboard(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
-}
 
 class KasDashboard extends StatefulWidget {
   const KasDashboard({super.key});

@@ -1,26 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Volunteer Dashboard',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.grey[100],
-      ),
-      home: const VolunteerDashboard(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
-}
 
 class VolunteerDashboard extends StatefulWidget {
   const VolunteerDashboard({super.key});

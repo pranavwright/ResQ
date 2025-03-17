@@ -105,7 +105,7 @@ class AuthService {
         _isAuthenticated = false;
         _userRoles = [];
         _userProfile = null;
-        await _clearStorage();
+        // await _clearStorage();
         return;
       }
       
@@ -116,7 +116,7 @@ class AuthService {
         _isAuthenticated = false;
         _userRoles = [];
         _userProfile = null;
-        await _clearStorage();
+        // await _clearStorage();
         return;
       }
       

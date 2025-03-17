@@ -96,14 +96,17 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   Widget getDashboardForRole(List<String> roles) {
-    if (roles.contains('superAdmin')) return SuperAdminDashboard();
-    if (roles.contains('admin')) return AdminDashboard();
-    if (roles.contains('stat')) return DashboardScreen();
-    if (roles.contains('kas')) return KasDashboard();
-    if (roles.contains('collectionpointadmin'))
+    final authService = AuthService();
+    final userRoles = authService.getCurrentUserRoles();
+    if (userRoles.contains('superAdmin')) return SuperAdminDashboard();
+    if (userRoles.contains('admin')) return AdminDashboard();
+    if (userRoles.contains('stat')) return DashboardScreen();
+    if (userRoles.contains('kas')) return KasDashboard();
+    if (userRoles.contains('collectionpointadmin'))
       return CollectionPointDashboard();
-    if (roles.contains('campadmin')) return CampAdminRequestScreen();
-    if (roles.contains('collectionpointvolunteer')) return VolunteerDashboard();
+    if (userRoles.contains('campadmin')) return CampAdminRequestScreen();
+    if (userRoles.contains('collectionpointvolunteer'))
+      return VolunteerDashboard();
     return RedirectWidget(route: '/otp');
   }
 
@@ -122,11 +125,11 @@ class MyApp extends StatelessWidget {
 
     return ConnectivityWrapper(
       child: MaterialApp(
-        debugShowCheckedModeBanner: false,
         theme: ThemeData(
           primarySwatch: Colors.blue,
           primaryColor: _getPrimaryColor(),
         ),
+        debugShowCheckedModeBanner: false,
         initialRoute: initialRoute,
         routes: {
           '/no-network':
@@ -153,7 +156,7 @@ class MyApp extends StatelessWidget {
                   'campadmin',
                   'collectionpointvolunteer',
                 ],
-                child: getDashboardForRole(roles ?? authService.getCurrentUserRoles() ?? []),
+                child: getDashboardForRole(roles),
               ),
           '/disaster':
               (context) =>

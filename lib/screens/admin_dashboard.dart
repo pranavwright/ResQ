@@ -8,27 +8,6 @@ import 'family_data_download.dart';
 import 'login_screen.dart';
 import '../utils/auth/auth_service.dart';
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Admin Dashboard',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.grey[100],
-      ),
-      home: const AdminDashboard(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
-}
-
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
 
