@@ -15,18 +15,18 @@ class _OtpScreenState extends State<OtpScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final phoneController = TextEditingController();
   final otpController = TextEditingController();
-  
+
   bool _isOtpSent = false;
   String _verificationId = '';
   bool _isLoading = false;
-  
+
   @override
   void dispose() {
     phoneController.dispose();
     otpController.dispose();
     super.dispose();
   }
-  
+
   // Send OTP via Firebase
   Future<void> _sendOtp() async {
     if (phoneController.text.trim().isEmpty) {
@@ -35,10 +35,9 @@ class _OtpScreenState extends State<OtpScreen> {
       );
       return;
     }
-    
+
     setState(() => _isLoading = true);
-    
-    
+
     try {
       // Format phone number with + if not present
       String phoneNumber = phoneController.text.trim();
@@ -48,18 +47,16 @@ class _OtpScreenState extends State<OtpScreen> {
 
       print(phoneNumber);
 
-
-      await AuthHttp().checkPhoneNumber(phoneNumber: phoneNumber).then((res){
-        if(!res['success']){
+      await AuthHttp().checkPhoneNumber(phoneNumber: phoneNumber).then((res) {
+        if (!res['success']) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Phone number not exists')),
           );
-         setState(() => _isLoading = true);
-         return;
+          setState(() => _isLoading = true);
+          return;
         }
       });
 
-      
       await _auth.verifyPhoneNumber(
         phoneNumber: phoneNumber,
         verificationCompleted: (PhoneAuthCredential credential) async {
@@ -79,13 +76,13 @@ class _OtpScreenState extends State<OtpScreen> {
             await tokenLessHttp.post('/auth/otpSent', {
               'phoneNumber': phoneNumber,
               'timestamp': DateTime.now().toIso8601String(),
-              'verificationId' : verificationId
+              'verificationId': verificationId,
             });
           } catch (e) {
             // Non-critical error, continue with flow
             print('Failed to notify API of OTP sent: $e');
           }
-          
+
           setState(() {
             _verificationId = verificationId;
             _isOtpSent = true;
@@ -100,143 +97,139 @@ class _OtpScreenState extends State<OtpScreen> {
       );
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error sending OTP: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error sending OTP: $e')));
     }
   }
-  
+
   // Verify OTP and sign in
   Future<void> _verifyOtp() async {
     if (otpController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter the OTP')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter the OTP')));
       return;
     }
-    
+
     setState(() => _isLoading = true);
-    
+
     try {
       // Create credential - Using PhoneAuthProvider instead of AuthService
       PhoneAuthCredential credential = PhoneAuthProvider.credential(
         verificationId: _verificationId,
         smsCode: otpController.text.trim(),
       );
-      
+
       await _signInWithCredential(credential);
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('OTP verification failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('OTP verification failed: $e')));
     }
   }
-  
+
   // Sign in with credential and verify with backend
-  
-Future<void> _signInWithCredential(PhoneAuthCredential credential) async {
-  try {
-    final userCredential = await _auth.signInWithCredential(credential);
-    
-    final firebaseToken = await userCredential.user?.getIdToken();
-    
-    if (firebaseToken == null) {
-      throw Exception('Failed to get Firebase token');
-    }
-    
-    final tokenLessHttp = TokenLessHttp();
-    final response = await tokenLessHttp.post('/auth/verifyFirebaseToken', {
-      'firebaseToken': firebaseToken, 
-    });
-    
-    if (response['jwtToken'] == null) {
-      throw Exception('Invalid response from server: JWT token is missing');
-    }
-    
-    final jwtToken = response['jwtToken'];
-    final roles = List<String>.from(response['roles'] ?? []);
-    
-    print("Saving auth state with token: $jwtToken and roles: $roles");
-    
-    await AuthService().login(jwtToken, roles);
-    
-    final savedToken = await AuthService().getToken();
-    print("Saved token: $savedToken");
-    
-    if (!mounted) return;
-    
-    final hasPhoto = response['photoUrl'] != null && response['photoUrl'] != '';
-    if (hasPhoto) {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/app',
-        (route) => false,
-      );
-    } else {
+
+  Future<void> _signInWithCredential(PhoneAuthCredential credential) async {
+    try {
+      final userCredential = await _auth.signInWithCredential(credential);
+
+      final firebaseToken = await userCredential.user?.getIdToken();
+
+      if (firebaseToken == null) {
+        throw Exception('Failed to get Firebase token');
+      }
+
+      final tokenLessHttp = TokenLessHttp();
+      final response = await tokenLessHttp.post('/auth/verifyFirebaseToken', {
+        'firebaseToken': firebaseToken,
+      });
+
+      if (response['jwtToken'] == null) {
+        throw Exception('Invalid response from server: JWT token is missing');
+      }
+
+      final jwtToken = response['jwtToken'];
+      final roles = List<String>.from(response['roles'] ?? []);
+
+      print("Saving auth state with token: $jwtToken and roles: $roles");
+
+      await AuthService().login(jwtToken, roles);
+      await AuthService().loadAuthState();
+      final savedToken = await AuthService().getToken();
+      print("Saved token: $savedToken");
+
+      if (!mounted) return;
+
+      final hasPhoto =
+          response['photoUrl'] != null && response['photoUrl'] != '';
+
       Navigator.pushNamedAndRemoveUntil(
         context,
         '/profile-setup',
         (route) => false,
       );
+    } catch (e) {
+      print("Authentication error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Authentication failed: $e')));
+      }
+      setState(() => _isLoading = false);
     }
-  } catch (e) {
-    print("Authentication error: $e");
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Authentication failed: $e')),
-      );
-    }
-    setState(() => _isLoading = false);
   }
-}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-  title: Text(_isOtpSent ? 'Verify OTP' : 'Phone Login'),
-  centerTitle: true,
-  automaticallyImplyLeading: false, // Removes the back button
-),
+        title: Text(_isOtpSent ? 'Verify OTP' : 'Phone Login'),
+        centerTitle: true,
+        automaticallyImplyLeading: false, // Removes the back button
+      ),
 
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
-          child: _isLoading 
-            ? const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(40.0),
-                  child: CircularProgressIndicator(),
-                ),
-              )
-            : _isOtpSent ? _buildOtpInput() : _buildPhoneInput(),
+          child:
+              _isLoading
+                  ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(40.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                  : _isOtpSent
+                  ? _buildOtpInput()
+                  : _buildPhoneInput(),
         ),
       ),
     );
   }
-  
+
   // Phone number input screen
   Widget _buildPhoneInput() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         SizedBox(height: 40),
-        
+
         // Image.asset(
         //   '../assets/images/resq_logo.jpg',
         //   height: 100,
         //   width: 100,
         // ),
-        
+
         // SizedBox(height: 30),
-        
         Text(
           'Enter Phone Number',
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 15),
-        
+
         TextField(
           controller: phoneController,
           keyboardType: TextInputType.phone,
@@ -247,26 +240,17 @@ Future<void> _signInWithCredential(PhoneAuthCredential credential) async {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    '+91 ',
-                    style: TextStyle(fontSize: 16),
-                  ),
+                  Text('+91 ', style: TextStyle(fontSize: 16)),
                   SizedBox(width: 8),
-                  Container(
-                    height: 24,
-                    width: 1,
-                    color: Colors.grey,
-                  )
+                  Container(height: 24, width: 1, color: Colors.grey),
                 ],
               ),
             ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           ),
         ),
         SizedBox(height: 30),
-        
+
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
@@ -277,25 +261,22 @@ Future<void> _signInWithCredential(PhoneAuthCredential credential) async {
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: Text(
-              'Send OTP',
-              style: TextStyle(fontSize: 18),
-            ),
+            child: Text('Send OTP', style: TextStyle(fontSize: 18)),
           ),
         ),
-        
+
         SizedBox(height: 40),
       ],
     );
   }
-  
+
   // OTP input screen
   Widget _buildOtpInput() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         SizedBox(height: 40),
-        
+
         Text(
           'Enter OTP',
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
@@ -305,7 +286,7 @@ Future<void> _signInWithCredential(PhoneAuthCredential credential) async {
           style: TextStyle(fontSize: 16, color: Colors.grey),
         ),
         SizedBox(height: 15),
-        
+
         TextField(
           controller: otpController,
           keyboardType: TextInputType.number,
@@ -314,14 +295,12 @@ Future<void> _signInWithCredential(PhoneAuthCredential credential) async {
           style: TextStyle(fontSize: 24, letterSpacing: 8),
           decoration: InputDecoration(
             hintText: '000000',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
             counterText: '',
           ),
         ),
         SizedBox(height: 30),
-        
+
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
@@ -332,13 +311,10 @@ Future<void> _signInWithCredential(PhoneAuthCredential credential) async {
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: Text(
-              'Verify & Continue',
-              style: TextStyle(fontSize: 18),
-            ),
+            child: Text('Verify & Continue', style: TextStyle(fontSize: 18)),
           ),
         ),
-        
+
         TextButton(
           onPressed: () {
             setState(() {
@@ -348,15 +324,15 @@ Future<void> _signInWithCredential(PhoneAuthCredential credential) async {
           },
           child: Text('Change Phone Number'),
         ),
-        
+
         SizedBox(height: 20),
-        
+
         TextButton.icon(
           onPressed: _sendOtp,
           icon: Icon(Icons.refresh),
           label: Text('Resend OTP'),
         ),
-        
+
         SizedBox(height: 40),
       ],
     );

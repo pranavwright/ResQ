@@ -72,6 +72,22 @@ void main() async {
   print("User roles: ${authService.userRoles}");
   runApp(const MyApp());
 }
+class RedirectWidget extends StatelessWidget {
+  final String route;
+  
+  const RedirectWidget({Key? key, required this.route}) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context) {
+    // Redirect after the widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Navigator.of(context).pushReplacementNamed(route);
+    });
+    
+    // Return an empty container while redirecting
+    return Container();
+  }
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -81,10 +97,11 @@ class MyApp extends StatelessWidget {
     if (roles.contains('admin')) return AdminDashboard();
     if (roles.contains('stat')) return DashboardScreen();
     if (roles.contains('kas')) return KasDashboard();
-    if (roles.contains('collectionpointadmin')) return CollectionPointDashboard();
+    if (roles.contains('collectionpointadmin'))
+      return CollectionPointDashboard();
     if (roles.contains('campadmin')) return CampAdminRequestScreen();
     if (roles.contains('collectionpointvolunteer')) return VolunteerDashboard();
-    return Home();
+    return RedirectWidget(route: '/otp');
   }
 
   @override
@@ -100,8 +117,6 @@ class MyApp extends StatelessWidget {
             ? '/'
             : '/otp';
 
-    print(initialRoute);
-
     return MaterialApp(
       debugShowCheckedModeBanner: false,
 
@@ -114,7 +129,7 @@ class MyApp extends StatelessWidget {
       initialRoute: initialRoute,
 
       routes: {
-        '/': (context) => AuthRoute(requiresAuth: false, child: SuperAdminDashboard()),
+        '/': (context) => AuthRoute(requiresAuth: false, child: MainHome()),
 
         '/otp':
             (context) =>

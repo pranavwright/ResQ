@@ -52,6 +52,12 @@ class AuthRoute extends StatelessWidget {
         return Container(); // Placeholder while redirecting
       }
     }
+    if(isAuthenticated && ModalRoute.of(context)?.settings.name == '/otp'){
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushReplacementNamed('/app');
+      });
+      return Container();
+    }
 
     return child;
   }
