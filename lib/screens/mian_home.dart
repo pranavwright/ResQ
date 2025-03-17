@@ -88,7 +88,7 @@ class MainHome extends StatelessWidget {
                         ),
                         padding: EdgeInsets.all(8),
                         child: Image.asset(
-                          'images/logo.jpg',
+                          'assets/images/logo.jpg',
                           errorBuilder: (context, error, stackTrace) {
                             print('Error loading logo: $error');
                             return Icon(

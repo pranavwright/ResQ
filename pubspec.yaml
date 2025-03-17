@@ -52,7 +52,7 @@ dependencies:
 
   # URL Handling
   url_launcher: ^6.1.14
-
+  connectivity_plus: ^5.0.2
   # Excel Handling
   syncfusion_flutter_xlsio: ^28.2.11
   path_provider: ^2.1.2

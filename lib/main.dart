@@ -4,6 +4,7 @@ import 'package:resq/home.dart';
 import 'package:resq/screens/add_members.dart';
 import 'package:resq/screens/agriculture.dart';
 import 'package:resq/screens/assistance_support.dart';
+import 'package:resq/screens/connectivity_wrapper.dart';
 import 'package:resq/screens/education_livielhoood.dart';
 import 'package:resq/screens/emp_status.dart';
 import 'package:resq/screens/foodand_health.dart';
@@ -12,6 +13,7 @@ import 'package:resq/screens/incom_andlose.dart';
 import 'package:resq/screens/items_list.dart';
 import 'package:resq/screens/kudumbasree.dart';
 import 'package:resq/screens/mian_home.dart';
+import 'package:resq/screens/no_network_screen.dart';
 import 'package:resq/screens/otp_screen.dart';
 import 'package:resq/screens/personal_loan.dart';
 import 'package:resq/screens/shelter.dart';
@@ -72,18 +74,19 @@ void main() async {
   print("User roles: ${authService.userRoles}");
   runApp(const MyApp());
 }
+
 class RedirectWidget extends StatelessWidget {
   final String route;
-  
+
   const RedirectWidget({Key? key, required this.route}) : super(key: key);
-  
+
   @override
   Widget build(BuildContext context) {
     // Redirect after the widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Navigator.of(context).pushReplacementNamed(route);
     });
-    
+
     // Return an empty container while redirecting
     return Container();
   }
@@ -117,143 +120,149 @@ class MyApp extends StatelessWidget {
             ? '/'
             : '/otp';
 
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
+    return ConnectivityWrapper(
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          primaryColor: _getPrimaryColor(),
+        ),
+        initialRoute: initialRoute,
+        routes: {
+          '/no-network':
+              (context) => NoNetworkScreen(
+                onRetry:
+                    () => Navigator.of(
+                      context,
+                    ).pushReplacementNamed(initialRoute),
+              ),
 
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+          '/': (context) => AuthRoute(requiresAuth: false, child: MainHome()),
 
-        primaryColor: _getPrimaryColor(),
+          '/otp':
+              (context) =>
+                  const AuthRoute(requiresAuth: false, child: OtpScreen()),
+          '/app':
+              (context) => AuthRoute(
+                requiredRoles: [
+                  'stat',
+
+                  'admin',
+
+                  'kas',
+
+                  'superAdmin',
+
+                  'collectionpointadmin',
+
+                  'campadmin',
+
+                  'collectionpointvolunteer',
+                ],
+
+                child: getDashboardForRole(roles),
+              ),
+          '/disaster':
+              (context) =>
+                  const AuthRoute(requiresAuth: false, child: ItemsList()),
+          '/download':
+              (context) =>
+                  const AuthRoute(requiresAuth: false, child: Downloading()),
+
+          '/families':
+              (context) => const AuthRoute(
+                requiredRoles: ['admin', 'familySurvey'],
+
+                child: FamiliesScreen(),
+              ),
+
+          '/camp-status':
+              (context) => const AuthRoute(
+                requiredRoles: ['admin', 'campadmin'],
+
+                child: CampStatusScreen(),
+              ),
+
+          '/notice-board':
+              (context) => const AuthRoute(
+                requiredRoles: ['admin'],
+
+                child: RoleCreationScreen(),
+              ),
+
+          '/create-notice':
+              (context) => const AuthRoute(
+                requiredRoles: ['admin'],
+
+                child: CreateNoticeScreen(),
+              ),
+
+          '/home':
+              (context) => const AuthRoute(requiresAuth: false, child: Home()),
+
+          '/public-donation': (context) => DonationRequestPage(),
+
+          '/foodand-health': (context) => FoodandHealth(),
+
+          '/shelter': (context) => Shelter(),
+
+          '/education-livilehood': (context) => EducationLivielhoood(),
+
+          '/agriculture': (context) => Agriculture(),
+
+          '/social': (context) => Social(),
+
+          '/personal-loan': (context) => PersonalLoan(),
+
+          '/special': (context) => SpecialCategory(),
+
+          '/kudumbasree': (context) => Kudumbasree(),
+
+          '/assistance': (context) => AssistanceSupport(),
+
+          '/incomandlose': (context) => IncomAndlose(),
+
+          '/emp-status': (context) => EmpStatus(),
+
+          '/add-members': (context) => AddMembers(),
+
+          '/helthnew': (context) => HealthNew(),
+
+          '/skill': (context) => Skill(),
+
+          '/root': (context) => Home(),
+
+          '/add-famili': (context) => AddFamilies(),
+
+          '/profile-setup':
+              (context) => AuthRoute(
+                requiresAuth: true,
+                // redirect: isProfileCompleted ? '/app' : null,
+                child: ProfileSetupScreen(),
+              ),
+          '/loan-relief':
+              (context) => AuthRoute(
+                requiredRoles: ['admin', 'kas', 'superadmin', 'campadmin'],
+                child:
+                    loan_relief.LoanReliefUploadScreen(), // Add the prefix here
+              ),
+          '/test-family': (context) => FamilyDataScreen(),
+          '/test-collectionpoint': (context) => CollectionPointDashboard(),
+          '/test-statistics': (context) => DashboardScreen(),
+          '/test-profile': (context) => ProfileUpdateScreen(),
+          '/donations': (context) => const DonationsScreen(),
+          '/verification-volunteer':
+              (context) => const VerificationVolunteerDashboard(),
+        },
+
+        onUnknownRoute:
+            (settings) => MaterialPageRoute(
+              builder:
+                  (context) => const Scaffold(
+                    body: Center(child: Text('404 - Page Not Found')),
+                  ),
+            ),
       ),
-
-      initialRoute: initialRoute,
-
-      routes: {
-        '/': (context) => AuthRoute(requiresAuth: false, child: MainHome()),
-
-        '/otp':
-            (context) =>
-                const AuthRoute(requiresAuth: false, child: OtpScreen()),
-        '/app':
-            (context) => AuthRoute(
-              requiredRoles: [
-                'stat',
-
-                'admin',
-
-                'kas',
-
-                'superAdmin',
-
-                'collectionpointadmin',
-
-                'campadmin',
-
-                'collectionpointvolunteer',
-              ],
-
-              child: getDashboardForRole(roles),
-            ),
-        '/disaster':
-            (context) =>
-                const AuthRoute(requiresAuth: false, child: ItemsList()),
-        '/download':
-            (context) =>
-                const AuthRoute(requiresAuth: false, child: Downloading()),
-
-        '/families':
-            (context) => const AuthRoute(
-              requiredRoles: ['admin', 'familySurvey'],
-
-              child: FamiliesScreen(),
-            ),
-
-        '/camp-status':
-            (context) => const AuthRoute(
-              requiredRoles: ['admin', 'campadmin'],
-
-              child: CampStatusScreen(),
-            ),
-
-        '/notice-board':
-            (context) => const AuthRoute(
-              requiredRoles: ['admin'],
-
-              child: RoleCreationScreen(),
-            ),
-
-        '/create-notice':
-            (context) => const AuthRoute(
-              requiredRoles: ['admin'],
-
-              child: CreateNoticeScreen(),
-            ),
-
-        '/home':
-            (context) => const AuthRoute(requiresAuth: false, child: Home()),
-
-        '/public-donation': (context) => DonationRequestPage(),
-
-        '/foodand-health': (context) => FoodandHealth(),
-
-        '/shelter': (context) => Shelter(),
-
-        '/education-livilehood': (context) => EducationLivielhoood(),
-
-        '/agriculture': (context) => Agriculture(),
-
-        '/social': (context) => Social(),
-
-        '/personal-loan': (context) => PersonalLoan(),
-
-        '/special': (context) => SpecialCategory(),
-
-        '/kudumbasree': (context) => Kudumbasree(),
-
-        '/assistance': (context) => AssistanceSupport(),
-
-        '/incomandlose': (context) => IncomAndlose(),
-
-        '/emp-status': (context) => EmpStatus(),
-
-        '/add-members': (context) => AddMembers(),
-
-        '/helthnew': (context) => HealthNew(),
-
-        '/skill': (context) => Skill(),
-
-        '/root': (context) => Home(),
-
-        '/add-famili': (context) => AddFamilies(),
-
-        '/profile-setup':
-            (context) => AuthRoute(
-              requiresAuth: true,
-              // redirect: isProfileCompleted ? '/app' : null,
-              child: ProfileSetupScreen(),
-            ),
-        '/loan-relief':
-            (context) => AuthRoute(
-              requiredRoles: ['admin', 'kas', 'superadmin', 'campadmin'],
-              child:
-                  loan_relief.LoanReliefUploadScreen(), // Add the prefix here
-            ),
-        '/test-family': (context) => FamilyDataScreen(),
-        '/test-collectionpoint': (context) => CollectionPointDashboard(),
-        '/test-statistics': (context) => DashboardScreen(),
-        '/test-profile': (context) => ProfileUpdateScreen(),
-        '/donations': (context) => const DonationsScreen(),
-        '/verification-volunteer':
-            (context) => const VerificationVolunteerDashboard(),
-      },
-
-      onUnknownRoute:
-          (settings) => MaterialPageRoute(
-            builder:
-                (context) => const Scaffold(
-                  body: Center(child: Text('404 - Page Not Found')),
-                ),
-          ),
     );
   }
 
