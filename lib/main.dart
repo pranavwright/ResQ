@@ -146,21 +146,14 @@ class MyApp extends StatelessWidget {
               (context) => AuthRoute(
                 requiredRoles: [
                   'stat',
-
                   'admin',
-
                   'kas',
-
                   'superAdmin',
-
                   'collectionpointadmin',
-
                   'campadmin',
-
                   'collectionpointvolunteer',
                 ],
-
-                child: getDashboardForRole(roles),
+                child: getDashboardForRole(roles ?? authService.getCurrentUserRoles() ?? []),
               ),
           '/disaster':
               (context) =>

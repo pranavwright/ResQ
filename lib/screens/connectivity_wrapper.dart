@@ -1,56 +1,81 @@
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import '../../screens/no_network_screen.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'dart:async';
+import 'no_network_screen.dart';
 
 class ConnectivityWrapper extends StatefulWidget {
   final Widget child;
-
   const ConnectivityWrapper({Key? key, required this.child}) : super(key: key);
 
   @override
-  _ConnectivityWrapperState createState() => _ConnectivityWrapperState();
+  State<ConnectivityWrapper> createState() => _ConnectivityWrapperState();
 }
 
 class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
   bool _isConnected = true;
-  late final Connectivity _connectivity;
-  
+  late StreamSubscription<ConnectivityResult> _subscription;
+  bool _hasShownDisconnectedMessage = false;
+  String _lastRoute = '/';
+
   @override
   void initState() {
     super.initState();
-    _connectivity = Connectivity();
-    
-    // Check connectivity initially
-    _checkConnectivity();
-    
-    // Listen for connectivity changes
-    _connectivity.onConnectivityChanged.listen(_updateConnectionStatus);
+    _initConnectivity();
   }
 
-  Future<void> _checkConnectivity() async {
-    try {
-      final result = await _connectivity.checkConnectivity();
-      _updateConnectionStatus(result);
-    } catch (e) {
-      print('Error checking connectivity: $e');
-      setState(() => _isConnected = false);
-    }
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
   }
-  
-  void _updateConnectionStatus(ConnectivityResult result) {
-    print('Connectivity status changed: $result');
-    setState(() {
-      _isConnected = result != ConnectivityResult.none;
-    });
+
+  // Check connectivity with debounce to avoid rapid state changes
+  Future<void> _initConnectivity() async {
+    try {
+      final result = await Connectivity().checkConnectivity();
+      setState(() => _isConnected = result != ConnectivityResult.none);
+      
+      // Subscribe to connectivity changes with debounce
+      _subscription = Connectivity().onConnectivityChanged.listen((result) {
+        if (mounted) {
+          setState(() => _isConnected = result != ConnectivityResult.none);
+          
+          if (_isConnected && _hasShownDisconnectedMessage) {
+            _hasShownDisconnectedMessage = false;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Connection restored')),
+            );
+          }
+          
+          if (!_isConnected) {
+            _hasShownDisconnectedMessage = true;
+            // Store current route when disconnecting
+            final currentRoute = ModalRoute.of(context)?.settings.name;
+            if (currentRoute != null && currentRoute != '/no-network') {
+              _lastRoute = currentRoute;
+            }
+          }
+        }
+      });
+    } catch (e) {
+      print('Connectivity check error: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // If connected, show the main app, otherwise show the no network screen
     return _isConnected 
-      ? widget.child 
-      : NoNetworkScreen(
-          onRetry: _checkConnectivity,
-        );
+        ? widget.child 
+        : NoNetworkScreen(
+            onRetry: () async {
+              final result = await Connectivity().checkConnectivity();
+              if (result != ConnectivityResult.none && mounted) {
+                setState(() => _isConnected = true);
+                if (_lastRoute.isNotEmpty) {
+                  Navigator.of(context).pushReplacementNamed(_lastRoute);
+                }
+              }
+            },
+          );
   }
 }
