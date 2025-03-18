@@ -49,7 +49,7 @@ class _AddMembersState extends State<AddMembers> {
   void _goBack() {
     Navigator.pushNamedAndRemoveUntil(
       context,
-      '/otp',
+      '/add-famili',
       (route) => false,
     );
   }

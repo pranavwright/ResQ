@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:resq/downloading.dart';
-import 'package:resq/home.dart';
+import 'package:resq/screens/downloading.dart';
 import 'package:resq/screens/add_members.dart';
 import 'package:resq/screens/agriculture.dart';
 import 'package:resq/screens/assistance_support.dart';
 import 'package:resq/screens/connectivity_wrapper.dart';
 import 'package:resq/screens/education_livielhoood.dart';
 import 'package:resq/screens/emp_status.dart';
+import 'package:resq/screens/familysurvay_home.dart';
 import 'package:resq/screens/foodand_health.dart';
 import 'package:resq/screens/helthnew.dart';
 import 'package:resq/screens/incom_andlose.dart';
@@ -140,7 +140,7 @@ class MyApp extends StatelessWidget {
                     ).pushReplacementNamed(initialRoute),
               ),
 
-          '/': (context) => AuthRoute(requiresAuth: false, child: MainHome()),
+          '/': (context) => AuthRoute(requiresAuth: false, child: FamilysurvayHome()),
 
           '/otp':
               (context) =>
@@ -157,6 +157,11 @@ class MyApp extends StatelessWidget {
                   'collectionpointvolunteer',
                 ],
                 child: getDashboardForRole(roles),
+              ),
+          '/add-fam-home':
+              (context) => AuthRoute(
+                requiredRoles: ["familiySurvey"],
+                child: FamilysurvayHome(),
               ),
           '/disaster':
               (context) =>
@@ -193,9 +198,6 @@ class MyApp extends StatelessWidget {
                 child: CreateNoticeScreen(),
               ),
 
-          '/home':
-              (context) => const AuthRoute(requiresAuth: false, child: Home()),
-
           '/public-donation': (context) => DonationRequestPage(),
 
           '/foodand-health': (context) => FoodandHealth(),
@@ -225,8 +227,6 @@ class MyApp extends StatelessWidget {
           '/helthnew': (context) => HealthNew(),
 
           '/skill': (context) => Skill(),
-
-          '/root': (context) => Home(),
 
           '/add-famili': (context) => AddFamilies(),
 

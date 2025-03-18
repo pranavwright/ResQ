@@ -61,7 +61,7 @@ class _AddFamiliesState extends State<AddFamilies> {
           onPressed: () {
             Navigator.pushNamedAndRemoveUntil(
                   context,
-                  '/otp',
+                  '/add-fam-home',
                   (route) => false,
                 ); // Pops the current screen and goes back to the previous screen
           },

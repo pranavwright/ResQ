@@ -1,20 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:resq/screens/add_famili.dart';
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: const FamilysurvayHome(),
-    );
-  }
-}
 
 class FamilysurvayHome extends StatefulWidget {
   const FamilysurvayHome({super.key});
