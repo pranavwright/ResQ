@@ -1,16 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:resq/screens/a_section_screen.dart';
+import 'package:resq/screens/b_section_screen.dart';
+import 'package:resq/screens/c_section_screen.dart';
+import 'package:resq/screens/d_section_screen.dart';
 import 'package:resq/screens/downloading.dart';
 import 'package:resq/screens/add_members.dart';
 import 'package:resq/screens/agriculture.dart';
 import 'package:resq/screens/assistance_support.dart';
 import 'package:resq/screens/connectivity_wrapper.dart';
+import 'package:resq/screens/e_section_screen.dart';
 import 'package:resq/screens/education_livielhoood.dart';
 import 'package:resq/screens/emp_status.dart';
+import 'package:resq/screens/f_section_screen.dart';
 import 'package:resq/screens/familysurvay_home.dart';
 import 'package:resq/screens/foodand_health.dart';
+import 'package:resq/screens/g_section_screen.dart';
+import 'package:resq/screens/h_section_screen.dart';
 import 'package:resq/screens/helthnew.dart';
+import 'package:resq/screens/i_section_screen.dart';
 import 'package:resq/screens/incom_andlose.dart';
 import 'package:resq/screens/items_list.dart';
+import 'package:resq/screens/j_section_screen.dart';
+import 'package:resq/screens/k_section_screen.dart';
 import 'package:resq/screens/kudumbasree.dart';
 import 'package:resq/screens/mian_home.dart';
 import 'package:resq/screens/no_network_screen.dart';
@@ -140,7 +151,9 @@ class MyApp extends StatelessWidget {
                     ).pushReplacementNamed(initialRoute),
               ),
 
-          '/': (context) => AuthRoute(requiresAuth: false, child: FamilysurvayHome()),
+          '/':
+              (context) =>
+                  AuthRoute(requiresAuth: false, child: Familysurveyhome()),
 
           '/otp':
               (context) =>
@@ -161,7 +174,7 @@ class MyApp extends StatelessWidget {
           '/add-fam-home':
               (context) => AuthRoute(
                 requiredRoles: ["familiySurvey"],
-                child: FamilysurvayHome(),
+                child: Familysurveyhome(),
               ),
           '/disaster':
               (context) =>
@@ -249,6 +262,115 @@ class MyApp extends StatelessWidget {
           '/donations': (context) => const DonationsScreen(),
           '/verification-volunteer':
               (context) => const VerificationVolunteerDashboard(),
+          '/sectionA': (context) {
+            // Create a fresh data object to pass around for sections A–K
+            final data = NeedAssessmentData();
+            return AuthRoute(
+              requiresAuth: false, // or true, if you want to force login
+              child: ASectionScreen(data: data),
+            );
+          },
+
+          '/sectionB': (context) {
+            // Grab the same data from arguments
+            final data =
+                ModalRoute.of(context)!.settings.arguments
+                    as NeedAssessmentData;
+            return AuthRoute(
+              requiresAuth: false,
+              child: BSectionScreen(data: data),
+            );
+          },
+
+          '/sectionC': (context) {
+            final data =
+                ModalRoute.of(context)!.settings.arguments
+                    as NeedAssessmentData;
+            return AuthRoute(
+              requiresAuth: false,
+              child: CSectionScreen(data: data),
+            );
+          },
+
+          '/sectionD': (context) {
+            final data =
+                ModalRoute.of(context)!.settings.arguments
+                    as NeedAssessmentData;
+            return AuthRoute(
+              requiresAuth: false,
+              child: DSectionScreen(data: data),
+            );
+          },
+
+          '/sectionE': (context) {
+            final data =
+                ModalRoute.of(context)!.settings.arguments
+                    as NeedAssessmentData;
+            return AuthRoute(
+              requiresAuth: false,
+              child: ESectionScreen(data: data),
+            );
+          },
+
+          '/sectionF': (context) {
+            final data =
+                ModalRoute.of(context)!.settings.arguments
+                    as NeedAssessmentData;
+            return AuthRoute(
+              requiresAuth: false,
+              child: FSectionScreen(data: data),
+            );
+          },
+
+          '/sectionG': (context) {
+            final data =
+                ModalRoute.of(context)!.settings.arguments
+                    as NeedAssessmentData;
+            return AuthRoute(
+              requiresAuth: false,
+              child: GSectionScreen(data: data),
+            );
+          },
+
+          '/sectionH': (context) {
+            final data =
+                ModalRoute.of(context)!.settings.arguments
+                    as NeedAssessmentData;
+            return AuthRoute(
+              requiresAuth: false,
+              child: HSectionScreen(data: data),
+            );
+          },
+
+          '/sectionI': (context) {
+            final data =
+                ModalRoute.of(context)!.settings.arguments
+                    as NeedAssessmentData;
+            return AuthRoute(
+              requiresAuth: false,
+              child: ISectionScreen(data: data),
+            );
+          },
+
+          '/sectionJ': (context) {
+            final data =
+                ModalRoute.of(context)!.settings.arguments
+                    as NeedAssessmentData;
+            return AuthRoute(
+              requiresAuth: false,
+              child: JSectionScreen(data: data),
+            );
+          },
+
+          '/sectionK': (context) {
+            final data =
+                ModalRoute.of(context)!.settings.arguments
+                    as NeedAssessmentData;
+            return AuthRoute(
+              requiresAuth: false,
+              child: KSectionScreen(data: data),
+            );
+          },
         },
 
         onUnknownRoute:
