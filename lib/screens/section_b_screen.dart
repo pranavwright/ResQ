@@ -1,134 +1,247 @@
 import 'package:flutter/material.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
+import 'package:resq/screens/section_c_screen.dart';
 
-class BSectionScreen extends StatefulWidget {
+class ScreenB extends StatefulWidget {
   final NeedAssessmentData data;
 
-  const BSectionScreen({Key? key, required this.data}) : super(key: key);
+  ScreenB({required this.data});
 
   @override
-  State<BSectionScreen> createState() => _BSectionScreenState();
+  _ScreenBState createState() => _ScreenBState();
 }
 
-class _BSectionScreenState extends State<BSectionScreen> {
-  final TextEditingController anganwadiStatusController = TextEditingController();
-  final TextEditingController childrenMalnutritionStatusController = TextEditingController();
-  final TextEditingController foodSecurityAdditionalInfoController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    anganwadiStatusController.text = widget.data.anganwadiStatus;
-    childrenMalnutritionStatusController.text = widget.data.childrenMalnutritionStatus;
-    foodSecurityAdditionalInfoController.text = widget.data.foodSecurityAdditionalInfo;
-  }
-
-  void _goToNextSection() {
-    widget.data.anganwadiStatus = anganwadiStatusController.text;
-    widget.data.childrenMalnutritionStatus = childrenMalnutritionStatusController.text;
-    widget.data.foodSecurityAdditionalInfo = foodSecurityAdditionalInfoController.text;
-
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder: (context) => CSectionScreen(data: widget.data),
-    //   ),
-    // );
-  }
-
+class _ScreenBState extends State<ScreenB> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Section B - Food Security & Nutrition")),
+      appBar: AppBar(
+        title: Text('Section B: Livelihood and Assets'),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Food Security & Nutrition',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: anganwadiStatusController,
-              decoration: const InputDecoration(
-                labelText: '1. Is the Anganwadi damaged?',
-                hintText: 'Yes/No',
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                decoration: InputDecoration(labelText: 'Primary Occupation'),
+                initialValue: widget.data.primaryOccupation,
+                onChanged: (value) => widget.data.primaryOccupation = value,
               ),
-            ),
-            TextField(
-              controller: childrenMalnutritionStatusController,
-              decoration: const InputDecoration(
-                labelText: '2. Are there any children with malnutrition?',
-                hintText: 'Yes/No',
+              TextFormField(
+                decoration: InputDecoration(labelText: 'Secondary Occupation'),
+                initialValue: widget.data.secondaryOccupation,
+                onChanged: (value) => widget.data.secondaryOccupation = value,
               ),
-            ),
-            TextField(
-              controller: foodSecurityAdditionalInfoController,
-              decoration: const InputDecoration(
-                labelText: '3. Any other information related to food security?',
-                hintText: 'E.g., food distribution, storage issues, etc.',
+              TextFormField(
+                decoration: InputDecoration(labelText: 'Land Ownership (Acres)'),
+                initialValue: widget.data.agriculturalLandLossArea,
+                onChanged: (value) => widget.data.agriculturalLandLossArea = value,
+                keyboardType: TextInputType.number,
               ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Family Members:',
-              style: TextStyle(fontSize: 18),
-            ),
-            // Display members and allow editing
-            for (var i = 0; i < widget.data.members.length; i++)
-              MemberCard(index: i + 1, member: widget.data.members[i]),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _goToNextSection,
-              child: const Text('Next'),
-            ),
-          ],
+              TextFormField(
+                decoration: InputDecoration(labelText: 'House Type'),
+                initialValue: widget.data.shelterType,
+                onChanged: (value) => widget.data.shelterType = value,
+              ),
+              if (widget.data.shelterType == 'Others')
+                TextFormField(
+                  decoration: InputDecoration(labelText: 'Other House Type'),
+                  initialValue: widget.data.otherShelterType,
+                  onChanged: (value) => widget.data.otherShelterType = value,
+                ),
+              TextFormField(
+                decoration: InputDecoration(labelText: 'Livestock (if any)'),
+                initialValue: widget.data.animalHusbandryLossDetails,
+                onChanged: (value) => widget.data.animalHusbandryLossDetails = value,
+              ),
+              TextFormField(
+                decoration: InputDecoration(
+                    labelText: 'Assets (e.g., Vehicle, Machinery)'),
+                initialValue: widget.data.equipmentLossDetails,
+                onChanged: (value) => widget.data.equipmentLossDetails = value,
+              ),
+              TextFormField(
+                decoration: InputDecoration(labelText: 'Average Monthly Income'),
+                initialValue: widget.data.avgMonthlyFamilyIncome.toString(),
+                onChanged: (value) =>
+                    widget.data.avgMonthlyFamilyIncome = double.tryParse(value) ?? 0.0,
+                keyboardType: TextInputType.number,
+              ),
+
+              TextFormField(
+                decoration: InputDecoration(labelText: 'Debt (if any)'),
+                initialValue: widget.data.loanRepaymentPending,
+                onChanged: (value) => widget.data.loanRepaymentPending = value,
+              ),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                itemCount: widget.data.loanDetails.length,
+                itemBuilder: (context, index) {
+                  return LoanDetailInput(
+                    loanDetail: widget.data.loanDetails[index],
+                    onChanged: (updatedLoanDetail) {
+                      setState(() {
+                        widget.data.loanDetails[index] = updatedLoanDetail;
+                      });
+                    },
+                    onDelete: (){
+                      setState((){
+                        widget.data.loanDetails.removeAt(index);
+                      });
+                    },
+                  );
+                },
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    widget.data.loanDetails.add(
+                      LoanDetail(
+                        bankName: "",
+                        branch: "",
+                        accountNumber: "",
+                        loanCategory: "",
+                        loanAmount: "",
+                        loanOutstanding: "",
+                      ),
+                    );
+                  });
+                },
+                child: Text('Add Loan Details'),
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ScreenC(data: widget.data),
+                    ),
+                  );
+                },
+                child: Text('Next'),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class MemberCard extends StatelessWidget {
-  final int index;
-  final Member member;
+class LoanDetailInput extends StatelessWidget {
+  final LoanDetail loanDetail;
+  final Function(LoanDetail) onChanged;
+  final VoidCallback onDelete;
 
-  MemberCard({Key? key, required this.index, required this.member}) : super(key: key);
+  LoanDetailInput({
+    required this.loanDetail,
+    required this.onChanged,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 4,
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(8.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Member #$index',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.delete),
+                  onPressed: onDelete,
+                ),
+              ],
             ),
-            TextField(
-              controller: TextEditingController(text: member.name),
-              decoration: const InputDecoration(labelText: 'Name'),
+            TextFormField(
+              decoration: InputDecoration(labelText: 'Bank Name'),
+              initialValue: loanDetail.bankName,
+              onChanged: (value) {
+                onChanged(LoanDetail(
+                  bankName: value,
+                  branch: loanDetail.branch,
+                  accountNumber: loanDetail.accountNumber,
+                  loanCategory: loanDetail.loanCategory,
+                  loanAmount: loanDetail.loanAmount,
+                  loanOutstanding: loanDetail.loanOutstanding,
+                ));
+              },
             ),
-            TextField(
-              controller: TextEditingController(text: member.age),
-              decoration: const InputDecoration(labelText: 'Age'),
+            TextFormField(
+              decoration: InputDecoration(labelText: 'Branch'),
+              initialValue: loanDetail.branch,
+              onChanged: (value) {
+                onChanged(LoanDetail(
+                  bankName: loanDetail.bankName,
+                  branch: value,
+                  accountNumber: loanDetail.accountNumber,
+                  loanCategory: loanDetail.loanCategory,
+                  loanAmount: loanDetail.loanAmount,
+                  loanOutstanding: loanDetail.loanOutstanding,
+                ));
+              },
             ),
-            TextField(
-              controller: TextEditingController(text: member.relationship),
-              decoration: const InputDecoration(labelText: 'Relationship to Household Head'),
+            TextFormField(
+              decoration: InputDecoration(labelText: 'Account Number'),
+              initialValue: loanDetail.accountNumber,
+              onChanged: (value) {
+                onChanged(LoanDetail(
+                  bankName: loanDetail.bankName,
+                  branch: loanDetail.branch,
+                  accountNumber: value,
+                  loanCategory: loanDetail.loanCategory,
+                  loanAmount: loanDetail.loanAmount,
+                  loanOutstanding: loanDetail.loanOutstanding,
+                ));
+              },
             ),
-            TextField(
-              controller: TextEditingController(text: member.gender),
-              decoration: const InputDecoration(labelText: 'Gender'),
+            TextFormField(
+              decoration: InputDecoration(labelText: 'Loan Category'),
+              initialValue: loanDetail.loanCategory,
+              onChanged: (value) {
+                onChanged(LoanDetail(
+                  bankName: loanDetail.bankName,
+                  branch: loanDetail.branch,
+                  accountNumber: loanDetail.accountNumber,
+                  loanCategory: value,
+                  loanAmount: loanDetail.loanAmount,
+                  loanOutstanding: loanDetail.loanOutstanding,
+                ));
+              },
+            ),
+            TextFormField(
+              decoration: InputDecoration(labelText: 'Loan Amount'),
+              initialValue: loanDetail.loanAmount,
+              onChanged: (value) {
+                onChanged(LoanDetail(
+                  bankName: loanDetail.bankName,
+                  branch: loanDetail.branch,
+                  accountNumber: loanDetail.accountNumber,
+                  loanCategory: loanDetail.loanCategory,
+                  loanAmount: value,
+                  loanOutstanding: loanDetail.loanOutstanding,
+                ));
+              },
+            ),
+            TextFormField(
+              decoration: InputDecoration(labelText: 'Loan Outstanding'),
+              initialValue: loanDetail.loanOutstanding,
+              onChanged: (value) {
+                onChanged(LoanDetail(
+                  bankName: loanDetail.bankName,
+                  branch: loanDetail.branch,
+                  accountNumber: loanDetail.accountNumber,
+                  loanCategory: loanDetail.loanCategory,
+                  loanAmount: loanDetail.loanAmount,
+                  loanOutstanding: value,
+                ));
+              },
             ),
           ],
         ),

@@ -187,7 +187,7 @@ class MyApp extends StatelessWidget {
                 child: CreateNoticeScreen(),
               ),
 
-          '/public-donation': (context) => const AuthRoute(requiresAuth: false, child: DonationRequestPage()),
+          '/public-donation': (context) =>  AuthRoute(requiresAuth: false, child: DonationRequestPage()),
 
           '/profile-setup':
               (context) => AuthRoute(

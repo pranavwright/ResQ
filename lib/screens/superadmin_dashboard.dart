@@ -3,13 +3,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:resq/screens/login_screen.dart';
 import 'package:resq/utils/auth/auth_service.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:resq/services/apk_service.dart';
 import 'package:resq/utils/http/token_http.dart';
 import 'dart:io';
-
-void main() {
-  runApp(DisasterManagementApp());
-}
 
 class DisasterManagementApp extends StatelessWidget {
   @override

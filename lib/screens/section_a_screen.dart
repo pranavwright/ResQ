@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:path/path.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
+import 'package:resq/screens/section_b_screen.dart';
 
 class ScreenA extends StatefulWidget {
   final NeedAssessmentData data;
@@ -66,7 +68,11 @@ class _ScreenAState extends State<ScreenA> {
               TextFormField(
                 decoration: InputDecoration(labelText: 'Caste'),
                 initialValue: widget.data.caste,
-                onChanged: (value) => widget.data.caste = value,
+                onChanged: (value) {
+                  setState(() {
+                    widget.data.caste = value;
+                  });
+                },
               ),
               if (widget.data.caste == 'Other')
                 TextFormField(
@@ -91,6 +97,11 @@ class _ScreenAState extends State<ScreenA> {
                         widget.data.members[index] = updatedMember;
                       });
                     },
+                    onDelete: () {
+                      setState(() {
+                        widget.data.members.removeAt(index);
+                      });
+                    },
                   );
                 },
               ),
@@ -112,12 +123,12 @@ class _ScreenAState extends State<ScreenA> {
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
-                  //   Navigator.push(
-                  //     context,
-                  //     MaterialPageRoute(
-                  //       builder: (context) => ScreenB(data: widget.data),
-                  //     ),
-                  //   );
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ScreenB(data: widget.data),
+                    ),
+                  );
                 },
                 child: Text('Next'),
               ),
@@ -132,10 +143,12 @@ class _ScreenAState extends State<ScreenA> {
 class MemberInput extends StatelessWidget {
   final Member member;
   final Function(Member) onChanged;
+  final VoidCallback onDelete;
 
   MemberInput({
     required this.member,
     required this.onChanged,
+    required this.onDelete,
   });
 
   @override
@@ -145,6 +158,15 @@ class MemberInput extends StatelessWidget {
         padding: const EdgeInsets.all(8.0),
         child: Column(
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.delete),
+                  onPressed: onDelete,
+                ),
+              ],
+            ),
             TextFormField(
               decoration: InputDecoration(labelText: 'Name'),
               initialValue: member.name,
