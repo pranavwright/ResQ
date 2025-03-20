@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
-import 'package:resq/screens/section_h_screen.dart';
-// Assuming you have ScreenH defined elsewhere
-// import 'screen_h.dart';
+import 'package:resq/screens/section_h_screen.dart'; // Assuming you have ScreenH defined elsewhere
 
 class ScreenG extends StatefulWidget {
   final NeedAssessmentData data;
@@ -29,7 +27,7 @@ class _ScreenGState extends State<ScreenG> {
               // Special Category Yes/No Radio Buttons
               Row(
                 children: [
-                  Text('Special Category (Yes/No): '),
+                  Expanded(child: Text('Special Category (Yes/No):')),
                   Radio<String>(
                     value: 'Yes',
                     groupValue: widget.data.specialCategory,
@@ -52,7 +50,6 @@ class _ScreenGState extends State<ScreenG> {
                   Text('No'),
                 ],
               ),
-              
               // Show "Other Special Category" field only if "Yes" is selected
               if (widget.data.specialCategory == 'Yes')
                 TextFormField(
@@ -60,11 +57,11 @@ class _ScreenGState extends State<ScreenG> {
                   initialValue: widget.data.otherSpecialCategory,
                   onChanged: (value) => widget.data.otherSpecialCategory = value,
                 ),
-              
+
               // Kudumbashree Member Yes/No Radio Buttons
               Row(
                 children: [
-                  Text('Kudumbashree Member (Yes/No): '),
+                  Expanded(child: Text('Kudumbashree Member (Yes/No):')),
                   Radio<String>(
                     value: 'Yes',
                     groupValue: widget.data.kudumbashreeMember,
@@ -87,7 +84,6 @@ class _ScreenGState extends State<ScreenG> {
                   Text('No'),
                 ],
               ),
-
               if (widget.data.kudumbashreeMember == 'Yes')
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,11 +93,10 @@ class _ScreenGState extends State<ScreenG> {
                       initialValue: widget.data.kudumbashreeNHGName,
                       onChanged: (value) => widget.data.kudumbashreeNHGName = value,
                     ),
-                    
                     // Kudumbashree Internal Loan Yes/No Radio Buttons
                     Row(
                       children: [
-                        Text('Kudumbashree Internal Loan (Yes/No): '),
+                        Expanded(child: Text('Kudumbashree Internal Loan (Yes/No):')),
                         Radio<String>(
                           value: 'Yes',
                           groupValue: widget.data.kudumbashreeInternalLoan,
@@ -131,11 +126,10 @@ class _ScreenGState extends State<ScreenG> {
                         onChanged: (value) => widget.data.kudumbashreeInternalLoanAmount = double.tryParse(value) ?? 0.0,
                         keyboardType: TextInputType.number,
                       ),
-                    
                     // Kudumbashree Linkage Loan Yes/No Radio Buttons
                     Row(
                       children: [
-                        Text('Kudumbashree Linkage Loan (Yes/No): '),
+                        Expanded(child: Text('Kudumbashree Linkage Loan (Yes/No):')),
                         Radio<String>(
                           value: 'Yes',
                           groupValue: widget.data.kudumbashreeLinkageLoan,
@@ -165,11 +159,10 @@ class _ScreenGState extends State<ScreenG> {
                         onChanged: (value) => widget.data.kudumbashreeLinkageLoanAmount = double.tryParse(value) ?? 0.0,
                         keyboardType: TextInputType.number,
                       ),
-                    
                     // Kudumbashree Microenterprise Loan Yes/No Radio Buttons
                     Row(
                       children: [
-                        Text('Kudumbashree Microenterprise Loan (Yes/No): '),
+                        Expanded(child: Text('Kudumbashree Microenterprise Loan (Yes/No):')),
                         Radio<String>(
                           value: 'Yes',
                           groupValue: widget.data.kudumbashreeMicroenterpriseLoan,
@@ -201,7 +194,6 @@ class _ScreenGState extends State<ScreenG> {
                       ),
                   ],
                 ),
-              
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {

@@ -204,8 +204,7 @@ extension MemberToJson on Member {
       'typesOfAssistanceTransport': typesOfAssistanceTransport,
       'typesOfAssistanceDigitalDevice': typesOfAssistanceDigitalDevice,
       'typesOfAssistanceStudyMaterials': typesOfAssistanceStudyMaterials,
-      'typesOfAssistanceAnyOtherSpecificRequirement':
-          typesOfAssistanceAnyOtherSpecificRequirement,
+      'typesOfAssistanceAnyOtherSpecificRequirement':typesOfAssistanceAnyOtherSpecificRequirement,
       'presentSkillSet': presentSkillSet,
       'typeOfLivelihoodAssistanceRequired': typeOfLivelihoodAssistanceRequired,
       'typeOfSkillingAssistanceRequired': typeOfSkillingAssistanceRequired,

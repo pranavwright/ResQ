@@ -129,55 +129,294 @@ class IndividualMemberInput extends StatelessWidget {
                 onChanged(member.copyWith(aadharNo: value));
               },
             ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Grievously Injured'),
-              initialValue: member.grievouslyInjured,
-              onChanged: (value) {
-                onChanged(member.copyWith(grievouslyInjured: value));
-              },
+
+            // Grievously Injured (Radio Buttons)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  Text('Grievously Injured: '),
+                  Radio<String>(
+                    value: 'Yes',
+                    groupValue: member.grievouslyInjured,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(grievouslyInjured: value!));
+                    },
+                  ),
+                  Text('Yes'),
+                  Radio<String>(
+                    value: 'No',
+                    groupValue: member.grievouslyInjured,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(grievouslyInjured: value!));
+                    },
+                  ),
+                  Text('No'),
+                ],
+              ),
             ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Bedridden/Palliative'),
-              initialValue: member.bedriddenPalliative,
-              onChanged: (value) {
-                onChanged(member.copyWith(bedriddenPalliative: value));
-              },
+
+            // Bedridden/Palliative (Radio Buttons)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  Text('Bedridden/Palliative: '),
+                  Radio<String>(
+                    value: 'Yes',
+                    groupValue: member.bedriddenPalliative,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(bedriddenPalliative: value!));
+                    },
+                  ),
+                  Text('Yes'),
+                  Radio<String>(
+                    value: 'No',
+                    groupValue: member.bedriddenPalliative,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(bedriddenPalliative: value!));
+                    },
+                  ),
+                  Text('No'),
+                ],
+              ),
             ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'PWDS'),
-              initialValue: member.pwDs,
-              onChanged: (value) {
-                onChanged(member.copyWith(pwDs: value));
-              },
+
+            // PWDS (Radio Buttons)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  Text('PWDS: '),
+                  Radio<String>(
+                    value: 'Yes',
+                    groupValue: member.pwDs,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(pwDs: value!));
+                    },
+                  ),
+                  Text('Yes'),
+                  Radio<String>(
+                    value: 'No',
+                    groupValue: member.pwDs,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(pwDs: value!));
+                    },
+                  ),
+                  Text('No'),
+                ],
+              ),
             ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Psycho-Social Assistance'),
-              initialValue: member.psychoSocialAssistance,
-              onChanged: (value) {
-                onChanged(member.copyWith(psychoSocialAssistance: value));
-              },
+
+            // Psycho-Social Assistance (Radio Buttons)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  Text('Psycho-Social Assistance: '),
+                  Radio<String>(
+                    value: 'Yes',
+                    groupValue: member.psychoSocialAssistance,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(psychoSocialAssistance: value!));
+                    },
+                  ),
+                  Text('Yes'),
+                  Radio<String>(
+                    value: 'No',
+                    groupValue: member.psychoSocialAssistance,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(psychoSocialAssistance: value!));
+                    },
+                  ),
+                  Text('No'),
+                ],
+              ),
             ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Nursing Home Assistance'),
-              initialValue: member.nursingHomeAssistance,
-              onChanged: (value) {
-                onChanged(member.copyWith(nursingHomeAssistance: value));
-              },
+
+            // Nursing Home Assistance (Radio Buttons)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  Text('Nursing Home Assistance: '),
+                  Radio<String>(
+                    value: 'Yes',
+                    groupValue: member.nursingHomeAssistance,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(nursingHomeAssistance: value!));
+                    },
+                  ),
+                  Text('Yes'),
+                  Radio<String>(
+                    value: 'No',
+                    groupValue: member.nursingHomeAssistance,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(nursingHomeAssistance: value!));
+                    },
+                  ),
+                  Text('No'),
+                ],
+              ),
             ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Assistive Devices'),
-              initialValue: member.assistiveDevices,
-              onChanged: (value) {
-                onChanged(member.copyWith(assistiveDevices: value));
-              },
+
+            // Assistive Devices (Radio Buttons)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  Text('Assistive Devices: '),
+                  Radio<String>(
+                    value: 'Yes',
+                    groupValue: member.assistiveDevices,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(assistiveDevices: value!));
+                    },
+                  ),
+                  Text('Yes'),
+                  Radio<String>(
+                    value: 'No',
+                    groupValue: member.assistiveDevices,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(assistiveDevices: value!));
+                    },
+                  ),
+                  Text('No'),
+                ],
+              ),
             ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Special Medical Requirements'),
-              initialValue: member.specialMedicalRequirements,
-              onChanged: (value) {
-                onChanged(member.copyWith(specialMedicalRequirements: value));
-              },
+
+            // Special Medical Requirements (Radio Buttons)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  Text(' Medical Requirements: '),
+                  Radio<String>(
+                    value: 'Yes',
+                    groupValue: member.specialMedicalRequirements,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(specialMedicalRequirements: value!));
+                    },
+                  ),
+                  Text('Yes'),
+                  Radio<String>(
+                    value: 'No',
+                    groupValue: member.specialMedicalRequirements,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(specialMedicalRequirements: value!));
+                    },
+                  ),
+                  Text('No'),
+                ],
+              ),
             ),
+
+            // Are Dropout (Radio Buttons)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  Text('Are Dropout: '),
+                  Radio<String>(
+                    value: 'Yes',
+                    groupValue: member.areDropout,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(areDropout: value!));
+                    },
+                  ),
+                  Text('Yes'),
+                  Radio<String>(
+                    value: 'No',
+                    groupValue: member.areDropout,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(areDropout: value!));
+                    },
+                  ),
+                  Text('No'),
+                ],
+              ),
+            ),
+
+            // Types of Assistance - Transport (Radio Buttons)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  Text('Transportation: '),
+                  Radio<String>(
+                    value: 'Yes',
+                    groupValue: member.typesOfAssistanceTransport,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(typesOfAssistanceTransport: value!));
+                    },
+                  ),
+                  Text('Yes'),
+                  Radio<String>(
+                    value: 'No',
+                    groupValue: member.typesOfAssistanceTransport,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(typesOfAssistanceTransport: value!));
+                    },
+                  ),
+                  Text('No'),
+                ],
+              ),
+            ),
+
+            // Types of Assistance - Digital Device (Radio Buttons)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  Text(' Digital Device: '),
+                  Radio<String>(
+                    value: 'Yes',
+                    groupValue: member.typesOfAssistanceDigitalDevice,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(typesOfAssistanceDigitalDevice: value!));
+                    },
+                  ),
+                  Text('Yes'),
+                  Radio<String>(
+                    value: 'No',
+                    groupValue: member.typesOfAssistanceDigitalDevice,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(typesOfAssistanceDigitalDevice: value!));
+                    },
+                  ),
+                  Text('No'),
+                ],
+              ),
+            ),
+
+            // Types of Assistance - Study Materials (Radio Buttons)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  Text(' Study Materials: '),
+                  Radio<String>(
+                    value: 'Yes',
+                    groupValue: member.typesOfAssistanceStudyMaterials,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(typesOfAssistanceStudyMaterials: value!));
+                    },
+                  ),
+                  Text('Yes'),
+                  Radio<String>(
+                    value: 'No',
+                    groupValue: member.typesOfAssistanceStudyMaterials,
+                    onChanged: (value) {
+                      onChanged(member.copyWith(typesOfAssistanceStudyMaterials: value!));
+                    },
+                  ),
+                  Text('No'),
+                ],
+              ),
+            ),
+
+            // Other fields remain unchanged...
             TextFormField(
               decoration: InputDecoration(labelText: 'Education'),
               initialValue: member.education,
@@ -228,67 +467,10 @@ class IndividualMemberInput extends StatelessWidget {
               },
             ),
             TextFormField(
-              decoration: InputDecoration(labelText: 'Are Dropout'),
-              initialValue: member.areDropout,
-              onChanged: (value) {
-                onChanged(member.copyWith(areDropout: value));
-              },
-            ),
-            TextFormField(
               decoration: InputDecoration(labelText: 'Preferred Mode of Education'),
               initialValue: member.preferredModeOfEducation,
               onChanged: (value) {
                 onChanged(member.copyWith(preferredModeOfEducation: value));
-              },
-            ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Types of Assistance - Transport'),
-              initialValue: member.typesOfAssistanceTransport,
-              onChanged: (value) {
-                onChanged(member.copyWith(typesOfAssistanceTransport: value));
-              },
-            ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Types of Assistance - Digital Device'),
-              initialValue: member.typesOfAssistanceDigitalDevice,
-              onChanged: (value) {
-                onChanged(member.copyWith(typesOfAssistanceDigitalDevice: value));
-              },
-            ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Types of Assistance - Study Materials'),
-              initialValue: member.typesOfAssistanceStudyMaterials,
-              onChanged: (value)
-              {
-                onChanged(member.copyWith(typesOfAssistanceStudyMaterials: value));
-              },
-            ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Types of Assistance - Any Other Specific Requirement'),
-              initialValue: member.typesOfAssistanceAnyOtherSpecificRequirement,
-              onChanged: (value) {
-                onChanged(member.copyWith(typesOfAssistanceAnyOtherSpecificRequirement: value));
-              },
-            ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Present Skill Set'),
-              initialValue: member.presentSkillSet,
-              onChanged: (value) {
-                onChanged(member.copyWith(presentSkillSet: value));
-              },
-            ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Type of Livelihood Assistance Required'),
-              initialValue: member.typeOfLivelihoodAssistanceRequired,
-              onChanged: (value) {
-                onChanged(member.copyWith(typeOfLivelihoodAssistanceRequired: value));
-              },
-            ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Type of Skilling Assistance Required'),
-              initialValue: member.typeOfSkillingAssistanceRequired,
-              onChanged: (value) {
-                onChanged(member.copyWith(typeOfSkillingAssistanceRequired: value));
               },
             ),
           ],
