@@ -151,6 +151,8 @@ class Member {
   String presentSkillSet = ''; 
   String typeOfLivelihoodAssistanceRequired = ''; 
   String typeOfSkillingAssistanceRequired = '';
+  String otherRelationship = '';
+  String otherGender = '';
 
   Member({
     required this.name,
