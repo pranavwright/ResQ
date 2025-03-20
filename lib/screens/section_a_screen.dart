@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:path/path.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
 import 'package:resq/screens/section_b_screen.dart';
 
@@ -60,21 +59,105 @@ class _ScreenAState extends State<ScreenA> {
                 initialValue: widget.data.rationCardNo,
                 onChanged: (value) => widget.data.rationCardNo = value,
               ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Ration Category'),
-                initialValue: widget.data.rationCategory,
-                onChanged: (value) => widget.data.rationCategory = value,
+              // Ration Category Radio Buttons
+              Text(
+                'Ration Category',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Caste'),
-                initialValue: widget.data.caste,
-                onChanged: (value) {
-                  setState(() {
-                    widget.data.caste = value;
-                  });
-                },
+              Column(
+                children: [
+                  RadioListTile<String>(
+                    title: Text('Yellow'),
+                    value: 'Yellow',
+                    groupValue: widget.data.rationCategory,
+                    onChanged: (value) {
+                      setState(() {
+                        widget.data.rationCategory = value!;
+                      });
+                    },
+                  ),
+                  RadioListTile<String>(
+                    title: Text('White'),
+                    value: 'White',
+                    groupValue: widget.data.rationCategory,
+                    onChanged: (value) {
+                      setState(() {
+                        widget.data.rationCategory = value!;
+                      });
+                    },
+                  ),
+                  RadioListTile<String>(
+                    title: Text('Pink'),
+                    value: 'Pink',
+                    groupValue: widget.data.rationCategory,
+                    onChanged: (value) {
+                      setState(() {
+                        widget.data.rationCategory = value!;
+                      });
+                    },
+                  ),
+                ],
               ),
-              if (widget.data.caste == 'Other')
+              // Caste Radio Buttons
+              Text(
+                'Caste',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              Column(
+                children: [
+                  RadioListTile<String>(
+                    title: Text('General'),
+                    value: 'General',
+                    groupValue: widget.data.caste,
+                    onChanged: (value) {
+                      setState(() {
+                        widget.data.caste = value!;
+                      });
+                    },
+                  ),
+                  RadioListTile<String>(
+                    title: Text('Other Backward Class'),
+                    value: 'Other Backward Class',
+                    groupValue: widget.data.caste,
+                    onChanged: (value) {
+                      setState(() {
+                        widget.data.caste = value!;
+                      });
+                    },
+                  ),
+                  RadioListTile<String>(
+                    title: Text('Scheduled Caste'),
+                    value: 'Scheduled Caste',
+                    groupValue: widget.data.caste,
+                    onChanged: (value) {
+                      setState(() {
+                        widget.data.caste = value!;
+                      });
+                    },
+                  ),
+                  RadioListTile<String>(
+                    title: Text('Scheduled Tribe'),
+                    value: 'Scheduled Tribe',
+                    groupValue: widget.data.caste,
+                    onChanged: (value) {
+                      setState(() {
+                        widget.data.caste = value!;
+                      });
+                    },
+                  ),
+                  RadioListTile<String>(
+                    title: Text('Others'),
+                    value: 'Others',
+                    groupValue: widget.data.caste,
+                    onChanged: (value) {
+                      setState(() {
+                        widget.data.caste = value!;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              if (widget.data.caste == 'Others')
                 TextFormField(
                   decoration: InputDecoration(labelText: 'Other Caste'),
                   initialValue: widget.data.otherCaste,
@@ -112,8 +195,8 @@ class _ScreenAState extends State<ScreenA> {
                       Member(
                         name: '',
                         age: '',
-                        gender: '',
-                        relationship: '',
+                        gender: 'Male', // Set a default gender
+                        relationship: 'Son', // Set a default relationship
                       ),
                     );
                   });
@@ -140,7 +223,7 @@ class _ScreenAState extends State<ScreenA> {
   }
 }
 
-class MemberInput extends StatelessWidget {
+class MemberInput extends StatefulWidget {
   final Member member;
   final Function(Member) onChanged;
   final VoidCallback onDelete;
@@ -150,6 +233,21 @@ class MemberInput extends StatelessWidget {
     required this.onChanged,
     required this.onDelete,
   });
+
+  @override
+  _MemberInputState createState() => _MemberInputState();
+}
+
+class _MemberInputState extends State<MemberInput> {
+  String? _selectedGender;
+  String? _selectedRelationship;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedGender = widget.member.gender;
+    _selectedRelationship = widget.member.relationship;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -163,56 +261,88 @@ class MemberInput extends StatelessWidget {
               children: [
                 IconButton(
                   icon: Icon(Icons.delete),
-                  onPressed: onDelete,
+                  onPressed: widget.onDelete,
                 ),
               ],
             ),
             TextFormField(
               decoration: InputDecoration(labelText: 'Name'),
-              initialValue: member.name,
+              initialValue: widget.member.name,
               onChanged: (value) {
-                onChanged(Member(
+                widget.onChanged(Member(
                   name: value,
-                  age: member.age,
-                  gender: member.gender,
-                  relationship: member.relationship,
+                  age: widget.member.age,
+                  gender: widget.member.gender,
+                  relationship: widget.member.relationship,
                 ));
               },
             ),
             TextFormField(
               decoration: InputDecoration(labelText: 'Age'),
-              initialValue: member.age,
+              initialValue: widget.member.age,
               onChanged: (value) {
-                onChanged(Member(
-                  name: member.name,
+                widget.onChanged(Member(
+                  name: widget.member.name,
                   age: value,
-                  gender: member.gender,
-                  relationship: member.relationship,
+                  gender: widget.member.gender,
+                  relationship: widget.member.relationship,
                 ));
               },
             ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Gender'),
-              initialValue: member.gender,
-              onChanged: (value) {
-                onChanged(Member(
-                  name: member.name,
-                  age: member.age,
-                  gender: value,
-                  relationship: member.relationship,
-                ));
+
+            // Gender dropdown using Material DropdownButton
+            DropdownButton<String>(
+              value: _selectedGender,
+              hint: Text('Select Gender'),
+              isExpanded: true,
+              items: ['Male', 'Female', 'Other']
+                  .map((gender) => DropdownMenuItem<String>(
+                        value: gender,
+                        child: Text(gender),
+                      ))
+                  .toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  _selectedGender = newValue;
+                  widget.onChanged(Member(
+                    name: widget.member.name,
+                    age: widget.member.age,
+                    gender: _selectedGender!,
+                    relationship: widget.member.relationship,
+                  ));
+                });
               },
             ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Relationship'),
-              initialValue: member.relationship,
-              onChanged: (value) {
-                onChanged(Member(
-                  name: member.name,
-                  age: member.age,
-                  gender: member.gender,
-                  relationship: value,
-                ));
+
+            // Relationship dropdown using Material DropdownButton
+            DropdownButton<String>(
+              value: _selectedRelationship,
+              hint: Text('Select Relationship'),
+              isExpanded: true,
+              items: [
+                'Father',
+                'Mother',
+                'Son',
+                'Daughter',
+                'Grand Mother',
+                'Grand Father',
+                'Other'
+              ]
+                  .map((relationship) => DropdownMenuItem<String>(
+                        value: relationship,
+                        child: Text(relationship),
+                      ))
+                  .toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  _selectedRelationship = newValue;
+                  widget.onChanged(Member(
+                    name: widget.member.name,
+                    age: widget.member.age,
+                    gender: widget.member.gender,
+                    relationship: _selectedRelationship!,
+                  ));
+                });
               },
             ),
           ],
