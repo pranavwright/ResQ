@@ -12,6 +12,7 @@ class AuthService {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   bool _isAuthenticated = false;
+  String _disasterId = '';
   List<String> _userRoles = [];
   Map<String, dynamic>? _userProfile;
   String? _token;
@@ -37,7 +38,7 @@ class AuthService {
       }
     } catch (e) {
       print('Error saving to storage: $e');
-      throw e; // Rethrow to let caller handle
+      throw e;
     }
   }
 
@@ -65,7 +66,7 @@ class AuthService {
       }
     } catch (e) {
       print('Error deleting from storage: $e');
-      throw e; // Rethrow
+      throw e;
     }
   }
 
@@ -76,100 +77,129 @@ class AuthService {
         await prefs.remove('auth_token');
         await prefs.remove('user_roles');
         await prefs.remove('user_profile');
+        await prefs.remove('disaster_id');
       } else {
         await _secureStorage.deleteAll();
       }
     } catch (e) {
       print('Error clearing storage: $e');
-      throw e; // Rethrow
+      throw e;
     }
   }
 
   Future<void> loadAuthState() async {
-  try {
-    final token = await _readFromStorage('auth_token');
-    if (token == null || token.isEmpty) {
-      _isAuthenticated = false;
-      _userRoles = [];
-      _userProfile = null;
-      return;
-    }
-
-    // Log auth token first few chars for debugging
-    print('Loaded token: ${token}...');
-    
     try {
-      final user = await TokenHttp().get('/auth/getUser');
-      if (user == null) {
-        print('User data is null from API');
+      final token = await _readFromStorage('auth_token');
+      final disasterId = await _readFromStorage('disaster_id');
+
+      if (token == null || token.isEmpty) {
         _isAuthenticated = false;
         _userRoles = [];
         _userProfile = null;
-        // await _clearStorage();
+        _disasterId = '';
         return;
       }
-      
-      // Check if roles exists and is a list
-      final roles = user['roles'];
-      if (roles == null) {
-        print('Roles not found in user data');
+
+      print('Loaded token: ${token.substring(0, 10)}...');
+
+      try {
+        final user = await TokenHttp().get('/auth/getUser');
+        if (user == null) {
+          print('User data is null from API');
+          _isAuthenticated = false;
+          _userRoles = [];
+          _userProfile = null;
+          _disasterId = '';
+          return;
+        }
+
+        final rolesData = user['roles'];
+        if (rolesData == null) {
+          print('Roles not found in user data');
+          _isAuthenticated = false;
+          _userRoles = [];
+          _userProfile = null;
+          _disasterId = '';
+          return;
+        }
+
+        final disasterId = await _readFromStorage('disaster_id');
+
+        List<String> rolesList = [];
+        if (rolesData is List) {
+          for (var roleData in rolesData) {
+            if (roleData['disasterId'] == disasterId) {
+              rolesList = List<String>.from(roleData['roles'].map((role) => role.toString()));
+              break;
+            }
+          }
+        }
+        
+        if (rolesList.isEmpty){
+          print('Roles not found for current disaster id');
+          _isAuthenticated = false;
+          _userRoles = [];
+          _userProfile = null;
+          _disasterId = '';
+          return;
+        }
+
+        final profile = {
+          'email': user['emailId'] ?? '',
+          'profileImagePath': user['photoUrl'] ?? '',
+        };
+
+        await _saveToStorage('user_profile', json.encode(profile));
+        await _saveToStorage('disaster_id', disasterId ?? '');
+
+        _token = token;
+        _userRoles = rolesList;
+        _userProfile = profile;
+        _isAuthenticated = rolesList.isNotEmpty;
+        _disasterId = disasterId ?? '';
+      } catch (e) {
+        print('API error in loadAuthState: $e');
+        _token = token;
         _isAuthenticated = false;
         _userRoles = [];
         _userProfile = null;
-        // await _clearStorage();
-        return;
+        _disasterId = '';
       }
-      
-      // Convert roles to List<String> and handle non-list responses
-      List<String> rolesList;
-      if (roles is List) {
-        rolesList = roles.map((role) => role.toString()).toList();
-      } else if (roles is String) {
-        rolesList = [roles];
-      } else {
-        print('Unexpected roles format: $roles');
-        rolesList = [];
-      }
-      
-      final profile = {
-        'email': user['emailId'] ?? '',
-        'profileImagePath': user['photoUrl'] ?? '',
-      };
-      
-      // Save updated data to storage
-      await _saveToStorage('user_roles', rolesList.join(','));
-      await _saveToStorage('user_profile', json.encode(profile));
-      
-      // Update in-memory state
-      _token = token;
-      _userRoles = rolesList;
-      _userProfile = profile;
-      _isAuthenticated = rolesList.isNotEmpty;
-      
     } catch (e) {
-      print('API error in loadAuthState: $e');
-      // Keep token but mark as unauthenticated if API error occurs
-      _token = token;
+      print('General error in loadAuthState: $e');
       _isAuthenticated = false;
       _userRoles = [];
       _userProfile = null;
+      _disasterId = '';
     }
-  } catch (e) {
-    print('General error in loadAuthState: $e');
-    _isAuthenticated = false;
-    _userRoles = [];
-    _userProfile = null;
   }
-}
+
+  Future<void> changeDisaster(
+    String disasterId,
+    List<String> roles,
+  ) async {
+    try {
+      await _saveToStorage('disaster_id', disasterId);
+      _userRoles = List.from(roles);
+
+      _disasterId = disasterId;
+
+      print('Disaster changed to: $disasterId');
+    } catch (e) {
+      print('Error changing disaster: $e');
+      throw e;
+    }
+  }
 
   Future<void> login(
     String token,
-    List<String> roles, [
+    List<String> roles,
+    String disasterId, [
     Map<String, dynamic>? profile,
   ]) async {
     try {
       await _saveToStorage('auth_token', token);
-      await _saveToStorage('user_roles', roles.join(','));
+      await _saveToStorage('disaster_id', disasterId);
 
       if (profile != null) {
         await _saveToStorage('user_profile', json.encode(profile));
@@ -179,6 +209,7 @@ class AuthService {
       _token = token;
       _isAuthenticated = true;
       _userRoles = List.from(roles);
+      _disasterId = disasterId;
 
       print(
         'Login successful - token: ${token.substring(0, 10)}... roles: $roles',
@@ -192,10 +223,8 @@ class AuthService {
   bool isProfileComplete() {
     if (_userProfile == null) return false;
 
-    return (_userProfile!['photoUrl'] != null &&
-            _userProfile!['photoUrl'].toString().isNotEmpty) ||
-        (_userProfile!['profileImagePath'] != null &&
-            _userProfile!['profileImagePath'].toString().isNotEmpty);
+    return (_userProfile!['profileImagePath'] != null &&
+        _userProfile!['profileImagePath'].toString().isNotEmpty);
   }
 
   Future<void> saveUserProfile({
@@ -234,7 +263,12 @@ class AuthService {
     _userRoles = [];
     _userProfile = null;
     _token = null;
+    _disasterId = '';
 
     print('Logout successful');
+  }
+
+  String getDisasterId() {
+    return _disasterId;
   }
 }
