@@ -100,6 +100,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authService = AuthService();
+    authService.loadAuthState();
     final isAuthenticated = authService.isAuthenticated;
     List<String> roles = authService.getCurrentUserRoles() ?? [];
 
