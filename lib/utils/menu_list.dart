@@ -14,31 +14,6 @@ class MenuItem {
     required this.roles,
   });
 
-  factory MenuItem.fromJson(Map<String, dynamic> json) {
-    return MenuItem(
-      title: json['title'],
-      icon: _getIconData(json['icon']),
-      route: json['route'],
-      roles: List<String>.from(json['roles']),
-    );
-  }
-
-  static IconData _getIconData(dynamic icon) {
-    if (icon is IconData) {
-      return icon;
-    } else if (icon == Icons.home) {
-      return Icons.home;
-    } else if (icon == Icons.person) {
-      return Icons.person;
-    } else if (icon == Icons.settings) {
-      return Icons.settings;
-    } else if (icon == Icons.exit_to_app) {
-      return Icons.exit_to_app;
-    } else {
-      // Handle other icons or return a default
-      return Icons.error; // Or another default icon
-    }
-  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -48,14 +23,53 @@ class MenuItem {
       'roles': roles,
     };
   }
+
+  factory MenuItem.fromJson(Map<String, dynamic> json) {
+    return MenuItem(
+      title: json['title'],
+      icon: json['icon'],
+      route: json['route'],
+      roles: List<String>.from(json['roles']),
+    );
+  }
 }
 
 final List<Map<String, dynamic>> menuData = [
   {
     "title": "Home",
     "icon": Icons.home,
-    "route": "/home",
+    "route": "/app",
     "roles": ["stat", "admin", "kas", "superAdmin", "collectionpointadmin", "campadmin", "collectionpointvolunteer"]
+  },
+  {
+    "title": "Families",
+    "icon": Icons.people,
+    "route": "/test-family",
+    "roles": ["admin"]
+  },
+  {
+    "title": "Camp Status",
+    "icon": Icons.home_work,
+    "route": "/test-family", // screen route
+    "roles": ["admin"]
+  },
+  {
+    "title": "Notice Board",
+    "icon": Icons.announcement,
+    "route": "/create-notice", 
+    "roles": ["admin"]
+  },
+  {
+    "title": "Officals",
+    "icon": Icons.assignment_ind,
+    "route": "/role-creation", 
+    "roles": ["admin"]
+  },
+  {
+    "title": "Collection Points",
+    "icon": Icons.add_location,
+    "route": '/admin-collectionpoint', 
+    "roles": ["admin"]
   },
   {
     "title": "Profile",
@@ -74,9 +88,9 @@ final List<Map<String, dynamic>> menuData = [
     "icon": Icons.exit_to_app,
     "route": "/logout",
     "roles": ["stat", "admin", "kas", "superAdmin", "collectionpointadmin", "campadmin", "collectionpointvolunteer"]
-  }
+  },
 ];
-
+            
 List<MenuItem> menuItems = menuData.map((data) => MenuItem.fromJson(data)).toList();
 
 // Example Usage (in a widget build method):

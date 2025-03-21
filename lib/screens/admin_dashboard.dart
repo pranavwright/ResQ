@@ -4,6 +4,7 @@ import 'package:resq/screens/campadmin_dashboard.dart';
 import 'package:resq/screens/camprole_creation.dart';
 import 'package:resq/screens/collection_point.dart';
 import 'package:resq/screens/create_notice.dart';
+import 'package:resq/utils/menu_list.dart';
 import 'family_data_download.dart';
 import 'login_screen.dart';
 import '../utils/auth/auth_service.dart';
@@ -17,6 +18,36 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   String selectedStatus = 'Alive';
+  late List<MenuItem> filteredMenuItems = [];
+  bool _isLoading = true; // Added loading state
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMenuItems();
+  }
+   Future<void> _loadMenuItems() async {
+    try {
+      final items = await getFilteredMenuItems(
+        AuthService().getCurrentUserRoles() ?? []
+      );
+      
+      // Only update state if widget is still mounted
+      if (mounted) {
+        setState(() {
+          filteredMenuItems = items;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading menu items: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   final Map<String, List<FlSpot>> statusData = {
     'Alive': [
@@ -63,60 +94,32 @@ class _AdminDashboardState extends State<AdminDashboard> {
       appBar: AppBar(
         title: const Text('Admin Dashboard'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _logout,
-          ),
+          IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
         ],
       ),
-      drawer: MediaQuery.of(context).size.width < 800 // Hamburger menu for smaller screen sizes (mobile)
-          ? Drawer(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  const DrawerHeader(child: Text('Admin Menu')),
-                  buildDrawerItem(Icons.people, 'Families', () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const FamilyDataScreen()),
-                    );
-                    print("Families tapped");
-                  }),
-                  buildDrawerItem(Icons.home_work, 'Camp Status', () {
-                     Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const CampAdminRequestScreen()),
-                    );
-                    // Add navigation for Camp Status
-                    print("Camp Status tapped");
-                  }),
-                  buildDrawerItem(Icons.announcement, 'Role Based Notice Board', () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const CreateNoticeScreen()),
-                    );
-                    // Add navigation for Role Based Notice Board
-                    print("Role Based Notice Board tapped");
-                  }),
-                  buildDrawerItem(Icons.assignment_ind, 'Role Creation', () {
-                    // Navigate to Role Creation Screen when clicked
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const CamproleCreation()),
-                    );
-                     print("camprole creation");
-                  }),
-                  buildDrawerItem(Icons.add_location, 'Add Collection Points', () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const CollectionPoint()),
-                    );
-                     print("collection ponit");
-                  }),
-                ],
-              ),
-            )
-          : null, // No Drawer on Web/Desktop
+      drawer:
+          MediaQuery.of(context).size.width <
+                  800 // Hamburger menu for smaller screen sizes (mobile)
+              ? Drawer(
+                child:
+                    _isLoading // Show loading indicator if loading
+                        ? const Center(child: CircularProgressIndicator())
+                        : 
+                        ListView(
+                          padding: const EdgeInsets.only(top: 46),
+                          children:
+                              filteredMenuItems.map((item) {
+                                return ListTile(
+                                  leading: Icon(item.icon),
+                                  title: Text(item.title),
+                                  onTap: () {
+                                    Navigator.pushNamed(context, item.route);
+                                  },
+                                );
+                              }).toList(),
+                        ),
+              )
+              : null, // No Drawer on Web/Desktop
       body: SafeArea(
         child: Container(
           color: Colors.white,
@@ -126,36 +129,39 @@ class _AdminDashboardState extends State<AdminDashboard> {
               if (MediaQuery.of(context).size.width >= 800)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      buildNavItem(Icons.people, 'Families', () {
-                        print("Families tapped");
-                      }),
-                      buildNavItem(Icons.home_work, 'Camp Status', () {
-                        print("Camp Status tapped");
-                      }),
-                      buildNavItem(Icons.announcement, 'Role Based Notice Board', () {
-                        print("Role Based Notice Board tapped");
-                      }),
-                      buildNavItem(Icons.assignment_ind, 'Role Creation', () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const CamproleCreation()),
-                        );
-                      }),
-                      buildNavItem(Icons.add_location, 'Add Collection Points', () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const CollectionPoint()),
-                        );
-                      }),
-                    ],
-                  ),
+                  child:
+                      _isLoading // Show loading indicator if loading
+                          ? const Center(child: CircularProgressIndicator())
+                          : Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children:
+                                filteredMenuItems.map((item) {
+                                  return GestureDetector(
+                                    onTap: () {
+                                      Navigator.pushNamed(context, item.route);
+                                    },
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(item.icon, color: Colors.black),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          item.title,
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                          ),
                 ),
 
               const Divider(),
-
               const Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Align(
@@ -229,7 +235,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   ),
                 ),
               ),
-
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
@@ -302,10 +307,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget buildDrawerItem(IconData icon, String label, VoidCallback onTap) {
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(label),
-      onTap: onTap,
-    );
+    return ListTile(leading: Icon(icon), title: Text(label), onTap: onTap);
   }
 }

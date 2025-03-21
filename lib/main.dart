@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
+import 'package:resq/screens/camprole_creation.dart';
+import 'package:resq/screens/collection_point.dart';
 import 'package:resq/screens/downloading.dart';
 import 'package:resq/wrapper/connectivity_wrapper.dart';
 import 'package:resq/screens/familysurvay_home.dart';
@@ -128,9 +130,7 @@ class MyApp extends StatelessWidget {
                     ).pushReplacementNamed(initialRoute),
               ),
 
-          '/':
-              (context) =>
-                  AuthRoute(requiresAuth: false, child: MainHome()),
+          '/': (context) => AuthRoute(requiresAuth: false, child: MainHome()),
 
           '/otp':
               (context) =>
@@ -187,8 +187,15 @@ class MyApp extends StatelessWidget {
 
                 child: CreateNoticeScreen(),
               ),
+          '/role-creation':
+              (context) => AuthRoute(
+                requiredRoles: ['admin', 'stat'],
+                child: CamproleCreation(),
+              ),
 
-          '/public-donation': (context) =>  AuthRoute(requiresAuth: false, child: DonationRequestPage()),
+          '/public-donation':
+              (context) =>
+                  AuthRoute(requiresAuth: false, child: DonationRequestPage()),
 
           '/profile-setup':
               (context) => AuthRoute(
@@ -203,7 +210,7 @@ class MyApp extends StatelessWidget {
                     loan_relief.LoanReliefUploadScreen(), // Add the prefix here
               ),
           '/test-family': (context) => FamilyDataScreen(),
-          '/test-collectionpoint': (context) => CollectionPointDashboard(),
+          '/admin-collectionpoint': (context) => CollectionPoint(),
           '/test-statistics': (context) => DashboardScreen(),
           '/test-profile': (context) => ProfileUpdateScreen(),
           '/donations': (context) => const DonationsScreen(),
@@ -217,7 +224,6 @@ class MyApp extends StatelessWidget {
               child: ScreenA(data: data),
             );
           },
-
         },
 
         onUnknownRoute:
