@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
-import 'package:resq/screens/section_j_screen.dart';
 import 'package:resq/screens/section_k_screen.dart';
 
 class ScreenI extends StatefulWidget {
@@ -71,7 +70,40 @@ class IndividualMemberInput extends StatelessWidget {
   IndividualMemberInput({
     required this.member,
     required this.onChanged,
-  });
+  }) {
+    if (member.maritalStatus == '') {
+      member.maritalStatus = 'Single';
+    }
+    if (member.previousStatus == '') {
+      member.previousStatus = 'Unemployed';
+    }
+    if(member.employmentType == '')
+    {
+      member.employmentType = 'Others';
+    }
+  }
+
+  final List<String> _maritalStatusOptions = [
+    'Single',
+    'Married',
+    'Divorced',
+    'Widowed',
+    'Other'
+  ];
+  final List<String> _previousStatusOptions = [
+    'Employed',
+    'Unemployed',
+    'Self Employed',
+    'Unemployed due to the disaster'
+  ];
+  final List<String> _employmentTypeOptions = [
+    'Govt',
+    'Private',
+    'Plantation',
+    'Agri/Allied',
+    'Daily Wage',
+    'Others'
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -108,12 +140,21 @@ class IndividualMemberInput extends StatelessWidget {
                 onChanged(member.copyWith(relationship: value));
               },
             ),
-            TextFormField(
+            DropdownButtonFormField<String>(
               decoration: InputDecoration(labelText: 'Marital Status'),
-              initialValue: member.maritalStatus,
-              onChanged: (value) {
-                onChanged(member.copyWith(maritalStatus: value));
+              value: member.maritalStatus ?? 'Single',
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  onChanged(member.copyWith(maritalStatus: newValue));
+                }
               },
+              items: _maritalStatusOptions
+                  .map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
             ),
             TextFormField(
               decoration: InputDecoration(labelText: 'L/D/M'),
@@ -129,7 +170,6 @@ class IndividualMemberInput extends StatelessWidget {
                 onChanged(member.copyWith(aadharNo: value));
               },
             ),
-
             // Grievously Injured (Radio Buttons)
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -155,7 +195,6 @@ class IndividualMemberInput extends StatelessWidget {
                 ],
               ),
             ),
-
             // Bedridden/Palliative (Radio Buttons)
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -181,31 +220,43 @@ class IndividualMemberInput extends StatelessWidget {
                 ],
               ),
             ),
-
             // PWDS (Radio Buttons)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  Text('PWDS: '),
-                  Radio<String>(
-                    value: 'Yes',
-                    groupValue: member.pwDs,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      Text('PWDS: '),
+                      Radio<String>(
+                        value: 'Yes',
+                        groupValue: member.pwDs,
+                        onChanged: (value) {
+                          onChanged(member.copyWith(pwDs: value!));
+                        },
+                      ),
+                      Text('Yes'),
+                      Radio<String>(
+                        value: 'No',
+                        groupValue: member.pwDs,
+                        onChanged: (value) {
+                          onChanged(member.copyWith(pwDs: value!));
+                        },
+                      ),
+                      Text('No'),
+                    ],
+                  ),
+                ),
+                if (member.pwDs == 'Yes')
+                  TextFormField(
+                    decoration: InputDecoration(labelText: 'Specify PWDS Details'),
+                    initialValue: member.pwDs,
                     onChanged: (value) {
-                      onChanged(member.copyWith(pwDs: value!));
+                      onChanged(member.copyWith(pwDs: value));
                     },
                   ),
-                  Text('Yes'),
-                  Radio<String>(
-                    value: 'No',
-                    groupValue: member.pwDs,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(pwDs: value!));
-                    },
-                  ),
-                  Text('No'),
-                ],
-              ),
+              ],
             ),
 
             // Psycho-Social Assistance (Radio Buttons)
@@ -233,7 +284,6 @@ class IndividualMemberInput extends StatelessWidget {
                 ],
               ),
             ),
-
             // Nursing Home Assistance (Radio Buttons)
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -259,164 +309,276 @@ class IndividualMemberInput extends StatelessWidget {
                 ],
               ),
             ),
-
             // Assistive Devices (Radio Buttons)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  Text('Assistive Devices: '),
-                  Radio<String>(
-                    value: 'Yes',
-                    groupValue: member.assistiveDevices,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      Text('Assistive Devices: '),
+                      Radio<String>(
+                        value: 'Yes',
+                        groupValue: member.assistiveDevices,
+                        onChanged: (value) {
+                          onChanged(member.copyWith(assistiveDevices: value!));
+                        },
+                      ),
+                      Text('Yes'),
+                      Radio<String>(
+                        value: 'No',
+                        groupValue: member.assistiveDevices,
+                        onChanged: (value) {
+                          onChanged(member.copyWith(assistiveDevices: value!));
+                        },
+                      ),
+                      Text('No'),
+                    ],
+                  ),
+                ),
+                if (member.assistiveDevices == 'Yes')
+                  TextFormField(
+                    decoration: InputDecoration(labelText: 'Specify Assistive Devices'),
+                    initialValue: member.assistiveDevices,
                     onChanged: (value) {
-                      onChanged(member.copyWith(assistiveDevices: value!));
+                      onChanged(member.copyWith(assistiveDevices: value));
                     },
                   ),
-                  Text('Yes'),
-                  Radio<String>(
-                    value: 'No',
-                    groupValue: member.assistiveDevices,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(assistiveDevices: value!));
-                    },
-                  ),
-                  Text('No'),
-                ],
-              ),
+              ],
             ),
-
             // Special Medical Requirements (Radio Buttons)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  Text(' Medical Requirements: '),
-                  Radio<String>(
-                    value: 'Yes',
-                    groupValue: member.specialMedicalRequirements,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      Text(' Medical Requirements: '),
+                      Radio<String>(
+                        value: 'Yes',
+                        groupValue: member.specialMedicalRequirements,
+                        onChanged: (value) {
+                          onChanged(member.copyWith(specialMedicalRequirements: value!));
+                        },
+                      ),
+                      Text('Yes'),
+                      Radio<String>(
+                        value: 'No',
+                        groupValue: member.specialMedicalRequirements,
+                        onChanged: (value) {
+                          onChanged(member.copyWith(specialMedicalRequirements: value!));
+                        },
+                      ),
+                      Text('No'),
+                    ],
+                  ),
+                ),
+                if (member.specialMedicalRequirements == 'Yes')
+                  TextFormField(
+                    decoration: InputDecoration(labelText: 'Specify Medical Requirements'),
+                    initialValue: member.specialMedicalRequirements,
                     onChanged: (value) {
-                      onChanged(member.copyWith(specialMedicalRequirements: value!));
+                      onChanged(member.copyWith(specialMedicalRequirements: value));
                     },
                   ),
-                  Text('Yes'),
-                  Radio<String>(
-                    value: 'No',
-                    groupValue: member.specialMedicalRequirements,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(specialMedicalRequirements: value!));
-                    },
-                  ),
-                  Text('No'),
-                ],
-              ),
+              ],
             ),
-
             // Are Dropout (Radio Buttons)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  Text('Are Dropout: '),
-                  Radio<String>(
-                    value: 'Yes',
-                    groupValue: member.areDropout,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      Text('Are Dropout: '),
+                      Radio<String>(
+                        value: 'Yes',
+                        groupValue: member.areDropout,
+                        onChanged: (value) {
+                          onChanged(member.copyWith(areDropout: value!));
+                        },
+                      ),
+                      Text('Yes'),
+                      Radio<String>(
+                        value: 'No',
+                        groupValue: member.areDropout,
+                        onChanged: (value) {
+                          onChanged(member.copyWith(areDropout: value!));
+                        },
+                      ),
+                      Text('No'),
+                    ],
+                  ),
+                ),
+                if (member.areDropout == 'Yes')
+                  TextFormField(
+                    decoration: InputDecoration(labelText: 'Specify Dropout Reason'),
+                    initialValue: member.areDropout,
                     onChanged: (value) {
-                      onChanged(member.copyWith(areDropout: value!));
+                      onChanged(member.copyWith(areDropout: value));
                     },
                   ),
-                  Text('Yes'),
-                  Radio<String>(
-                    value: 'No',
-                    groupValue: member.areDropout,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(areDropout: value!));
-                    },
-                  ),
-                  Text('No'),
-                ],
-              ),
+              ],
             ),
 
             // Types of Assistance - Transport (Radio Buttons)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  Text('Transportation: '),
-                  Radio<String>(
-                    value: 'Yes',
-                    groupValue: member.typesOfAssistanceTransport,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      Text('Transportation: '),
+                      Radio<String>(
+                        value: 'Yes',
+                        groupValue: member.typesOfAssistanceTransport,
+                        onChanged: (value) {
+                          onChanged(member.copyWith(typesOfAssistanceTransport: value!));
+                        },
+                      ),
+                      Text('Yes'),
+                      Radio<String>(
+                        value: 'No',
+                        groupValue: member.typesOfAssistanceTransport,
+                        onChanged: (value) {
+                          onChanged(member.copyWith(typesOfAssistanceTransport: value!));
+                        },
+                      ),
+                      Text('No'),
+                    ],
+                  ),
+                ),
+                if (member.typesOfAssistanceTransport == 'Yes')
+                  TextFormField(
+                    decoration: InputDecoration(labelText: 'Specify Transport Needs'),
+                    initialValue: member.typesOfAssistanceTransport,
                     onChanged: (value) {
-                      onChanged(member.copyWith(typesOfAssistanceTransport: value!));
+                      onChanged(member.copyWith(typesOfAssistanceTransport: value));
                     },
                   ),
-                  Text('Yes'),
-                  Radio<String>(
-                    value: 'No',
-                    groupValue: member.typesOfAssistanceTransport,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(typesOfAssistanceTransport: value!));
-                    },
-                  ),
-                  Text('No'),
-                ],
-              ),
+              ],
             ),
-
             // Types of Assistance - Digital Device (Radio Buttons)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  Text(' Digital Device: '),
-                  Radio<String>(
-                    value: 'Yes',
-                    groupValue: member.typesOfAssistanceDigitalDevice,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      Text(' Digital Device: '),
+                      Radio<String>(
+                        value: 'Yes',
+                        groupValue: member.typesOfAssistanceDigitalDevice,
+                        onChanged: (value) {
+                          onChanged(member.copyWith(typesOfAssistanceDigitalDevice: value!));
+                        },
+                      ),
+                      Text('Yes'),
+                      Radio<String>(
+                        value: 'No',
+                        groupValue: member.typesOfAssistanceDigitalDevice,
+                        onChanged: (value) {
+                          onChanged(member.copyWith(typesOfAssistanceDigitalDevice: value!));
+                        },
+                      ),
+                      Text('No'),
+                    ],
+                  ),
+                ),
+                if (member.typesOfAssistanceDigitalDevice == 'Yes')
+                  TextFormField(
+                    decoration: InputDecoration(labelText: 'Specify Device Needs'),
+                    initialValue: member.typesOfAssistanceDigitalDevice,
                     onChanged: (value) {
-                      onChanged(member.copyWith(typesOfAssistanceDigitalDevice: value!));
+                      onChanged(member.copyWith(typesOfAssistanceDigitalDevice: value));
                     },
                   ),
-                  Text('Yes'),
-                  Radio<String>(
-                    value: 'No',
-                    groupValue: member.typesOfAssistanceDigitalDevice,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(typesOfAssistanceDigitalDevice: value!));
-                    },
-                  ),
-                  Text('No'),
-                ],
-              ),
+              ],
             ),
-
             // Types of Assistance - Study Materials (Radio Buttons)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  Text(' Study Materials: '),
-                  Radio<String>(
-                    value: 'Yes',
-                    groupValue: member.typesOfAssistanceStudyMaterials,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      Text('Study Materials: '),
+                      Radio<String>(
+                        value: 'Yes',
+                        groupValue: member.typesOfAssistanceStudyMaterials,
+                        onChanged: (value) {
+                          onChanged(member.copyWith(typesOfAssistanceStudyMaterials: value!));
+                        },
+                      ),
+                      Text('Yes'),
+                      Radio<String>(
+                        value: 'No',
+                        groupValue: member.typesOfAssistanceStudyMaterials,
+                        onChanged: (value) {
+                          onChanged(member.copyWith(typesOfAssistanceStudyMaterials: value!));
+                        },
+                      ),
+                      Text('No'),
+                    ],
+                  ),
+                ),
+                if (member.typesOfAssistanceStudyMaterials == 'Yes')
+                  TextFormField(
+                    decoration: InputDecoration(labelText: 'Specify Study Material Needs'),
+                    initialValue: member.typesOfAssistanceStudyMaterials,
                     onChanged: (value) {
-                      onChanged(member.copyWith(typesOfAssistanceStudyMaterials: value!));
+                      onChanged(member.copyWith(typesOfAssistanceStudyMaterials: value));
                     },
                   ),
-                  Text('Yes'),
-                  Radio<String>(
-                    value: 'No',
-                    groupValue: member.typesOfAssistanceStudyMaterials,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(typesOfAssistanceStudyMaterials: value!));
-                    },
-                  ),
-                  Text('No'),
-                ],
-              ),
+              ],
             ),
-
             // Other fields remain unchanged...
+            DropdownButtonFormField<String>(
+              decoration: InputDecoration(labelText: 'Previous Status'),
+              value: member.previousStatus ?? 'Unemployed',
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  onChanged(member.copyWith(previousStatus: newValue));
+                }
+              },
+              items: _previousStatusOptions
+                  .map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+            ),
+            DropdownButtonFormField<String>(
+              decoration: InputDecoration(labelText: 'Employment Type'),
+              value: member.employmentType ?? 'Others',
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  onChanged(member.copyWith(employmentType: newValue));
+                }
+              },
+              items: _employmentTypeOptions
+                  .map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+            ),
+            if (member.employmentType == 'Others')
+              TextFormField(
+                decoration: InputDecoration(labelText: 'Specify Other Employment'),
+                initialValue: member.employmentType,
+                onChanged: (value) {
+                  onChanged(member.copyWith(employmentType: value));
+                },
+              ),
             TextFormField(
               decoration: InputDecoration(labelText: 'Education'),
               initialValue: member.education,
@@ -424,32 +586,12 @@ class IndividualMemberInput extends StatelessWidget {
                 onChanged(member.copyWith(education: value));
               },
             ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Previous Status'),
-              initialValue: member.previousStatus,
-              onChanged: (value) {
-                onChanged(member.copyWith(previousStatus: value));
-              },
-            ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Employment Type'),
-              initialValue: member.employmentType,
-              onChanged: (value) {
-                onChanged(member.copyWith(employmentType: value));
-              },
-            ),
+
             TextFormField(
               decoration: InputDecoration(labelText: 'Salary'),
               initialValue: member.salary,
               onChanged: (value) {
                 onChanged(member.copyWith(salary: value));
-              },
-            ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Unemployed Due to Disaster'),
-              initialValue: member.unemployedDueToDisaster,
-              onChanged: (value) {
-                onChanged(member.copyWith(unemployedDueToDisaster: value));
               },
             ),
             TextFormField(
@@ -479,3 +621,4 @@ class IndividualMemberInput extends StatelessWidget {
     );
   }
 }
+

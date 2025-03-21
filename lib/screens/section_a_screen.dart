@@ -16,7 +16,7 @@ class _ScreenAState extends State<ScreenA> {
   // Method to add a new member
   void _addMember() {
     setState(() {
-      widget.data.members.add(Member(name: '', age: '', gender: 'Male', relationship: 'Other')); // Initialize with default values
+      widget.data.members.add(Member(name: '', age: '', gender: 'Male', relationship: 'Son')); // Initialize with default values
     });
   }
 
@@ -223,7 +223,7 @@ class _ScreenAState extends State<ScreenA> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF08708E),
-                    foregroundColor: Colors.white,
+                    foregroundColor: const Color.fromARGB(255, 255, 255, 255),
                     padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -283,7 +283,6 @@ class _ScreenAState extends State<ScreenA> {
     );
   }
 
-  // Custom method for consistent RadioListTile styling
   Widget _buildRadioListTile<T>({
     required String title,
     required T value,
@@ -302,7 +301,6 @@ class _ScreenAState extends State<ScreenA> {
     );
   }
 
-  // Custom method for consistent section titles
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),
@@ -317,7 +315,6 @@ class _ScreenAState extends State<ScreenA> {
     );
   }
 
-  //Custom dropdown
   Widget _buildDropdownButton<T>({
     required T? value,
     required String hint,
@@ -672,7 +669,7 @@ class _MemberInputState extends State<MemberInput> {
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: Colors.grey),
+            borderSide: const BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),

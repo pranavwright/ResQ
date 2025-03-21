@@ -18,8 +18,24 @@ class _ScreenDState extends State<ScreenD> {
   String? vehicleLossTypeDetails;
   String? selectedShelterType; // To hold the selected Shelter Type
 
-  bool isShelterTypeDropdownOpen = false;
-  bool isAccommodationStatusDropdownOpen = false;
+  // bool isShelterTypeDropdownOpen = false;  //No longer needed
+  // bool isAccommodationStatusDropdownOpen = false; //No longer needed
+
+  final List<String> _shelterTypeOptions = [
+    'Permanent House',
+    'House Built with Govt Assistance',
+    'Rented',
+    'Paadi (Layam)',
+    'Others',
+  ];
+
+  final List<String> _accommodationStatusOptions = [
+    'Relief Camps',
+    'Friends/Relatives',
+    'Rented House',
+    'Govt Accommodation',
+    'Others',
+  ];
 
   @override
   void initState() {
@@ -27,103 +43,52 @@ class _ScreenDState extends State<ScreenD> {
     selectedVehiclePossession = widget.data.vehiclePossession;
     selectedVehicleLoss = widget.data.vehicleLoss;
     selectedAccommodationStatus = widget.data.accommodationStatus;
-    selectedShelterType = widget.data.shelterType; // Set the initial value for shelter type
+    selectedShelterType = widget.data.shelterType;
+
+    if(selectedAccommodationStatus==''){
+      selectedAccommodationStatus = 'Relief Camps';
+    }
+    if(selectedShelterType==''){
+      selectedShelterType = 'Permanent House';
+    }
+
+    // Set the initial value for shelter type
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Section D: Shelter and Accommodation'),
-      ),
+      appBar: AppBar(title: Text('Section D: Shelter and Accommodation')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Shelter Type custom dropdown with better styling
-              Text(
-                'Shelter Type/house Type',
-                style: TextStyle(fontSize: 16),
-              ),
-              GestureDetector(
-                onTap: () {
+              // Shelter Type Dropdown
+              Text('Shelter Type/House Type', style: TextStyle(fontSize: 16)),
+              DropdownButtonFormField<String>(
+                value: selectedShelterType,
+                onChanged: (String? newValue) {
                   setState(() {
-                    isShelterTypeDropdownOpen = !isShelterTypeDropdownOpen;
+                    selectedShelterType = newValue;
+                    widget.data.shelterType = newValue!;
                   });
                 },
-                child: Container(
-                  padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.grey.shade400),
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 5,
-                        spreadRadius: 1,
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        selectedShelterType ?? 'Select Shelter Type',
-                        style: TextStyle(fontSize: 16, color: Colors.black),
-                      ),
-                      Icon(
-                        isShelterTypeDropdownOpen
-                            ? Icons.arrow_drop_up
-                            : Icons.arrow_drop_down,
-                        color: Colors.black,
-                      ),
-                    ],
-                  ),
+                items:
+                    _shelterTypeOptions.map<DropdownMenuItem<String>>((
+                      String value,
+                    ) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                decoration: InputDecoration(
+                  labelText: 'Select Shelter Type',
+                  border: OutlineInputBorder(),
                 ),
               ),
-              if (isShelterTypeDropdownOpen)
-                Column(
-                  children: <String>[
-                    'Permanent House',
-                    'House Built with Govt Assistance',
-                    'Rented',
-                    'Paadi (Layam)',
-                    'Others'
-                  ].map((shelter) {
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedShelterType = shelter;
-                          widget.data.shelterType = shelter;
-                          isShelterTypeDropdownOpen = false;
-                        });
-                      },
-                      child: Container(
-                        padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
-                        margin: EdgeInsets.only(top: 4.0),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: Colors.grey.shade400),
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 5,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          shelter,
-                          style: TextStyle(fontSize: 16, color: Colors.black),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
               SizedBox(height: 20),
 
               // If "Others" is selected, show the text field to specify
@@ -154,103 +119,48 @@ class _ScreenDState extends State<ScreenD> {
                 'Accommodation Status (Post-Disaster)',
                 style: TextStyle(fontSize: 16),
               ),
-              GestureDetector(
-                onTap: () {
+              DropdownButtonFormField<String>(
+                value: selectedAccommodationStatus,
+                onChanged: (String? newValue) {
                   setState(() {
-                    isAccommodationStatusDropdownOpen =
-                        !isAccommodationStatusDropdownOpen;
+                    selectedAccommodationStatus = newValue;
+                    widget.data.accommodationStatus = newValue!;
                   });
                 },
-                child: Container(
-                  padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.grey.shade400),
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 5,
-                        spreadRadius: 1,
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        selectedAccommodationStatus ??
-                            'Select Accommodation Status',
-                        style: TextStyle(fontSize: 16, color: Colors.black),
-                      ),
-                      Icon(
-                        isAccommodationStatusDropdownOpen
-                            ? Icons.arrow_drop_up
-                            : Icons.arrow_drop_down,
-                        color: Colors.black,
-                      ),
-                    ],
-                  ),
+                items:
+                    _accommodationStatusOptions.map<DropdownMenuItem<String>>((
+                      String value,
+                    ) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                decoration: InputDecoration(
+                  labelText: 'Select Accommodation Status',
+                  border: OutlineInputBorder(),
                 ),
               ),
-              if (isAccommodationStatusDropdownOpen)
-                Column(
-                  children: <String>[
-                    'Relief Camps',
-                    'Friends/Relatives',
-                    'Rented House',
-                    'Govt Accommodation',
-                    'Others'
-                  ].map((status) {
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedAccommodationStatus = status;
-                          widget.data.accommodationStatus = status;
-                          isAccommodationStatusDropdownOpen = false;
-                        });
-                      },
-                      child: Container(
-                        padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
-                        margin: EdgeInsets.only(top: 4.0),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: Colors.grey.shade400),
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 5,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          status,
-                          style: TextStyle(fontSize: 16, color: Colors.black),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
               SizedBox(height: 20),
 
-              // If "Others" is selected, show the text field to specify
               if (selectedAccommodationStatus == 'Others')
                 TextFormField(
-                  decoration: InputDecoration(labelText: 'Other Accommodation Details'),
+                  decoration: InputDecoration(
+                    labelText: 'Other Accommodation Details',
+                  ),
                   initialValue: widget.data.otherAccommodation,
                   onChanged: (value) => widget.data.otherAccommodation = value,
                 ),
 
-              // Vehicle Possession (Before Disaster) - Yes/No
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Vehicle Possession Before Disaster (Yes/No)',
-                        style: TextStyle(fontSize: 16)),
+                    Text(
+                      'Vehicle Possession Before Disaster (Yes/No)',
+                      style: TextStyle(fontSize: 16),
+                    ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
@@ -291,19 +201,22 @@ class _ScreenDState extends State<ScreenD> {
 
               if (widget.data.vehicleType == 'Any other')
                 TextFormField(
-                  decoration: InputDecoration(labelText: 'Other Vehicle Details'),
+                  decoration: InputDecoration(
+                    labelText: 'Other Vehicle Details',
+                  ),
                   initialValue: widget.data.otherVehicleType,
                   onChanged: (value) => widget.data.otherVehicleType = value,
                 ),
 
-              // Vehicle Loss (Post-Disaster) - Yes/No
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Vehicle Loss (Post-Disaster) (Yes/No)',
-                        style: TextStyle(fontSize: 16)),
+                    Text(
+                      'Vehicle Loss (Post-Disaster) (Yes/No)',
+                      style: TextStyle(fontSize: 16),
+                    ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
@@ -336,13 +249,15 @@ class _ScreenDState extends State<ScreenD> {
               ),
 
               if (widget.data.vehicleLoss == 'Yes')
-                // Vehicle Loss Type Selection (Text Field)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Enter Vehicle Loss Type', style: TextStyle(fontSize: 16)),
+                      Text(
+                        'Enter Vehicle Loss Type',
+                        style: TextStyle(fontSize: 16),
+                      ),
                       TextFormField(
                         decoration: InputDecoration(
                           labelText: 'e.g., Tow Wheeler, Three Wheeler, Other',
@@ -358,16 +273,16 @@ class _ScreenDState extends State<ScreenD> {
                     ],
                   ),
                 ),
-
               if (widget.data.vehicleLossType == 'Other')
                 TextFormField(
-                  decoration: InputDecoration(labelText: 'Other Vehicle Loss Details'),
+                  decoration: InputDecoration(
+                    labelText: 'Other Vehicle Loss Details',
+                  ),
                   initialValue: widget.data.otherVehicleLossType,
-                  onChanged: (value) => widget.data.otherVehicleLossType = value,
+                  onChanged:
+                      (value) => widget.data.otherVehicleLossType = value,
                 ),
-
               SizedBox(height: 20),
-
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
