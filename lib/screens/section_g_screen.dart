@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
-import 'package:resq/screens/section_h_screen.dart';
-// Assuming you have ScreenH defined elsewhere
-// import 'screen_h.dart';
+import 'package:resq/screens/section_h_screen.dart'; // Assuming you have ScreenH defined elsewhere
 
 class ScreenG extends StatefulWidget {
   final NeedAssessmentData data;
@@ -26,21 +24,65 @@ class _ScreenGState extends State<ScreenG> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Special Category'),
-                initialValue: widget.data.specialCategory,
-                onChanged: (value) => widget.data.specialCategory = value,
+              // Special Category Yes/No Radio Buttons
+              Row(
+                children: [
+                  Expanded(child: Text('Special Category (Yes/No):')),
+                  Radio<String>(
+                    value: 'Yes',
+                    groupValue: widget.data.specialCategory,
+                    onChanged: (value) {
+                      setState(() {
+                        widget.data.specialCategory = value!;
+                      });
+                    },
+                  ),
+                  Text('Yes'),
+                  Radio<String>(
+                    value: 'No',
+                    groupValue: widget.data.specialCategory,
+                    onChanged: (value) {
+                      setState(() {
+                        widget.data.specialCategory = value!;
+                      });
+                    },
+                  ),
+                  Text('No'),
+                ],
               ),
-              if (widget.data.specialCategory == 'Others')
+              // Show "Other Special Category" field only if "Yes" is selected
+              if (widget.data.specialCategory == 'Yes')
                 TextFormField(
                   decoration: InputDecoration(labelText: 'Other Special Category'),
                   initialValue: widget.data.otherSpecialCategory,
                   onChanged: (value) => widget.data.otherSpecialCategory = value,
                 ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Kudumbashree Member (Yes/No)'),
-                initialValue: widget.data.kudumbashreeMember,
-                onChanged: (value) => widget.data.kudumbashreeMember = value,
+
+              // Kudumbashree Member Yes/No Radio Buttons
+              Row(
+                children: [
+                  Expanded(child: Text('Kudumbashree Member (Yes/No):')),
+                  Radio<String>(
+                    value: 'Yes',
+                    groupValue: widget.data.kudumbashreeMember,
+                    onChanged: (value) {
+                      setState(() {
+                        widget.data.kudumbashreeMember = value!;
+                      });
+                    },
+                  ),
+                  Text('Yes'),
+                  Radio<String>(
+                    value: 'No',
+                    groupValue: widget.data.kudumbashreeMember,
+                    onChanged: (value) {
+                      setState(() {
+                        widget.data.kudumbashreeMember = value!;
+                      });
+                    },
+                  ),
+                  Text('No'),
+                ],
               ),
               if (widget.data.kudumbashreeMember == 'Yes')
                 Column(
@@ -51,10 +93,31 @@ class _ScreenGState extends State<ScreenG> {
                       initialValue: widget.data.kudumbashreeNHGName,
                       onChanged: (value) => widget.data.kudumbashreeNHGName = value,
                     ),
-                    TextFormField(
-                      decoration: InputDecoration(labelText: 'Kudumbashree Internal Loan (Yes/No)'),
-                      initialValue: widget.data.kudumbashreeInternalLoan,
-                      onChanged: (value) => widget.data.kudumbashreeInternalLoan = value,
+                    // Kudumbashree Internal Loan Yes/No Radio Buttons
+                    Row(
+                      children: [
+                        Expanded(child: Text('Kudumbashree Internal Loan (Yes/No):')),
+                        Radio<String>(
+                          value: 'Yes',
+                          groupValue: widget.data.kudumbashreeInternalLoan,
+                          onChanged: (value) {
+                            setState(() {
+                              widget.data.kudumbashreeInternalLoan = value!;
+                            });
+                          },
+                        ),
+                        Text('Yes'),
+                        Radio<String>(
+                          value: 'No',
+                          groupValue: widget.data.kudumbashreeInternalLoan,
+                          onChanged: (value) {
+                            setState(() {
+                              widget.data.kudumbashreeInternalLoan = value!;
+                            });
+                          },
+                        ),
+                        Text('No'),
+                      ],
                     ),
                     if (widget.data.kudumbashreeInternalLoan == 'Yes')
                       TextFormField(
@@ -63,10 +126,31 @@ class _ScreenGState extends State<ScreenG> {
                         onChanged: (value) => widget.data.kudumbashreeInternalLoanAmount = double.tryParse(value) ?? 0.0,
                         keyboardType: TextInputType.number,
                       ),
-                    TextFormField(
-                      decoration: InputDecoration(labelText: 'Kudumbashree Linkage Loan (Yes/No)'),
-                      initialValue: widget.data.kudumbashreeLinkageLoan,
-                      onChanged: (value) => widget.data.kudumbashreeLinkageLoan = value,
+                    // Kudumbashree Linkage Loan Yes/No Radio Buttons
+                    Row(
+                      children: [
+                        Expanded(child: Text('Kudumbashree Linkage Loan (Yes/No):')),
+                        Radio<String>(
+                          value: 'Yes',
+                          groupValue: widget.data.kudumbashreeLinkageLoan,
+                          onChanged: (value) {
+                            setState(() {
+                              widget.data.kudumbashreeLinkageLoan = value!;
+                            });
+                          },
+                        ),
+                        Text('Yes'),
+                        Radio<String>(
+                          value: 'No',
+                          groupValue: widget.data.kudumbashreeLinkageLoan,
+                          onChanged: (value) {
+                            setState(() {
+                              widget.data.kudumbashreeLinkageLoan = value!;
+                            });
+                          },
+                        ),
+                        Text('No'),
+                      ],
                     ),
                     if (widget.data.kudumbashreeLinkageLoan == 'Yes')
                       TextFormField(
@@ -75,10 +159,31 @@ class _ScreenGState extends State<ScreenG> {
                         onChanged: (value) => widget.data.kudumbashreeLinkageLoanAmount = double.tryParse(value) ?? 0.0,
                         keyboardType: TextInputType.number,
                       ),
-                    TextFormField(
-                      decoration: InputDecoration(labelText: 'Kudumbashree Microenterprise Loan (Yes/No)'),
-                      initialValue: widget.data.kudumbashreeMicroenterpriseLoan,
-                      onChanged: (value) => widget.data.kudumbashreeMicroenterpriseLoan = value,
+                    // Kudumbashree Microenterprise Loan Yes/No Radio Buttons
+                    Row(
+                      children: [
+                        Expanded(child: Text('Kudumbashree Microenterprise Loan (Yes/No):')),
+                        Radio<String>(
+                          value: 'Yes',
+                          groupValue: widget.data.kudumbashreeMicroenterpriseLoan,
+                          onChanged: (value) {
+                            setState(() {
+                              widget.data.kudumbashreeMicroenterpriseLoan = value!;
+                            });
+                          },
+                        ),
+                        Text('Yes'),
+                        Radio<String>(
+                          value: 'No',
+                          groupValue: widget.data.kudumbashreeMicroenterpriseLoan,
+                          onChanged: (value) {
+                            setState(() {
+                              widget.data.kudumbashreeMicroenterpriseLoan = value!;
+                            });
+                          },
+                        ),
+                        Text('No'),
+                      ],
                     ),
                     if (widget.data.kudumbashreeMicroenterpriseLoan == 'Yes')
                       TextFormField(

@@ -12,6 +12,31 @@ class ScreenF extends StatefulWidget {
 }
 
 class _ScreenFState extends State<ScreenF> {
+  String? pensionBeneficiary;
+  String? mgnregaBeneficiary;
+  String? legalDocumentsLost;
+  String? loanRepaymentPending;
+
+  bool isOldAgePension = false;
+  bool isWidowPension = false;
+  bool isDivyangPension = false;
+  bool isOtherPension = false;
+  bool isOtherDocumentLoss = false; // Controls the "Other Document Loss Details"
+  
+  TextEditingController otherPensionController = TextEditingController();
+  TextEditingController mgnregaDetailsController = TextEditingController();
+  TextEditingController otherDocumentLossDetailsController = TextEditingController(); // Controller for text field
+  
+  @override
+  void initState() {
+    super.initState();
+    pensionBeneficiary = widget.data.pensionBeneficiary;
+    mgnregaBeneficiary = widget.data.mgnregaBeneficiary;
+    legalDocumentsLost = widget.data.legalDocumentsLost;
+    loanRepaymentPending = widget.data.loanRepaymentPending;
+    mgnregaDetailsController.text = widget.data.mgnregaDetails; // Set initial value for text field
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -24,135 +49,360 @@ class _ScreenFState extends State<ScreenF> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Pension Beneficiary (Yes/No)'),
-                initialValue: widget.data.pensionBeneficiary,
-                onChanged: (value) => widget.data.pensionBeneficiary = value,
+              // Pension Beneficiary Radio Buttons
+              Row(
+                children: [
+                  Text('Pension Beneficiary: ',style: TextStyle(fontSize: 16),),
+                  Radio<String>(
+                    value: 'Yes',
+                    groupValue: pensionBeneficiary,
+                    onChanged: (value) {
+                      setState(() {
+                        pensionBeneficiary = value;
+                        widget.data.pensionBeneficiary = value!;
+                      });
+                    },
+                  ),
+                  Text('Yes'),
+                  Radio<String>(
+                    value: 'No',
+                    groupValue: pensionBeneficiary,
+                    onChanged: (value) {
+                      setState(() {
+                        pensionBeneficiary = value;
+                        widget.data.pensionBeneficiary = value!;
+                      });
+                    },
+                  ),
+                  Text('No'),
+                ],
               ),
               if (widget.data.pensionBeneficiary == 'Yes')
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextFormField(
-                      decoration: InputDecoration(labelText: 'Pension Type'),
-                      initialValue: widget.data.pensionType,
-                      onChanged: (value) => widget.data.pensionType = value,
+                    CheckboxListTile(
+                      title: Text('Old Age Pension'),
+                      value: isOldAgePension,
+                      onChanged: (value) {
+                        setState(() {
+                          isOldAgePension = value!;
+                          widget.data.pensionType = 'Old Age Pension';
+                        });
+                      },
                     ),
-                    if (widget.data.pensionType == 'Others')
-                      TextFormField(
-                        decoration: InputDecoration(labelText: 'Other Pension Type'),
-                        initialValue: widget.data.otherPensionType,
-                        onChanged: (value) => widget.data.otherPensionType = value,
+                    CheckboxListTile(
+                      title: Text('Widow Pension'),
+                      value: isWidowPension,
+                      onChanged: (value) {
+                        setState(() {
+                          isWidowPension = value!;
+                          widget.data.pensionType = 'Widow Pension';
+                        });
+                      },
+                    ),
+                    CheckboxListTile(
+                      title: Text('Divyang Pension'),
+                      value: isDivyangPension,
+                      onChanged: (value) {
+                        setState(() {
+                          isDivyangPension = value!;
+                          widget.data.pensionType = 'Divyang Pension';
+                        });
+                      },
+                    ),
+                    CheckboxListTile(
+                      title: Text('Others'),
+                      value: isOtherPension,
+                      onChanged: (value) {
+                        setState(() {
+                          isOtherPension = value!;
+                          widget.data.pensionType = 'Other';
+                        });
+                      },
+                    ),
+                    if (isOtherPension)
+                      TextField(
+                        controller: otherPensionController,
+                        decoration: InputDecoration(
+                          labelText: 'Specify Other Pension Type',
+                          hintText: 'Enter other pension type',
+                        ),
                       ),
                   ],
                 ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'MGNREGA Beneficiary (Yes/No)'),
-                initialValue: widget.data.mgnregaBeneficiary,
-                onChanged: (value) => widget.data.mgnregaBeneficiary = value,
+
+              // MGNREGA Beneficiary Radio Buttons
+              Row(
+                children: [
+                  Text('MGNREGA Beneficiary: '),
+                  Radio<String>(
+                    value: 'Yes',
+                    groupValue: mgnregaBeneficiary,
+                    onChanged: (value) {
+                      setState(() {
+                        mgnregaBeneficiary = value;
+                        widget.data.mgnregaBeneficiary = value!;
+                      });
+                    },
+                  ),
+                  Text('Yes'),
+                  Radio<String>(
+                    value: 'No',
+                    groupValue: mgnregaBeneficiary,
+                    onChanged: (value) {
+                      setState(() {
+                        mgnregaBeneficiary = value;
+                        widget.data.mgnregaBeneficiary = value!;
+                      });
+                    },
+                  ),
+                  Text('No'),
+                ],
               ),
               if (widget.data.mgnregaBeneficiary == 'Yes')
-                TextFormField(
-                  decoration: InputDecoration(labelText: 'MGNREGA Details'),
-                  initialValue: widget.data.mgnregaDetails,
-                  onChanged: (value) => widget.data.mgnregaDetails = value,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: mgnregaDetailsController,
+                      decoration: InputDecoration(
+                        labelText: 'Enter MGNREGA Details',
+                        hintText: 'Provide MGNREGA related details here',
+                      ),
+                      onChanged: (value) {
+                        widget.data.mgnregaDetails = value; // Update the details in the data model
+                      },
+                    ),
+                  ],
                 ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Legal Documents Lost (Yes/No)'),
-                initialValue: widget.data.legalDocumentsLost,
-                onChanged: (value) => widget.data.legalDocumentsLost = value,
+
+              // Legal Documents Lost Radio Buttons
+              Row(
+                children: [
+                  Text('Legal Documents Lost: '),
+                  Radio<String>(
+                    value: 'Yes',
+                    groupValue: legalDocumentsLost,
+                    onChanged: (value) {
+                      setState(() {
+                        legalDocumentsLost = value;
+                        widget.data.legalDocumentsLost = value!;
+                      });
+                    },
+                  ),
+                  Text('Yes'),
+                  Radio<String>(
+                    value: 'No',
+                    groupValue: legalDocumentsLost,
+                    onChanged: (value) {
+                      setState(() {
+                        legalDocumentsLost = value;
+                        widget.data.legalDocumentsLost = value!;
+                      });
+                    },
+                  ),
+                  Text('No'),
+                ],
               ),
               if (widget.data.legalDocumentsLost == 'Yes')
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextFormField(
-                      decoration: InputDecoration(labelText: 'Aadhar Card Loss'),
-                      initialValue: widget.data.aadharCardLoss,
-                      onChanged: (value) => widget.data.aadharCardLoss = value,
+                    CheckboxListTile(
+                      title: Text('Aadhar Card Loss'),
+                      value: widget.data.aadharCardLoss.isNotEmpty,
+                      onChanged: (value) {
+                        setState(() {
+                          widget.data.aadharCardLoss = value! ? 'Yes' : '';
+                        });
+                      },
                     ),
-                    TextFormField(
-                      decoration: InputDecoration(labelText: 'Government ID Loss'),
-                      initialValue: widget.data.governmentIDLoss,
-                      onChanged: (value) => widget.data.governmentIDLoss = value,
+                    CheckboxListTile(
+                      title: Text('Government ID Loss'),
+                      value: widget.data.governmentIDLoss.isNotEmpty,
+                      onChanged: (value) {
+                        setState(() {
+                          widget.data.governmentIDLoss = value! ? 'Yes' : '';
+                        });
+                      },
                     ),
-                    TextFormField(
-                      decoration: InputDecoration(labelText: 'Passport Loss'),
-                      initialValue: widget.data.passportLoss,
-                      onChanged: (value) => widget.data.passportLoss = value,
+                    CheckboxListTile(
+                      title: Text('Passport Loss'),
+                      value: widget.data.passportLoss.isNotEmpty,
+                      onChanged: (value) {
+                        setState(() {
+                          widget.data.passportLoss = value! ? 'Yes' : '';
+                        });
+                      },
                     ),
-                    TextFormField(
-                      decoration: InputDecoration(labelText: 'Employment Card Loss'),
-                      initialValue: widget.data.employmentCardLoss,
-                      onChanged: (value) => widget.data.employmentCardLoss = value,
+                    CheckboxListTile(
+                      title: Text('Employment Card Loss'),
+                      value: widget.data.employmentCardLoss.isNotEmpty,
+                      onChanged: (value) {
+                        setState(() {
+                          widget.data.employmentCardLoss = value! ? 'Yes' : '';
+                        });
+                      },
                     ),
-                    TextFormField(
-                      decoration: InputDecoration(labelText: 'PAN Card Loss'),
-                      initialValue: widget.data.panCardLoss,
-                      onChanged: (value) => widget.data.panCardLoss = value,
+                    CheckboxListTile(
+                      title: Text('PAN Card Loss'),
+                      value: widget.data.panCardLoss.isNotEmpty,
+                      onChanged: (value) {
+                        setState(() {
+                          widget.data.panCardLoss = value! ? 'Yes' : '';
+                        });
+                      },
                     ),
-                    TextFormField(
-                      decoration: InputDecoration(labelText: 'Insurance Card Loss'),
-                      initialValue: widget.data.insuranceCardLoss,
-                      onChanged: (value) => widget.data.insuranceCardLoss = value,
+                    CheckboxListTile(
+                      title: Text('Insurance Card Loss'),
+                      value: widget.data.insuranceCardLoss.isNotEmpty,
+                      onChanged: (value) {
+                        setState(() {
+                          widget.data.insuranceCardLoss = value! ? 'Yes' : '';
+                        });
+                      },
                     ),
-                    TextFormField(
-                      decoration: InputDecoration(labelText: 'Driving License Loss'),
-                      initialValue: widget.data.drivingLicenseLoss,
-                      onChanged: (value) => widget.data.drivingLicenseLoss = value,
+                    CheckboxListTile(
+                      title: Text('Driving License Loss'),
+                      value: widget.data.drivingLicenseLoss.isNotEmpty,
+                      onChanged: (value) {
+                        setState(() {
+                          widget.data.drivingLicenseLoss = value! ? 'Yes' : '';
+                        });
+                      },
                     ),
-                    TextFormField(
-                      decoration: InputDecoration(labelText: 'ATM Card Loss'),
-                      initialValue: widget.data.atmCardLoss,
-                      onChanged: (value) => widget.data.atmCardLoss = value,
+                    CheckboxListTile(
+                      title: Text('ATM Card Loss'),
+                      value: widget.data.atmCardLoss.isNotEmpty,
+                      onChanged: (value) {
+                        setState(() {
+                          widget.data.atmCardLoss = value! ? 'Yes' : '';
+                        });
+                      },
                     ),
-                    TextFormField(
-                      decoration: InputDecoration(labelText: 'Ration Card Loss (Document)'),
-                      initialValue: widget.data.rationCardLossDoc,
-                      onChanged: (value) => widget.data.rationCardLossDoc = value,
+                    CheckboxListTile(
+                      title: Text('Ration Card Loss (Document)'),
+                      value: widget.data.rationCardLossDoc.isNotEmpty,
+                      onChanged: (value) {
+                        setState(() {
+                          widget.data.rationCardLossDoc = value! ? 'Yes' : '';
+                        });
+                      },
                     ),
-                    TextFormField(
-                      decoration: InputDecoration(labelText: 'Land Document Loss'),
-                      initialValue: widget.data.landDocumentLoss,
-                      onChanged: (value) => widget.data.landDocumentLoss = value,
+                    CheckboxListTile(
+                      title: Text('Land Document Loss'),
+                      value: widget.data.landDocumentLoss.isNotEmpty,
+                      onChanged: (value) {
+                        setState(() {
+                          widget.data.landDocumentLoss = value! ? 'Yes' : '';
+                        });
+                      },
                     ),
-                    TextFormField(
-                      decoration: InputDecoration(labelText: 'Property Document Loss'),
-                      initialValue: widget.data.propertyDocumentLoss,
-                      onChanged: (value) => widget.data.propertyDocumentLoss = value,
+                    CheckboxListTile(
+                      title: Text('Property Document Loss'),
+                      value: widget.data.propertyDocumentLoss.isNotEmpty,
+                      onChanged: (value) {
+                        setState(() {
+                          widget.data.propertyDocumentLoss = value! ? 'Yes' : '';
+                        });
+                      },
                     ),
-                    TextFormField(
-                      decoration: InputDecoration(labelText: 'Birth Certificate Loss'),
-                      initialValue: widget.data.birthCertificateLoss,
-                      onChanged: (value) => widget.data.birthCertificateLoss = value,
+                    CheckboxListTile(
+                      title: Text('Birth Certificate Loss'),
+                      value: widget.data.birthCertificateLoss.isNotEmpty,
+                      onChanged: (value) {
+                        setState(() {
+                          widget.data.birthCertificateLoss = value! ? 'Yes' : '';
+                        });
+                      },
                     ),
-                    TextFormField(
-                      decoration: InputDecoration(labelText: 'Marriage Certificate Loss'),
-                      initialValue: widget.data.marriageCertificateLoss,
-                      onChanged: (value) => widget.data.marriageCertificateLoss = value,
+                    CheckboxListTile(
+                      title: Text('Marriage Certificate Loss'),
+                      value: widget.data.marriageCertificateLoss.isNotEmpty,
+                      onChanged: (value) {
+                        setState(() {
+                          widget.data.marriageCertificateLoss = value! ? 'Yes' : '';
+                        });
+                      },
                     ),
-                    TextFormField(
-                      decoration: InputDecoration(labelText: 'Educational Document Loss'),
-                      initialValue: widget.data.educationalDocumentLoss,
-                      onChanged: (value) => widget.data.educationalDocumentLoss = value,
+                    CheckboxListTile(
+                      title: Text('Educational Document Loss'),
+                      value: widget.data.educationalDocumentLoss.isNotEmpty,
+                      onChanged: (value) {
+                        setState(() {
+                          widget.data.educationalDocumentLoss = value! ? 'Yes' : '';
+                        });
+                      },
                     ),
-                    TextFormField(
-                      decoration: InputDecoration(labelText: 'Other Document Loss'),
-                      initialValue: widget.data.otherDocumentLoss,
-                      onChanged: (value) => widget.data.otherDocumentLoss = value,
+                    CheckboxListTile(
+                      title: Text('Other Document Loss'),
+                      value: isOtherDocumentLoss,
+                      onChanged: (value) {
+                        setState(() {
+                          isOtherDocumentLoss = value!;
+                          if (!value) {
+                            widget.data.otherDocumentLossDetails = ''; // Reset the details if checkbox is unchecked
+                          }
+                        });
+                      },
                     ),
-                    if (widget.data.otherDocumentLoss == 'Yes')
-                      TextFormField(
-                        decoration: InputDecoration(labelText: 'Other Document Loss Details'),
-                        initialValue: widget.data.otherDocumentLossDetails,
-                        onChanged: (value) => widget.data.otherDocumentLossDetails = value,
+                    if (isOtherDocumentLoss) 
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CheckboxListTile(
+                            title: Text('click and give the Other Loss Document  Details'),
+                            value: widget.data.otherDocumentLossDetails.isNotEmpty,
+                            onChanged: (value) {
+                              setState(() {
+                                widget.data.otherDocumentLossDetails = value! ? 'Other Details' : '';
+                              });
+                            },
+                          ),
+                          if (widget.data.otherDocumentLossDetails.isNotEmpty)
+                            TextField(
+                              controller: otherDocumentLossDetailsController,
+                              decoration: InputDecoration(
+                                labelText: 'Specify Other Document Loss Details',
+                                hintText: 'Enter details about the other document loss',
+                              ),
+                              onChanged: (value) {
+                                widget.data.otherDocumentLossDetails = value; // Update the other document loss details
+                              },
+                            ),
+                        ],
                       ),
                   ],
                 ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Loan Repayment Pending (Yes/No)'),
-                initialValue: widget.data.loanRepaymentPending,
-                onChanged: (value) => widget.data.loanRepaymentPending = value,
+              
+              // Loan Repayment Pending Radio Buttons
+              Row(
+                children: [
+                  Text('Loan Repayment Pending: '),
+                  Radio<String>(
+                    value: 'Yes',
+                    groupValue: loanRepaymentPending,
+                    onChanged: (value) {
+                      setState(() {
+                        loanRepaymentPending = value;
+                        widget.data.loanRepaymentPending = value!;
+                      });
+                    },
+                  ),
+                  Text('Yes'),
+                  Radio<String>(
+                    value: 'No',
+                    groupValue: loanRepaymentPending,
+                    onChanged: (value) {
+                      setState(() {
+                        loanRepaymentPending = value;
+                        widget.data.loanRepaymentPending = value!;
+                      });
+                    },
+                  ),
+                  Text('No'),
+                ],
               ),
               SizedBox(height: 20),
               ElevatedButton(

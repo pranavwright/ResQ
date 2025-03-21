@@ -12,6 +12,24 @@ class ScreenC extends StatefulWidget {
 }
 
 class _ScreenCState extends State<ScreenC> {
+  String? selectedAnganwadiStatus;
+  String? selectedChildrenMalnutritionStatus;
+  String? selectedFoodAssistanceSufficient;
+  String? selectedGovtNutritionDisruption;
+  String? selectedHealthInsuranceStatus;
+  String? foodAssistanceDetails;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedAnganwadiStatus = widget.data.anganwadiStatus;
+    selectedChildrenMalnutritionStatus = widget.data.childrenMalnutritionStatus;
+    selectedFoodAssistanceSufficient = widget.data.foodAssistanceSufficient;
+    selectedGovtNutritionDisruption = widget.data.govtNutritionDisruption;
+    selectedHealthInsuranceStatus = widget.data.healthInsuranceStatus;
+    foodAssistanceDetails = widget.data.foodAssistanceNeedDuration; // or other relevant field
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -30,15 +48,79 @@ class _ScreenCState extends State<ScreenC> {
                 onChanged: (value) => widget.data.numChildrenAnganwadi = int.tryParse(value) ?? 0,
                 keyboardType: TextInputType.number,
               ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Anganwadi Status (Damaged: Yes/No)'),
-                initialValue: widget.data.anganwadiStatus,
-                onChanged: (value) => widget.data.anganwadiStatus = value,
+              // Anganwadi Status (Damaged: Yes/No)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Anganwadi Status (Damaged: Yes/No)', style: TextStyle(fontSize: 16)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Radio<String>(
+                          value: 'Yes',
+                          groupValue: selectedAnganwadiStatus,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedAnganwadiStatus = value;
+                              widget.data.anganwadiStatus = value!;
+                            });
+                          },
+                        ),
+                        Text('Yes'),
+                        Radio<String>(
+                          value: 'No',
+                          groupValue: selectedAnganwadiStatus,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedAnganwadiStatus = value;
+                              widget.data.anganwadiStatus = value!;
+                            });
+                          },
+                        ),
+                        Text('No'),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Children with Malnutrition (Yes/No)'),
-                initialValue: widget.data.childrenMalnutritionStatus,
-                onChanged: (value) => widget.data.childrenMalnutritionStatus = value,
+              // Children with Malnutrition (Yes/No)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Children with Malnutrition (Yes/No)', style: TextStyle(fontSize: 16)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Radio<String>(
+                          value: 'Yes',
+                          groupValue: selectedChildrenMalnutritionStatus,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedChildrenMalnutritionStatus = value;
+                              widget.data.childrenMalnutritionStatus = value!;
+                            });
+                          },
+                        ),
+                        Text('Yes'),
+                        Radio<String>(
+                          value: 'No',
+                          groupValue: selectedChildrenMalnutritionStatus,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedChildrenMalnutritionStatus = value;
+                              widget.data.childrenMalnutritionStatus = value!;
+                            });
+                          },
+                        ),
+                        Text('No'),
+                      ],
+                    ),
+                  ],
+                ),
               ),
               TextFormField(
                 decoration: InputDecoration(labelText: 'Number of Pregnant Women'),
@@ -52,27 +134,137 @@ class _ScreenCState extends State<ScreenC> {
                 onChanged: (value) => widget.data.numLactatingMothers = int.tryParse(value) ?? 0,
                 keyboardType: TextInputType.number,
               ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Present Food Assistance Sufficient (Yes/No)'),
-                initialValue: widget.data.foodAssistanceSufficient,
-                onChanged: (value) => widget.data.foodAssistanceSufficient = value,
+              // Present Food Assistance Sufficient (Yes/No)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Present Food Assistance Sufficient (Yes/No)', style: TextStyle(fontSize: 16)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Radio<String>(
+                          value: 'Yes',
+                          groupValue: selectedFoodAssistanceSufficient,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedFoodAssistanceSufficient = value;
+                              widget.data.foodAssistanceSufficient = value!;
+                              foodAssistanceDetails = ''; // Reset the text field if Yes is selected
+                            });
+                          },
+                        ),
+                        Text('Yes'),
+                        Radio<String>(
+                          value: 'No',
+                          groupValue: selectedFoodAssistanceSufficient,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedFoodAssistanceSufficient = value;
+                              widget.data.foodAssistanceSufficient = value!;
+                            });
+                          },
+                        ),
+                        Text('No'),
+                      ],
+                    ),
+                    // Show TextFormField if "No" is selected
+                    if (selectedFoodAssistanceSufficient == 'No')
+                      TextFormField(
+                        decoration: InputDecoration(labelText: 'please specify'),
+                        initialValue: foodAssistanceDetails,
+                        onChanged: (value) {
+                          setState(() {
+                            foodAssistanceDetails = value;
+                            widget.data.foodAssistanceNeedDuration = value;
+                          });
+                        },
+                      ),
+                  ],
+                ),
               ),
               TextFormField(
                 decoration: InputDecoration(labelText: 'Food Assistance Need Duration'),
                 initialValue: widget.data.foodAssistanceNeedDuration,
                 onChanged: (value) => widget.data.foodAssistanceNeedDuration = value,
               ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Disruption in Government Nutrition Service'),
-                initialValue: widget.data.govtNutritionDisruption,
-                onChanged: (value) => widget.data.govtNutritionDisruption = value,
+              // Disruption in Government Nutrition Service (Yes/No)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Disruption in Government Nutrition Service', style: TextStyle(fontSize: 16)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Radio<String>(
+                          value: 'Yes',
+                          groupValue: selectedGovtNutritionDisruption,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedGovtNutritionDisruption = value;
+                              widget.data.govtNutritionDisruption = value!;
+                            });
+                          },
+                        ),
+                        Text('Yes'),
+                        Radio<String>(
+                          value: 'No',
+                          groupValue: selectedGovtNutritionDisruption,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedGovtNutritionDisruption = value;
+                              widget.data.govtNutritionDisruption = value!;
+                            });
+                          },
+                        ),
+                        Text('No'),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Health Insurance Coverage (Yes/No)'),
-                initialValue: widget.data.healthInsuranceStatus,
-                onChanged: (value) => widget.data.healthInsuranceStatus = value,
+              // Health Insurance Coverage (Yes/No)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Health Insurance Coverage (Yes/No)', style: TextStyle(fontSize: 16)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Radio<String>(
+                          value: 'Yes',
+                          groupValue: selectedHealthInsuranceStatus,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedHealthInsuranceStatus = value;
+                              widget.data.healthInsuranceStatus = value!;
+                            });
+                          },
+                        ),
+                        Text('Yes'),
+                        Radio<String>(
+                          value: 'No',
+                          groupValue: selectedHealthInsuranceStatus,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedHealthInsuranceStatus = value;
+                              widget.data.healthInsuranceStatus = value!;
+                            });
+                          },
+                        ),
+                        Text('No'),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              if (widget.data.healthInsuranceStatus == 'Yes')
+              // Health Insurance Details (appears only if Health Insurance is Yes)
+              if (selectedHealthInsuranceStatus == 'Yes')
                 TextFormField(
                   decoration: InputDecoration(labelText: 'Health Insurance Details'),
                   initialValue: widget.data.healthInsuranceDetails,

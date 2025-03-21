@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:path/path.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
 import 'package:resq/screens/section_b_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ScreenA extends StatefulWidget {
   final NeedAssessmentData data;
@@ -13,81 +13,162 @@ class ScreenA extends StatefulWidget {
 }
 
 class _ScreenAState extends State<ScreenA> {
+  // Method to add a new member
+  void _addMember() {
+    setState(() {
+      widget.data.members.add(Member(name: '', age: '', gender: 'Male', relationship: 'Son')); // Initialize with default values
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Section A: Household Profile'),
+        title: Text(
+          'Section A: Household Profile',
+          style: GoogleFonts.urbanist(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        backgroundColor: const Color(0xFF08708E),
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Village/Ward'),
+              _buildModernTextFormField(
+                labelText: 'Village/Ward',
                 initialValue: widget.data.villageWard,
                 onChanged: (value) => widget.data.villageWard = value,
               ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'House Number'),
+              _buildModernTextFormField(
+                labelText: 'House Number',
                 initialValue: widget.data.houseNumber,
                 onChanged: (value) => widget.data.houseNumber = value,
               ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Household Head'),
+              _buildModernTextFormField(
+                labelText: 'Household Head',
                 initialValue: widget.data.householdHead,
                 onChanged: (value) => widget.data.householdHead = value,
               ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Unique Household ID'),
+              _buildModernTextFormField(
+                labelText: 'Unique Household ID',
                 initialValue: widget.data.uniqueHouseholdId,
                 onChanged: (value) => widget.data.uniqueHouseholdId = value,
               ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Address'),
+              _buildModernTextFormField(
+                labelText: 'Address',
                 initialValue: widget.data.address,
                 onChanged: (value) => widget.data.address = value,
               ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Contact No.'),
+              _buildModernTextFormField(
+                labelText: 'Contact No.',
                 initialValue: widget.data.contactNo,
                 onChanged: (value) => widget.data.contactNo = value,
+                keyboardType: TextInputType.phone,
               ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Ration Card No.'),
+              _buildModernTextFormField(
+                labelText: 'Ration Card No.',
                 initialValue: widget.data.rationCardNo,
                 onChanged: (value) => widget.data.rationCardNo = value,
               ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Ration Category'),
-                initialValue: widget.data.rationCategory,
-                onChanged: (value) => widget.data.rationCategory = value,
-              ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Caste'),
-                initialValue: widget.data.caste,
+              _buildSectionTitle('Ration Category'),
+              _buildRadioListTile(
+                title: 'Yellow',
+                value: 'Yellow',
+                groupValue: widget.data.rationCategory,
                 onChanged: (value) {
                   setState(() {
-                    widget.data.caste = value;
+                    widget.data.rationCategory = value!;
                   });
                 },
               ),
-              if (widget.data.caste == 'Other')
-                TextFormField(
-                  decoration: InputDecoration(labelText: 'Other Caste'),
+              _buildRadioListTile(
+                title: 'White',
+                value: 'White',
+                groupValue: widget.data.rationCategory,
+                onChanged: (value) {
+                  setState(() {
+                    widget.data.rationCategory = value!;
+                  });
+                },
+              ),
+              _buildRadioListTile(
+                title: 'Pink',
+                value: 'Pink',
+                groupValue: widget.data.rationCategory,
+                onChanged: (value) {
+                  setState(() {
+                    widget.data.rationCategory = value!;
+                  });
+                },
+              ),
+              _buildSectionTitle('Caste'),
+              _buildRadioListTile(
+                title: 'General',
+                value: 'General',
+                groupValue: widget.data.caste,
+                onChanged: (value) {
+                  setState(() {
+                    widget.data.caste = value!;
+                  });
+                },
+              ),
+              _buildRadioListTile(
+                title: 'Other Backward Class',
+                value: 'Other Backward Class',
+                groupValue: widget.data.caste,
+                onChanged: (value) {
+                  setState(() {
+                    widget.data.caste = value!;
+                  });
+                },
+              ),
+              _buildRadioListTile(
+                title: 'Scheduled Caste',
+                value: 'Scheduled Caste',
+                groupValue: widget.data.caste,
+                onChanged: (value) {
+                  setState(() {
+                    widget.data.caste = value!;
+                  });
+                },
+              ),
+              _buildRadioListTile(
+                title: 'Scheduled Tribe',
+                value: 'Scheduled Tribe',
+                groupValue: widget.data.caste,
+                onChanged: (value) {
+                  setState(() {
+                    widget.data.caste = value!;
+                  });
+                },
+              ),
+              _buildRadioListTile(
+                title: 'Others',
+                value: 'Others',
+                groupValue: widget.data.caste,
+                onChanged: (value) {
+                  setState(() {
+                    widget.data.caste = value!;
+                  });
+                },
+              ),
+              if (widget.data.caste == 'Others')
+                _buildModernTextFormField(
+                  labelText: 'Other Caste',
                   initialValue: widget.data.otherCaste,
                   onChanged: (value) => widget.data.otherCaste = value,
                 ),
-              SizedBox(height: 20),
-              Text(
-                'Demographics of Total Household Members',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
+              const SizedBox(height: 30),
+              _buildSectionTitle('Demographics of Total Household Members'),
               ListView.builder(
                 shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
+                physics: const NeverScrollableScrollPhysics(),
                 itemCount: widget.data.members.length,
                 itemBuilder: (context, index) {
                   return MemberInput(
@@ -105,32 +186,58 @@ class _ScreenAState extends State<ScreenA> {
                   );
                 },
               ),
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    widget.data.members.add(
-                      Member(
-                        name: '',
-                        age: '',
-                        gender: '',
-                        relationship: '',
+              const SizedBox(height: 10), // Added space before the button
+              Align(
+                alignment: Alignment.center,
+                child: ElevatedButton(
+                  onPressed: _addMember, // Call the _addMember method
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF08708E),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    elevation: 5,
+                  ),
+                  child: Text(
+                    'Add Member', // Button text
+                    style: GoogleFonts.urbanist(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Align(
+                alignment: Alignment.center,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ScreenB(data: widget.data),
                       ),
                     );
-                  });
-                },
-                child: Text('Add Member'),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ScreenB(data: widget.data),
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF08708E),
+                    foregroundColor: const Color.fromARGB(255, 255, 255, 255),
+                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  );
-                },
-                child: Text('Next'),
+                    elevation: 5,
+                  ),
+                  child: Text(
+                    'Next',
+                    style: GoogleFonts.urbanist(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -138,9 +245,126 @@ class _ScreenAState extends State<ScreenA> {
       ),
     );
   }
+
+  // Custom method for consistent TextFormField styling
+  Widget _buildModernTextFormField({
+    required String labelText,
+    String? initialValue,
+    void Function(String)? onChanged,
+    TextInputType? keyboardType,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: TextFormField(
+        keyboardType: keyboardType,
+        initialValue: initialValue,
+        onChanged: onChanged,
+        style: GoogleFonts.urbanist(),
+        decoration: InputDecoration(
+          labelText: labelText,
+          labelStyle: GoogleFonts.urbanist(
+            fontWeight: FontWeight.w500,
+            color: Colors.grey[700],
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Colors.grey),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Color(0xFF08708E), width: 2),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Colors.grey),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRadioListTile<T>({
+    required String title,
+    required T value,
+    required T? groupValue,
+    void Function(T?)? onChanged,
+  }) {
+    return RadioListTile<T>(
+      title: Text(
+        title,
+        style: GoogleFonts.urbanist(),
+      ),
+      value: value,
+      groupValue: groupValue,
+      onChanged: onChanged,
+      activeColor: const Color(0xFF08708E),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: Text(
+        title,
+        style: GoogleFonts.urbanist(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFF08708E),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdownButton<T>({
+    required T? value,
+    required String hint,
+    required List<String> items,
+    void Function(T?)? onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: DropdownButtonFormField<T>(
+        value: value,
+        hint: Text(
+          hint,
+          style: GoogleFonts.urbanist(
+            fontWeight: FontWeight.w500,
+            color: Colors.grey[700],
+          ),
+        ),
+        onChanged: onChanged,
+        isExpanded: true,
+        items: items.map<DropdownMenuItem<T>>((String item) {
+          return DropdownMenuItem<T>(
+            value: item as T,
+            child: Text(
+              item,
+              style: GoogleFonts.urbanist(),
+            ),
+          );
+        }).toList(),
+        decoration: InputDecoration(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Colors.grey),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Color(0xFF08708E), width: 2),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Colors.grey),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+        style: GoogleFonts.urbanist(),
+      ),
+    );
+  }
 }
 
-class MemberInput extends StatelessWidget {
+class MemberInput extends StatefulWidget {
   final Member member;
   final Function(Member) onChanged;
   final VoidCallback onDelete;
@@ -152,72 +376,306 @@ class MemberInput extends StatelessWidget {
   });
 
   @override
+  _MemberInputState createState() => _MemberInputState();
+}
+
+class _MemberInputState extends State<MemberInput> {
+  String? _selectedGender;
+  String? _selectedRelationship;
+  bool _genderOtherSelected = false;
+  bool _relationshipOtherSelected = false;
+  TextEditingController _otherGenderController = TextEditingController();
+  TextEditingController _otherRelationshipController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (['Male', 'Female', 'Other'].contains(widget.member.gender)) {
+      _selectedGender = widget.member.gender;
+      if (widget.member.gender == 'Other') {
+        _genderOtherSelected = true;
+        _otherGenderController.text = widget.member.gender ?? ""; // corrected this line
+      }
+    } else {
+      _selectedGender = null;
+    }
+
+    final validRelationships = [
+      'Father',
+      'Mother',
+      'Son',
+      'Daughter',
+      'Grand Mother',
+      'Grand Father',
+      'Other'
+    ];
+    if (validRelationships.contains(widget.member.relationship)) {
+      _selectedRelationship = widget.member.relationship;
+      if (widget.member.relationship == "Other") {
+        _relationshipOtherSelected = true;
+        _otherRelationshipController.text =
+            widget.member.relationship ?? ""; // corrected this line
+      }
+    } else {
+      _selectedRelationship = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _otherGenderController.dispose();
+    _otherRelationshipController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      margin: const EdgeInsets.symmetric(vertical: 8),
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 IconButton(
-                  icon: Icon(Icons.delete),
-                  onPressed: onDelete,
+                  icon: const Icon(Icons.delete, color: Colors.grey),
+                  onPressed: widget.onDelete,
                 ),
               ],
             ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Name'),
-              initialValue: member.name,
+            _buildModernTextFormField(
+              labelText: 'Name',
+              initialValue: widget.member.name,
               onChanged: (value) {
-                onChanged(Member(
+                widget.onChanged(Member(
                   name: value,
-                  age: member.age,
-                  gender: member.gender,
-                  relationship: member.relationship,
+                  age: widget.member.age,
+                  gender: widget.member.gender,
+                  relationship: widget.member.relationship,
                 ));
               },
             ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Age'),
-              initialValue: member.age,
+            _buildModernTextFormField(
+              labelText: 'Age',
+              initialValue: widget.member.age,
               onChanged: (value) {
-                onChanged(Member(
-                  name: member.name,
+                widget.onChanged(Member(
+                  name: value,
                   age: value,
-                  gender: member.gender,
-                  relationship: member.relationship,
+                  gender: widget.member.gender,
+                  relationship: widget.member.relationship,
                 ));
               },
+              keyboardType: TextInputType.number,
             ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Gender'),
-              initialValue: member.gender,
-              onChanged: (value) {
-                onChanged(Member(
-                  name: member.name,
-                  age: member.age,
-                  gender: value,
-                  relationship: member.relationship,
-                ));
+            _buildDropdownButton<String>(
+              value: _selectedGender,
+              hint: 'Select Gender',
+              items: ['Male', 'Female', 'Other'],
+              onChanged: (String? newValue) {
+                setState(() {
+                  _selectedGender = newValue;
+                  _genderOtherSelected = newValue == 'Other';
+                  widget.onChanged(
+                    Member(
+                      name: widget.member.name,
+                      age: widget.member.age,
+                      gender: _selectedGender ?? 'Male',
+                      relationship: widget.member.relationship,
+                    ),
+                  );
+                });
               },
             ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Relationship'),
-              initialValue: member.relationship,
-              onChanged: (value) {
-                onChanged(Member(
-                  name: member.name,
-                  age: member.age,
-                  gender: member.gender,
-                  relationship: value,
-                ));
+            if (_genderOtherSelected)
+              _buildModernTextFormField(
+                labelText: 'Other Gender',
+                controller: _otherGenderController,
+                onChanged: (value) {
+                  String genderValue = value.isNotEmpty ? value : "Other";
+                  widget.onChanged(
+                    Member(
+                      name: widget.member.name,
+                      age: widget.member.age,
+                      gender: genderValue,
+                      relationship: widget.member.relationship,
+                    ),
+                  );
+                },
+              ),
+            _buildDropdownButton<String>(
+              value: _selectedRelationship,
+              hint: 'Select Relationship',
+              items: [
+                'Father',
+                'Mother',
+                'Son',
+                'Daughter',
+                'Grand Mother',
+                'Grand Father',
+                'Other'
+              ],
+              onChanged: (String? newValue) {
+                setState(() {
+                  _selectedRelationship = newValue;
+                  _relationshipOtherSelected = newValue == 'Other';
+                  widget.onChanged(
+                    Member(
+                      name: widget.member.name,
+                      age: widget.member.age,
+                      gender: widget.member.gender,
+                      relationship: _selectedRelationship ?? 'Other',
+                    ),
+                  );
+                });
               },
             ),
+            if (_relationshipOtherSelected)
+              _buildModernTextFormField(
+                labelText: 'Other Relationship',
+                controller: _otherRelationshipController,
+                onChanged: (value) {
+                  String relationshipValue = value.isNotEmpty ? value : "Other";
+                  widget.onChanged(
+                    Member(
+                      name: widget.member.name,
+                      age: widget.member.age,
+                      gender: widget.member.gender,
+                      relationship: relationshipValue,
+                    ),
+                  );
+                },
+              ),
           ],
         ),
       ),
     );
   }
+
+  // Custom method for consistent TextFormField styling
+  Widget _buildModernTextFormField({
+    required String labelText,
+    String? initialValue,
+    void Function(String)? onChanged,
+    TextInputType? keyboardType,
+    TextEditingController? controller,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        initialValue: initialValue,
+        onChanged: onChanged,
+        style: GoogleFonts.urbanist(),
+        decoration: InputDecoration(
+          labelText: labelText,
+          labelStyle: GoogleFonts.urbanist(
+            fontWeight: FontWeight.w500,
+            color: Colors.grey[700],
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Colors.grey),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Color(0xFF08708E), width: 2),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Colors.grey),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Custom method for consistent RadioListTile styling
+  Widget _buildRadioListTile<T>({
+    required String title,
+    required T value,
+    required T? groupValue,
+    void Function(T?)? onChanged,
+  }) {
+    return RadioListTile<T>(
+      title: Text(
+        title,
+        style: GoogleFonts.urbanist(),
+      ),
+      value: value,
+      groupValue: groupValue,
+      onChanged: onChanged,
+      activeColor: const Color(0xFF08708E),
+    );
+  }
+
+  // Custom method for consistent section titles
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: Text(
+        title,
+        style: GoogleFonts.urbanist(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFF08708E),
+        ),
+      ),
+    );
+  }
+
+  //Custom dropdown
+  Widget _buildDropdownButton<T>({
+    required T? value,
+    required String hint,
+    required List<String> items,
+    void Function(T?)? onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: DropdownButtonFormField<T>(
+        value: value,
+        hint: Text(
+          hint,
+          style: GoogleFonts.urbanist(
+            fontWeight: FontWeight.w500,
+            color: Colors.grey[700],
+          ),
+        ),
+        onChanged: onChanged,
+        isExpanded: true,
+        items: items.map<DropdownMenuItem<T>>((String item) {
+          return DropdownMenuItem<T>(
+            value: item as T,
+            child: Text(
+              item,
+              style: GoogleFonts.urbanist(),
+            ),
+          );
+        }).toList(),
+        decoration: InputDecoration(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Colors.grey),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Color(0xFF08708E), width: 2),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+        style: GoogleFonts.urbanist(),
+      ),
+    );
+  }
 }
+
