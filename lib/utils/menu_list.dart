@@ -39,7 +39,7 @@ final List<Map<String, dynamic>> menuData = [
     "title": "Home",
     "icon": Icons.home,
     "route": "/app",
-    "roles": ["stat", "admin", "kas", "superAdmin", "collectionpointadmin", "campadmin", "collectionpointvolunteer"]
+    "roles": ["all"]
   },
   {
     "title": "Families",
@@ -75,30 +75,45 @@ final List<Map<String, dynamic>> menuData = [
     "title": "Profile",
     "icon": Icons.person,
     "route": "/profile",
-    "roles": ["stat", "admin",  "superAdmin", "collectionpointadmin", "campadmin", "collectionpointvolunteer"]
+    "roles": ["all"]
   },
   {
     "title": "Settings",
     "icon": Icons.settings,
     "route": "/settings",
-    "roles": ["stat", "admin",  "superAdmin", "collectionpointadmin", "campadmin", "collectionpointvolunteer"]
+    "roles": ["all"]
   },
   {
     "title": "Logout",
     "icon": Icons.exit_to_app,
     "route": "/logout",
-    "roles": ["stat", "admin",  "superAdmin", "collectionpointadmin", "campadmin", "collectionpointvolunteer"]
+    "roles": ["all"]
   },
 ];
             
 List<MenuItem> menuItems = menuData.map((data) => MenuItem.fromJson(data)).toList();
 
-// Example Usage (in a widget build method):
+// Function to get filtered menu items based on user roles
+List<MenuItem> getFilteredMenuItems(List<dynamic> userRoles) {
+  // Convert dynamic userRoles to string list
+  final roles = List<String>.from(userRoles.whereType<String>());
+  
+  // Use current user roles if userRoles is empty
+  List<dynamic> updatedUserRoles = userRoles.isNotEmpty 
+      ? userRoles 
+      : AuthService().getCurrentUserRoles() ?? [];
 
-// Assuming you have a user's roles stored in a list called 'userRoles'.
-List<MenuItem> getFilteredMenuItems(List<String?> userRoles) {
-  userRoles = userRoles.length > 0 ? userRoles : AuthService().getCurrentUserRoles() ?? [];
-  return menuItems.where((item) => item.roles.any(userRoles.contains)).toList();
+  if (updatedUserRoles.isNotEmpty && roles.isEmpty) {
+    roles.add("all");
+    roles.add("noAuth");
+    roles.addAll(updatedUserRoles.whereType<String>());
+  } else {
+    roles.add("noAuth");
+  }
+
+  return menuItems
+      .where((item) => item.roles.any((role) => roles.contains(role)))
+      .toList();
 }
 
 // Example usage inside a widget build method.

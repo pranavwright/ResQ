@@ -26,12 +26,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
     super.initState();
     _loadMenuItems();
   }
-   Future<void> _loadMenuItems() async {
+
+  Future<void> _loadMenuItems() async {
     try {
-      final items = await getFilteredMenuItems(
-        AuthService().getCurrentUserRoles() ?? []
-      );
-      
+      final items =  getFilteredMenuItems([]);
+
       // Only update state if widget is still mounted
       if (mounted) {
         setState(() {
@@ -104,8 +103,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 child:
                     _isLoading // Show loading indicator if loading
                         ? const Center(child: CircularProgressIndicator())
-                        : 
-                        ListView(
+                        : ListView(
                           padding: const EdgeInsets.only(top: 46),
                           children:
                               filteredMenuItems.map((item) {

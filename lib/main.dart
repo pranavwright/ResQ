@@ -51,6 +51,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    String initialRoute = '/';
+    if (kIsWeb) {
+      final uri = Uri.parse(Uri.base.toString());
+      final path = uri.path;
+
+      if (path.isNotEmpty && path != '/') {
+        initialRoute = path;
+        print('Initial route from URL: $initialRoute');
+      }
+    }
     return MaterialApp(
       title: 'RESQ App',
       theme: ThemeData(
@@ -58,14 +68,19 @@ class MyApp extends StatelessWidget {
         primaryColor: _getPrimaryColor(),
       ),
       debugShowCheckedModeBanner: false,
-      home: const SplashScreen(),
+      home: SplashScreen(initialRoute: initialRoute),
       routes: {
-        '/no-network': (context) => NoNetworkScreen(
+        '/no-network':
+            (context) => NoNetworkScreen(
               onRetry: () async {
-                final connectivityResult = await Connectivity().checkConnectivity();
+                final connectivityResult =
+                    await Connectivity().checkConnectivity();
                 if (connectivityResult != ConnectivityResult.none) {
                   Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (context) => const SplashScreen()),
+                    MaterialPageRoute(
+                      builder:
+                          (context) => SplashScreen(initialRoute: initialRoute),
+                    ),
                   );
                 }
               },
@@ -84,49 +99,77 @@ class MyApp extends StatelessWidget {
 
     switch (settings.name) {
       case '/':
-        builder = (context) => AuthRoute(requiresAuth: false, child: MainHome());
+        builder = (context) => SplashScreen(initialRoute: '/');
         break;
       case '/otp':
-        builder = (context) => AuthRoute(requiresAuth: false, child: OtpScreen());
+        builder =
+            (context) => AuthRoute(requiresAuth: false, child: OtpScreen());
         break;
       case '/app':
-        builder = (context) => AuthRoute(
-              requiredRoles: [
-                'stat', 'admin', 'kas', 'superAdmin',
-                'collectionpointadmin', 'campadmin', 'collectionpointvolunteer'
-              ],
+        builder =
+            (context) => AuthRoute(
+              requiresAuth: true,
               child: getDashboardForRole(roles),
             );
         break;
       case '/profile-setup':
-        builder = (context) => AuthRoute(requiresAuth: true, child: ProfileSetupScreen());
+        builder =
+            (context) =>
+                AuthRoute(requiresAuth: true, child: ProfileSetupScreen());
         break;
       case '/disaster':
-        builder = (context) => const AuthRoute(requiresAuth: false, child: ItemsList());
+        builder =
+            (context) =>
+                const AuthRoute(requiresAuth: false, child: ItemsList());
         break;
       case '/download':
-        builder = (context) => const AuthRoute(requiresAuth: false, child: Downloading());
+        builder =
+            (context) =>
+                const AuthRoute(requiresAuth: false, child: Downloading());
         break;
       case '/families':
-        builder = (context) => const AuthRoute(requiredRoles: ['admin', 'familySurvey'], child: FamiliesScreen());
+        builder =
+            (context) => const AuthRoute(
+              requiredRoles: ['admin', 'familySurvey'],
+              child: FamiliesScreen(),
+            );
         break;
       case '/camp-status':
-        builder = (context) => const AuthRoute(requiredRoles: ['admin', 'campadmin'], child: CampStatusScreen());
+        builder =
+            (context) => const AuthRoute(
+              requiredRoles: ['admin', 'campadmin'],
+              child: CampStatusScreen(),
+            );
         break;
       case '/notice-board':
-        builder = (context) => const AuthRoute(requiredRoles: ['admin'], child: RoleCreationScreen());
+        builder =
+            (context) => const AuthRoute(
+              requiredRoles: ['admin'],
+              child: RoleCreationScreen(),
+            );
         break;
       case '/create-notice':
-        builder = (context) => const AuthRoute(requiredRoles: ['admin'], child: CreateNoticeScreen());
+        builder =
+            (context) => const AuthRoute(
+              requiredRoles: ['admin'],
+              child: CreateNoticeScreen(),
+            );
         break;
       case '/role-creation':
-        builder = (context) => AuthRoute(requiredRoles: ['admin', 'stat'], child: CamproleCreation());
+        builder =
+            (context) => AuthRoute(
+              requiredRoles: ['admin', 'stat'],
+              child: CamproleCreation(),
+            );
         break;
       case '/public-donation':
-        builder = (context) => AuthRoute(requiresAuth: false, child: DonationRequestPage());
+        builder =
+            (context) =>
+                AuthRoute(requiresAuth: false, child: DonationRequestPage());
         break;
       case '/loan-relief':
-        builder = (context) => AuthRoute(
+        builder =
+            (context) => AuthRoute(
               requiredRoles: ['admin', 'kas', 'superadmin', 'campadmin'],
               child: loan_relief.LoanReliefUploadScreen(),
             );
@@ -150,14 +193,23 @@ class MyApp extends StatelessWidget {
         builder = (context) => const VerificationVolunteerDashboard();
         break;
       case '/add-fam-home':
-        builder = (context) => AuthRoute(requiredRoles: ['familiySurvey'], child: FamiliSurveyHomeScreen());
+        builder =
+            (context) => AuthRoute(
+              requiredRoles: ['familiySurvey'],
+              child: FamiliSurveyHomeScreen(),
+            );
         break;
       case '/sectionA':
         final data = NeedAssessmentData();
-        builder = (context) => AuthRoute(requiresAuth: false, child: ScreenA(data: data));
+        builder =
+            (context) =>
+                AuthRoute(requiresAuth: false, child: ScreenA(data: data));
         break;
       default:
-        builder = (context) => const Scaffold(body: Center(child: Text('404 - Page Not Found')));
+        builder =
+            (context) => const Scaffold(
+              body: Center(child: Text('404 - Page Not Found')),
+            );
     }
 
     return MaterialPageRoute(builder: builder, settings: settings);
@@ -168,7 +220,8 @@ class MyApp extends StatelessWidget {
     if (roles.contains('admin')) return AdminDashboard();
     if (roles.contains('stat')) return DashboardScreen();
     if (roles.contains('kas')) return KasDashboard();
-    if (roles.contains('collectionpointadmin')) return CollectionPointDashboard();
+    if (roles.contains('collectionpointadmin'))
+      return CollectionPointDashboard();
     if (roles.contains('campadmin')) return CampAdminRequestScreen();
     if (roles.contains('collectionpointvolunteer')) return VolunteerDashboard();
     return const Scaffold(body: Center(child: Text("No valid role assigned")));

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:resq/utils/auth/auth_service.dart';
+import 'package:resq/utils/http/token_http.dart';
 
 class CampStatusScreen extends StatefulWidget {
   const CampStatusScreen({super.key});
@@ -12,9 +14,21 @@ class _CampStatusScreenState extends State<CampStatusScreen> {
   final TextEditingController campNameController = TextEditingController();
   final TextEditingController campStatusController = TextEditingController();
   final TextEditingController campLocationController = TextEditingController();
-  final TextEditingController campCapacityController = TextEditingController();
+  final TextEditingController campIdContorller = TextEditingController();
 
   List<Map<String, String>> camps = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCamps().then((_) {
+      if (mounted)
+        setState(() {
+          _isLoading = false;
+        });
+    });
+  }
 
   // Flag to track if we are editing a camp
   int? editingIndex;
@@ -22,73 +36,125 @@ class _CampStatusScreenState extends State<CampStatusScreen> {
   // Flag to control the visibility of the form
   bool _showForm = false;
 
-  // Function to handle form submission
-  void _submitForm() {
+  Future<void> _fetchCamps() async {
+    try {
+      final response = await TokenHttp().get(
+        '/disaster/getCamps?disasterId=${AuthService().getDisasterId()}',
+      );
+      print(response);
+      if (mounted) {
+        setState(() {
+          camps = List<Map<String, String>>.from(
+            response.map(
+              (camp) => {
+                'name': camp['name']?.toString() ?? '',
+                'status': camp['status']?.toString() ?? '',
+                'location': camp['location']?.toString() ?? '',
+                '_id': camp['_id']?.toString() ?? '',
+                'capacity': camp['capacity']?.toString() ?? '',
+              },
+            ),
+          );
+        });
+      }
+    } catch (e) {
+      print('Error fetching camps: $e');
+    }
+  }
+
+  void _submitForm() async {
+    setState(() {
+      _isLoading = true;
+    });
     final campName = campNameController.text;
     final campStatus = campStatusController.text;
     final campLocation = campLocationController.text;
-    final campCapacity = campCapacityController.text;
+    final campId = campIdContorller.text;
 
-    if (campName.isEmpty ||
-        campStatus.isEmpty ||
-        campLocation.isEmpty ||
-        campCapacity.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill out all fields!')),
-      );
-      return; // Exit the function if fields are empty
+    if (campName.isEmpty || campStatus.isEmpty || campLocation.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please fill out all fields!')),
+        );
+      }
+      return;
     }
 
-    setState(() {
-      if (editingIndex == null) {
-        camps.add({
-          'name': campName,
-          'status': campStatus,
-          'location': campLocation,
-          'capacity': campCapacity,
+    _fetchCamps().then((_) {
+      if (mounted)
+        setState(() {
+          _isLoading = false;
         });
-      } else {
-        camps[editingIndex!] = {
-          'name': campName,
-          'status': campStatus,
-          'location': campLocation,
-          'capacity': campCapacity,
-        };
-        editingIndex = null; // Reset editing mode
+    });
+
+    try {
+      await TokenHttp().post('/disaster/postCamp', {
+        'name': campName,
+        '_id': campId,
+        'status': campStatus,
+        'location': campLocation,
+        'disasterId': AuthService().getDisasterId(),
+      });
+
+      if (mounted) {
+        campNameController.clear();
+        campStatusController.clear();
+        campLocationController.clear();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              editingIndex == null
+                  ? 'Camp added successfully!'
+                  : 'Camp updated successfully!',
+            ),
+          ),
+        );
       }
-    });
-
-    campNameController.clear();
-    campStatusController.clear();
-    campLocationController.clear();
-    campCapacityController.clear();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          editingIndex == null
-              ? 'Camp added successfully!'
-              : 'Camp updated successfully!',
-        ),
-      ),
-    );
+    } catch (e) {
+      print('Error saving camp: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
   }
 
-  void _editCamp(int index) {
+  void _inActiveCamp(int index) async {
+    final campId = camps[index]['_id'];
     setState(() {
-      editingIndex = index;
-      campNameController.text = camps[index]['name']!;
-      campStatusController.text = camps[index]['status']!;
-      campLocationController.text = camps[index]['location']!;
-      campCapacityController.text = camps[index]['capacity']!;
+      _isLoading = true;
     });
+    try {
+      await TokenHttp().post('/disaster/postCamp', {
+        '_id': campId,
+        'status': 'inactive',
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Camp inactivated successfully!')),
+        );
+        _fetchCamps().then((_) {
+          if (mounted)
+            setState(() {
+              _isLoading = false;
+            });
+        });
+      }
+    } catch (e) {
+      print('Error deleting camp: $e');
+    }
   }
 
-  void _deleteCamp(int index) {
-    setState(() {
-      camps.removeAt(index);
-    });
-    printCamps();
+  @override
+  void dispose() {
+    // Clean up controllers
+    campNameController.dispose();
+    campStatusController.dispose();
+    campLocationController.dispose();
+    campIdContorller.dispose();
+    super.dispose();
   }
 
   void printCamps() {
@@ -141,6 +207,9 @@ class _CampStatusScreenState extends State<CampStatusScreen> {
                   label: 'Camp Name',
                   icon: Icons.location_city,
                 ),
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : const SizedBox.shrink(),
                 const SizedBox(height: 16),
 
                 // Camp Status Field
@@ -156,16 +225,6 @@ class _CampStatusScreenState extends State<CampStatusScreen> {
                   controller: campLocationController,
                   label: 'Camp Location',
                   icon: Icons.place,
-                ),
-                const SizedBox(height: 16),
-
-                // Camp Capacity Field
-                _buildTextField(
-                  controller: campCapacityController,
-                  label: 'Camp Capacity',
-                  icon: Icons.people,
-                  keyboardType:
-                      TextInputType.number, // Only numbers for capacity
                 ),
                 const SizedBox(height: 16),
 
@@ -216,11 +275,14 @@ class _CampStatusScreenState extends State<CampStatusScreen> {
                           children: [
                             IconButton(
                               icon: const Icon(Icons.edit, color: Colors.blue),
-                              onPressed: () => _editCamp(index),
+                              onPressed: () => _submitForm(),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _deleteCamp(index),
+                              icon: const Icon(
+                                Icons.warning,
+                                color: Colors.orange,
+                              ),
+                              onPressed: () => _inActiveCamp(index),
                             ),
                           ],
                         ),
