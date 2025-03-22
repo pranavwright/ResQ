@@ -1,7 +1,9 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
-import '../screens/no_network_screen.dart';
+
+import 'package:resq/firebase_options.dart';
 
 class ConnectivityWrapper extends StatefulWidget {
   final Widget child;
@@ -12,74 +14,64 @@ class ConnectivityWrapper extends StatefulWidget {
 }
 
 class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
-  bool _isConnected = true;
   late StreamSubscription<ConnectivityResult> _subscription;
   bool _hasShownDisconnectedMessage = false;
-  String _lastRoute = '/';
 
   @override
   void initState() {
     super.initState();
-    _initConnectivity();
+    _checkConnectivity();
+    _subscription = Connectivity().onConnectivityChanged.listen(_updateConnectionStatus);
   }
-
+  
   @override
   void dispose() {
     _subscription.cancel();
     super.dispose();
   }
 
-  // Check connectivity with debounce to avoid rapid state changes
-  Future<void> _initConnectivity() async {
-    try {
-      final result = await Connectivity().checkConnectivity();
-      setState(() => _isConnected = result != ConnectivityResult.none);
+  Future<void> _checkConnectivity() async {
 
-      // Subscribe to connectivity changes with debounce
-      _subscription = Connectivity().onConnectivityChanged.listen((result) {
-        if (mounted) {
-          setState(() => _isConnected = result != ConnectivityResult.none);
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-          if (_isConnected && _hasShownDisconnectedMessage) {
-            _hasShownDisconnectedMessage = false;
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text('Connection restored')));
-          }
+    final connectivityResult = await Connectivity().checkConnectivity();
+    _updateConnectionStatus(connectivityResult);
+  }
 
-          if (!_isConnected) {
-            _hasShownDisconnectedMessage = true;
-            // Store current route when disconnecting
-            final currentRoute = ModalRoute.of(context)?.settings.name;
-            if (currentRoute != null && currentRoute != '/no-network') {
-              _lastRoute = currentRoute;
-            }
-          }
-        }
-      });
-    } catch (e) {
-      print('Connectivity check error: $e');
+  void _updateConnectionStatus(ConnectivityResult result) {
+    final isConnected = result != ConnectivityResult.none;
+    
+    if (mounted) {
+      if (!isConnected && !_hasShownDisconnectedMessage) {
+        _hasShownDisconnectedMessage = true;
+        
+        // Show a message about lost connection
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('No internet connection'),
+            duration: Duration(seconds: 3),
+            action: SnackBarAction(
+              label: 'Retry',
+              onPressed: () {
+                Navigator.of(context).pushReplacementNamed('/no-network');
+              },
+            ),
+          ),
+        );
+      } else if (isConnected && _hasShownDisconnectedMessage) {
+        _hasShownDisconnectedMessage = false;
+        
+        // Show reconnected message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Connection restored')),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner:false,
-      home:
-          _isConnected
-              ? widget.child
-              : NoNetworkScreen(
-                onRetry: () async {
-                  final result = await Connectivity().checkConnectivity();
-                  if (result != ConnectivityResult.none && mounted) {
-                    setState(() => _isConnected = true);
-                    if (_lastRoute.isNotEmpty) {
-                      Navigator.of(context).pushReplacementNamed(_lastRoute);
-                    }
-                  }
-                },
-              ),
-    );
+    return widget.child;
   }
 }

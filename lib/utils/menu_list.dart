@@ -45,7 +45,7 @@ final List<Map<String, dynamic>> menuData = [
     "title": "Families",
     "icon": Icons.people,
     "route": "/test-family",
-    "roles": ["admin"]
+    "roles": ["admin", "stat"]
   },
   {
     "title": "Camp Status",
@@ -57,7 +57,7 @@ final List<Map<String, dynamic>> menuData = [
     "title": "Notice Board",
     "icon": Icons.announcement,
     "route": "/create-notice", 
-    "roles": ["admin"]
+    "roles": ["admin","stat"]
   },
   {
     "title": "Officals",
