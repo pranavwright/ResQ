@@ -134,7 +134,7 @@ class MyApp extends StatelessWidget {
 
           '/otp':
               (context) =>
-                  AuthRoute(requiresAuth: false, child: FamiliSurveyHomeScreen()),
+                  AuthRoute(requiresAuth: false, child: OtpScreen()),
           '/app':
               (context) => AuthRoute(
                 requiredRoles: [

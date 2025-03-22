@@ -75,19 +75,19 @@ final List<Map<String, dynamic>> menuData = [
     "title": "Profile",
     "icon": Icons.person,
     "route": "/profile",
-    "roles": ["stat", "admin", "kas", "superAdmin", "collectionpointadmin", "campadmin", "collectionpointvolunteer"]
+    "roles": ["stat", "admin",  "superAdmin", "collectionpointadmin", "campadmin", "collectionpointvolunteer"]
   },
   {
     "title": "Settings",
     "icon": Icons.settings,
     "route": "/settings",
-    "roles": ["stat", "admin", "kas", "superAdmin", "collectionpointadmin", "campadmin", "collectionpointvolunteer"]
+    "roles": ["stat", "admin",  "superAdmin", "collectionpointadmin", "campadmin", "collectionpointvolunteer"]
   },
   {
     "title": "Logout",
     "icon": Icons.exit_to_app,
     "route": "/logout",
-    "roles": ["stat", "admin", "kas", "superAdmin", "collectionpointadmin", "campadmin", "collectionpointvolunteer"]
+    "roles": ["stat", "admin",  "superAdmin", "collectionpointadmin", "campadmin", "collectionpointvolunteer"]
   },
 ];
             

@@ -192,7 +192,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
           indianStates: _indianStates,
           districtByState: _districtByState,
         ),
-       
+
         // Add the App Management Screen
         SingleChildScrollView(
           padding: EdgeInsets.all(16),
@@ -1157,12 +1157,13 @@ class _DisasterDetailScreenState extends State<DisasterDetailScreen> {
     }
   }
 
-  Future<void> deleteAdmins(String id) async {
+  Future<void> deleteAdmins(String id, String role) async {
     setState(() => isLoading = true);
     try {
       await TokenHttp().post('/auth/revokeAdmin', {
         '_id': id,
         'disasterId': widget.disaster.id,
+        'role': role,
       });
       _fetchAdmins();
     } catch (e) {
@@ -1261,9 +1262,7 @@ class _DisasterDetailScreenState extends State<DisasterDetailScreen> {
   }
 
   Future<void> _openGoogleMaps() async {
-    final location = widget.disaster.location.split(
-      ',',
-    ); 
+    final location = widget.disaster.location.split(',');
     if (location.length == 2) {
       final latitude = location[0].trim();
       final longitude = location[1].trim();
@@ -1278,7 +1277,7 @@ class _DisasterDetailScreenState extends State<DisasterDetailScreen> {
         ).showSnackBar(SnackBar(content: Text('Could not open Google Maps.')));
       }
     } else {
-       if (await canLaunchUrl(Uri.parse(widget.disaster.location))) {
+      if (await canLaunchUrl(Uri.parse(widget.disaster.location))) {
         await launchUrl(Uri.parse(widget.disaster.location));
       } else {
         ScaffoldMessenger.of(
@@ -1399,19 +1398,93 @@ class _DisasterDetailScreenState extends State<DisasterDetailScreen> {
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  subtitle: Text(
-                                    '• ${admin.assignedRoles.contains('admin') ? "Collector" : "Statistics Dept"}',
+                                  subtitle: Wrap(
+                                    spacing: 8.0,
+                                    children:
+                                        admin.assignedRoles
+                                            .map(
+                                              (role) => Chip(
+                                                label: Text(
+                                                  role == "admin"
+                                                      ? "Collector"
+                                                      : role == "stat"
+                                                      ? " Statistics Dept"
+                                                      : role,
+                                                ),
+                                              ),
+                                            )
+                                            .toList(),
                                   ),
                                   leading: CircleAvatar(
                                     child: Icon(Icons.person),
                                     backgroundColor: Colors.blue.shade100,
                                   ),
-                                  trailing: ElevatedButton.icon(
-                                    icon: Icon(Icons.delete),
-                                    label: Text('Delete'),
-                                    onPressed: () {
-                                      deleteAdmins(admin.id);
-                                    },
+                                  trailing: SizedBox(
+                                    height: 50,
+                                    child:
+                                        admin.assignedRoles.isEmpty
+                                            ? Text(
+                                              "No roles",
+                                              style: TextStyle(
+                                                color: Colors.grey,
+                                              ),
+                                            )
+                                            : SingleChildScrollView(
+                                              scrollDirection: Axis.horizontal,
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children:
+                                                    admin.assignedRoles.map((
+                                                      role,
+                                                    ) {
+                                                      String roleName =
+                                                          role == "admin"
+                                                              ? "Collector"
+                                                              : role == "stat"
+                                                              ? " Statistics Dept"
+                                                              : role;
+                                                      return Padding(
+                                                        padding:
+                                                            const EdgeInsets.only(
+                                                              left: 8.0,
+                                                            ),
+                                                        child: ElevatedButton.icon(
+                                                          icon: Icon(
+                                                            Icons.delete,
+                                                            size: 16,
+                                                          ),
+                                                          label: Text(
+                                                            'Revoke $roleName',
+                                                            style: TextStyle(
+                                                              fontSize: 12,
+                                                            ),
+                                                          ),
+                                                          style: ElevatedButton.styleFrom(
+                                                            backgroundColor:
+                                                                Colors.red[400],
+                                                            foregroundColor:
+                                                                Colors.white,
+                                                            padding:
+                                                                EdgeInsets.symmetric(
+                                                                  horizontal: 8,
+                                                                  vertical: 0,
+                                                                ),
+                                                            minimumSize: Size(
+                                                              80,
+                                                              36,
+                                                            ),
+                                                          ),
+                                                          onPressed: () {
+                                                            deleteAdmins(
+                                                              admin.id,
+                                                              role,
+                                                            );
+                                                          },
+                                                        ),
+                                                      );
+                                                    }).toList(),
+                                              ),
+                                            ),
                                   ),
                                 ),
                               ),
