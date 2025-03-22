@@ -14,11 +14,13 @@ class _CampStatusScreenState extends State<CampStatusScreen> {
   final TextEditingController campLocationController = TextEditingController();
   final TextEditingController campCapacityController = TextEditingController();
 
-  // List to store added camps
   List<Map<String, String>> camps = [];
 
   // Flag to track if we are editing a camp
   int? editingIndex;
+
+  // Flag to control the visibility of the form
+  bool _showForm = false;
 
   // Function to handle form submission
   void _submitForm() {
@@ -27,7 +29,10 @@ class _CampStatusScreenState extends State<CampStatusScreen> {
     final campLocation = campLocationController.text;
     final campCapacity = campCapacityController.text;
 
-    if (campName.isEmpty || campStatus.isEmpty || campLocation.isEmpty || campCapacity.isEmpty) {
+    if (campName.isEmpty ||
+        campStatus.isEmpty ||
+        campLocation.isEmpty ||
+        campCapacity.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill out all fields!')),
       );
@@ -53,19 +58,19 @@ class _CampStatusScreenState extends State<CampStatusScreen> {
       }
     });
 
-    // Clear the form fields after submission
     campNameController.clear();
     campStatusController.clear();
     campLocationController.clear();
     campCapacityController.clear();
 
-    // Print the data to the debug console
-    printCamps();
-
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(editingIndex == null
-          ? 'Camp added successfully!'
-          : 'Camp updated successfully!')),
+      SnackBar(
+        content: Text(
+          editingIndex == null
+              ? 'Camp added successfully!'
+              : 'Camp updated successfully!',
+        ),
+      ),
     );
   }
 
@@ -89,7 +94,9 @@ class _CampStatusScreenState extends State<CampStatusScreen> {
   void printCamps() {
     print('Current Camps:');
     for (var camp in camps) {
-      print('Name: ${camp['name']}, Status: ${camp['status']}, Location: ${camp['location']}, Capacity: ${camp['capacity']}');
+      print(
+        'Name: ${camp['name']}, Status: ${camp['status']}, Location: ${camp['location']}, Capacity: ${camp['capacity']}',
+      );
     }
   }
 
@@ -99,7 +106,7 @@ class _CampStatusScreenState extends State<CampStatusScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black, // Black background for the app bar
         title: const Text(
-          'Camp Status',
+          'Add Camps',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -108,7 +115,10 @@ class _CampStatusScreenState extends State<CampStatusScreen> {
         ),
         centerTitle: true, // Center the title
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white), // White arrow icon
+          icon: const Icon(
+            Icons.arrow_back,
+            color: Colors.white,
+          ), // White arrow icon
           onPressed: () {
             Navigator.pop(context); // Handle back button press
           },
@@ -116,55 +126,62 @@ class _CampStatusScreenState extends State<CampStatusScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView( // Use SingleChildScrollView to prevent overflow on small screens
+        child: SingleChildScrollView(
+          // Use SingleChildScrollView to prevent overflow on small screens
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Camp Name Field
-              _buildTextField(
-                controller: campNameController,
-                label: 'Camp Name',
-                icon: Icons.location_city,
-              ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
-              // Camp Status Field
-              _buildTextField(
-                controller: campStatusController,
-                label: 'Camp Status',
-                icon: Icons.info,
-              ),
-              const SizedBox(height: 16),
+              // Show the form if _showForm is true
+              if (_showForm) ...[
+                // Camp Name Field
+                _buildTextField(
+                  controller: campNameController,
+                  label: 'Camp Name',
+                  icon: Icons.location_city,
+                ),
+                const SizedBox(height: 16),
 
-              // Camp Location Field
-              _buildTextField(
-                controller: campLocationController,
-                label: 'Camp Location',
-                icon: Icons.place,
-              ),
-              const SizedBox(height: 16),
+                // Camp Status Field
+                _buildTextField(
+                  controller: campStatusController,
+                  label: 'Camp Status',
+                  icon: Icons.info,
+                ),
+                const SizedBox(height: 16),
 
-              // Camp Capacity Field
-              _buildTextField(
-                controller: campCapacityController,
-                label: 'Camp Capacity',
-                icon: Icons.people,
-                keyboardType: TextInputType.number, // Only numbers for capacity
-              ),
-              const SizedBox(height: 16),
+                // Camp Location Field
+                _buildTextField(
+                  controller: campLocationController,
+                  label: 'Camp Location',
+                  icon: Icons.place,
+                ),
+                const SizedBox(height: 16),
 
-              // Submit Button
-              ElevatedButton(
-                onPressed: _submitForm,
-                child: const Text('Submit'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                // Camp Capacity Field
+                _buildTextField(
+                  controller: campCapacityController,
+                  label: 'Camp Capacity',
+                  icon: Icons.people,
+                  keyboardType:
+                      TextInputType.number, // Only numbers for capacity
+                ),
+                const SizedBox(height: 16),
+
+                // Submit Button
+                ElevatedButton(
+                  onPressed: _submitForm,
+                  child: const Text('Submit'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
+              ],
 
               // Display the added camps
               const Text(
@@ -191,7 +208,9 @@ class _CampStatusScreenState extends State<CampStatusScreen> {
                             fontSize: 16,
                           ),
                         ),
-                        subtitle: Text('Status: ${camps[index]['status']}, Location: ${camps[index]['location']}, Capacity: ${camps[index]['capacity']}'),
+                        subtitle: Text(
+                          'Status: ${camps[index]['status']}, Location: ${camps[index]['location']}, Capacity: ${camps[index]['capacity']}',
+                        ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -213,6 +232,21 @@ class _CampStatusScreenState extends State<CampStatusScreen> {
           ),
         ),
       ),
+      // Floating Action Button to add a new camp
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          setState(() {
+            _showForm = !_showForm; // Toggle form visibility
+          });
+        },
+        child: Icon(
+          _showForm ? Icons.cancel : Icons.add, // Show a plus or cancel icon
+          color: Colors.white, // Set the icon color to white
+        ),
+        backgroundColor:
+            Colors.black, // Set the button background color to black
+        tooltip: _showForm ? 'Cancel' : 'Add Collection Point',
+      ),
     );
   }
 
@@ -229,9 +263,7 @@ class _CampStatusScreenState extends State<CampStatusScreen> {
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.black, width: 2),

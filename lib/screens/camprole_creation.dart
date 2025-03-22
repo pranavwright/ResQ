@@ -18,13 +18,22 @@ class _CamproleCreationState extends State<CamproleCreation> {
   // Flag to track if we are editing a role
   int? editingIndex;
 
+  // Flag to control the visibility of the form
+  bool _showForm = false;
+
   // Variables for additional role fields
   String assignedTo = '';
   String location = '';
   String validationMessage = '';
 
   // List for dropdowns
-  List<String> roleOptions = ['Statistics', 'Camp Admin', 'Collection Point Admin', 'Survey Officials', 'Verify Officials'];
+  List<String> roleOptions = [
+    'Statistics',
+    'Camp Admin',
+    'Collection Point Admin',
+    'Survey Officials',
+    'Verify Officials',
+  ];
   List<String> locationOptions = ['St. Joseph', 'SKMJ', 'DePaul'];
 
   // Function to handle form submission
@@ -39,7 +48,9 @@ class _CamproleCreationState extends State<CamproleCreation> {
       return; // Exit the function if fields are empty
     }
 
-    if ((assignedTo == 'Camp Admin' || assignedTo == 'Collection Point Admin') && location.isEmpty) {
+    if ((assignedTo == 'Camp Admin' ||
+            assignedTo == 'Collection Point Admin') &&
+        location.isEmpty) {
       setState(() {
         validationMessage = 'Please select a Location.';
       });
@@ -75,36 +86,26 @@ class _CamproleCreationState extends State<CamproleCreation> {
 
     // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(editingIndex == null ? 'Role added successfully!' : 'Role updated successfully!')),
+      SnackBar(
+        content: Text(
+          editingIndex == null
+              ? 'Role added successfully!'
+              : 'Role updated successfully!',
+        ),
+      ),
     );
 
     // Call print function to output the current roles
     printRoles();
   }
 
-  // Function to handle editing a role
-  void _editRole(int index) {
-    setState(() {
-      editingIndex = index;
-      final role = roles[index];
-      nameController.text = role['name']!;
-      phoneController.text = role['phone']!;
-      assignedTo = role['assignedTo']!;
-      location = role['location']!;
-    });
-  }
-
-  void _deleteRole(int index) {
-    setState(() {
-      roles.removeAt(index);
-    });
-  }
-
   // Function to print the current list of roles (simulating the "print" functionality)
   void printRoles() {
     print('Current Roles:');
     for (var role in roles) {
-      print('Name: ${role['name']},Phone Number:${role['phone']} Assigned To: ${role['assignedTo']}, Location: ${role['location']}');
+      print(
+        'Name: ${role['name']}, Phone Number: ${role['phone']}, Assigned To: ${role['assignedTo']}, Location: ${role['location']}',
+      );
     }
   }
 
@@ -119,7 +120,7 @@ class _CamproleCreationState extends State<CamproleCreation> {
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white), // Set the arrow icon to white
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -129,66 +130,78 @@ class _CamproleCreationState extends State<CamproleCreation> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Text Fields for Role Details
-              _buildTextField(controller: nameController, label: 'Name', icon: Icons.person),
-              const SizedBox(height: 16),
-              _buildTextField(controller: phoneController, label: 'Phone Number', icon: Icons.phone),
-              const SizedBox(height: 16),
-              _buildDropdownField(
-                label: 'Assigned To',
-                value: assignedTo,
-                items: roleOptions,
-                onChanged: (value) {
-                  setState(() {
-                    assignedTo = value!;
-                    location = ''; // Reset location if assignedTo changes
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-              // Location Dropdown appears if "Camp Admin" or "Collection Point Admin" is selected
-              if (assignedTo == 'Camp Admin' || assignedTo == 'Collection Point Admin')
+              // Show the form if _showForm is true
+              if (_showForm) ...[
+                // Text Fields for Role Details
+                _buildTextField(
+                  controller: nameController,
+                  label: 'Name',
+                  icon: Icons.person,
+                ),
+                const SizedBox(height: 16),
+                _buildTextField(
+                  controller: phoneController,
+                  label: 'Phone Number',
+                  icon: Icons.phone,
+                ),
+                const SizedBox(height: 16),
                 _buildDropdownField(
-                  label: 'Location',
-                  value: location,
-                  items: locationOptions,
+                  label: 'Assigned To',
+                  value: assignedTo,
+                  items: roleOptions,
                   onChanged: (value) {
                     setState(() {
-                      location = value!;
+                      assignedTo = value!;
+                      location = ''; // Reset location if assignedTo changes
                     });
                   },
-                  icon: Icons.location_on, // Updated icon for location
                 ),
-              
-              // Validation message
-              if (validationMessage.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  color: Colors.red[50],
-                  child: Text(
-                    validationMessage,
-                    style: const TextStyle(color: Colors.red),
+                const SizedBox(height: 16),
+                // Location Dropdown appears if "Camp Admin" or "Collection Point Admin" is selected
+                if (assignedTo == 'Camp Admin' ||
+                    assignedTo == 'Collection Point Admin')
+                  _buildDropdownField(
+                    label: 'Location',
+                    value: location,
+                    items: locationOptions,
+                    onChanged: (value) {
+                      setState(() {
+                        location = value!;
+                      });
+                    },
+                    icon: Icons.location_on,
+                  ),
+                // Validation message
+                if (validationMessage.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    color: Colors.red[50],
+                    child: Text(
+                      validationMessage,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+                const SizedBox(height: 16),
+                // Submit Button
+                ElevatedButton(
+                  onPressed: _submitForm,
+                  child: const Text('Submit'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
-              const SizedBox(height: 16),
-              // Submit Button
-              ElevatedButton(
-                onPressed: _submitForm,
-                child: const Text('Submit'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 20),
+              ],
+
+              // Display the list of roles
               const Text(
                 'All Roles:',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              // Display the list of roles
               if (roles.isNotEmpty)
                 ListView.builder(
                   shrinkWrap: true,
@@ -202,19 +215,8 @@ class _CamproleCreationState extends State<CamproleCreation> {
                       elevation: 4,
                       child: ListTile(
                         title: Text(roles[index]['name']!),
-                        subtitle: Text('Assigned to: ${roles[index]['assignedTo']}'),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.blue),
-                              onPressed: () => _editRole(index),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _deleteRole(index),
-                            ),
-                          ],
+                        subtitle: Text(
+                          'Assigned to: ${roles[index]['assignedTo']}',
                         ),
                       ),
                     );
@@ -223,6 +225,21 @@ class _CamproleCreationState extends State<CamproleCreation> {
             ],
           ),
         ),
+      ),
+      // Floating Action Button to toggle form visibility
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          setState(() {
+            _showForm = !_showForm; // Toggle form visibility
+          });
+        },
+        child: Icon(
+          _showForm ? Icons.cancel : Icons.add, // Show a plus or cancel icon
+          color: Colors.white, // Set the icon color to white
+        ),
+        backgroundColor:
+            Colors.black, // Set the button background color to black
+        tooltip: _showForm ? 'Cancel' : 'Add Collection Point',
       ),
     );
   }
@@ -238,9 +255,7 @@ class _CamproleCreationState extends State<CamproleCreation> {
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -251,24 +266,20 @@ class _CamproleCreationState extends State<CamproleCreation> {
     required String value,
     required List<String> items,
     required void Function(String?) onChanged,
-    IconData? icon, // Optional icon parameter for dropdown
+    IconData? icon,
   }) {
     return DropdownButtonFormField<String>(
       value: value.isEmpty ? null : value,
       onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon ?? Icons.assignment), // Use passed icon or default icon
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        prefixIcon: Icon(icon ?? Icons.assignment),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
-      items: items.map((String option) {
-        return DropdownMenuItem<String>(
-          value: option,
-          child: Text(option),
-        );
-      }).toList(),
+      items:
+          items.map((String option) {
+            return DropdownMenuItem<String>(value: option, child: Text(option));
+          }).toList(),
     );
   }
 }
