@@ -50,7 +50,7 @@ final List<Map<String, dynamic>> menuData = [
   {
     "title": "Camp Status",
     "icon": Icons.home_work,
-    "route": "/test-family", // screen route
+    "route": "/camp-status", // screen route
     "roles": ["admin"]
   },
   {

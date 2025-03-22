@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class CamproleCreation extends StatefulWidget {
   const CamproleCreation({super.key});
@@ -9,316 +8,267 @@ class CamproleCreation extends StatefulWidget {
 }
 
 class _CamproleCreationState extends State<CamproleCreation> {
-  // Create text controllers for each TextField
-  TextEditingController nameController = TextEditingController();
-  TextEditingController phoneController = TextEditingController();
-  TextEditingController assignedToController = TextEditingController();
-  
-  // Additional text controllers for camp data
-  TextEditingController campNameController = TextEditingController();
-  TextEditingController campLocationController = TextEditingController();
+  // Define controllers for each text field
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
 
-  // Variables to store submitted data
-  String name = '';
-  String phone = '';
-  String assignedTo = '';
-  String campName = '';
-  String campLocation = '';
-
-  // List to store multiple roles
+  // List to store added roles
   List<Map<String, String>> roles = [];
 
-  // Flag to toggle between the form and the data display
-  bool isSubmitted = false;
-  int? editingIndex; // To store the index of the role being edited
-  String validationMessage = ''; // To show validation errors
+  // Flag to track if we are editing a role
+  int? editingIndex;
 
-  // Function to add a new role or update an existing role
-  void saveRole() {
-    // Check if the role is "camp" and validate the additional fields
-    if (assignedToController.text.toLowerCase() == 'camp') {
-      if (campNameController.text.isEmpty || campLocationController.text.isEmpty) {
-        // Show validation error if camp fields are empty
-        setState(() {
-          validationMessage = 'Please fill in both Camp Name and Camp Location.';
-        });
-        return; // Don't submit if validation fails
-      }
+  // Variables for additional role fields
+  String assignedTo = '';
+  String location = '';
+  String validationMessage = '';
+
+  // List for dropdowns
+  List<String> roleOptions = ['Statistics', 'Camp Admin', 'Collection Point Admin', 'Survey Officials', 'Verify Officials'];
+  List<String> locationOptions = ['St. Joseph', 'SKMJ', 'DePaul'];
+
+  // Function to handle form submission
+  void _submitForm() {
+    final name = nameController.text;
+    final phone = phoneController.text;
+
+    if (name.isEmpty || phone.isEmpty || assignedTo.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill out all fields!')),
+      );
+      return; // Exit the function if fields are empty
     }
 
-    // If validation passes, proceed with saving the role
+    if ((assignedTo == 'Camp Admin' || assignedTo == 'Collection Point Admin') && location.isEmpty) {
+      setState(() {
+        validationMessage = 'Please select a Location.';
+      });
+      return;
+    }
+
     setState(() {
       if (editingIndex == null) {
-        // Add a new role
+        // Add new role
         roles.add({
-          'name': nameController.text,
-          'phone': phoneController.text,
-          'assignedTo': assignedToController.text,
-          'campName': campNameController.text,
-          'campLocation': campLocationController.text,
+          'name': name,
+          'phone': phone,
+          'assignedTo': assignedTo,
+          'location': location,
         });
-        print('New Role Added:');
-        print('Name: ${nameController.text}');
-        print('Phone: ${phoneController.text}');
-        print('Assigned To: ${assignedToController.text}');
-        print('Camp Name: ${campNameController.text}');
-        print('Camp Location: ${campLocationController.text}');
       } else {
-        // Update the existing role
+        // Update existing role
         roles[editingIndex!] = {
-          'name': nameController.text,
-          'phone': phoneController.text,
-          'assignedTo': assignedToController.text,
-          'campName': campNameController.text,
-          'campLocation': campLocationController.text,
+          'name': name,
+          'phone': phone,
+          'assignedTo': assignedTo,
+          'location': location,
         };
-        print('Role Updated:');
-        print('Name: ${nameController.text}');
-        print('Phone: ${phoneController.text}');
-        print('Assigned To: ${assignedToController.text}');
-        print('Camp Name: ${campNameController.text}');
-        print('Camp Location: ${campLocationController.text}');
-        editingIndex = null; // Reset editing mode after update
+        editingIndex = null; // Reset editing mode
       }
+    });
 
-      // Clear the form after saving
-      nameController.clear();
-      phoneController.clear();
-      assignedToController.clear();
-      campNameController.clear();
-      campLocationController.clear();
-      isSubmitted = false;
-      validationMessage = ''; // Clear validation message on successful submit
+    // Clear the form fields after submission
+    nameController.clear();
+    phoneController.clear();
+    assignedTo = '';
+    location = '';
+
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(editingIndex == null ? 'Role added successfully!' : 'Role updated successfully!')),
+    );
+
+    // Call print function to output the current roles
+    printRoles();
+  }
+
+  // Function to handle editing a role
+  void _editRole(int index) {
+    setState(() {
+      editingIndex = index;
+      final role = roles[index];
+      nameController.text = role['name']!;
+      phoneController.text = role['phone']!;
+      assignedTo = role['assignedTo']!;
+      location = role['location']!;
     });
   }
 
-  // Function to edit an existing role
-  void editRole(int index) {
+  void _deleteRole(int index) {
     setState(() {
-      // Load the role data into the form for editing
-      editingIndex = index;
-      nameController.text = roles[index]['name']!;
-      phoneController.text = roles[index]['phone']!;
-      assignedToController.text = roles[index]['assignedTo']!;
-      campNameController.text = roles[index]['campName']!;
-      campLocationController.text = roles[index]['campLocation']!;
-      isSubmitted = true;
+      roles.removeAt(index);
     });
+  }
+
+  // Function to print the current list of roles (simulating the "print" functionality)
+  void printRoles() {
+    print('Current Roles:');
+    for (var role in roles) {
+      print('Name: ${role['name']},Phone Number:${role['phone']} Assigned To: ${role['assignedTo']}, Location: ${role['location']}');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-        title: const Text('Role Creation',
-        style:TextStyle(
-          
+        backgroundColor: Colors.black,
+        title: const Text(
+          'Role Creation',
+          style: TextStyle(color: Colors.white),
         ),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white), // Set the arrow icon to white
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: SingleChildScrollView(  // Wrap the entire body in SingleChildScrollView
+      body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Create New Role',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.normal, color: Color.fromARGB(255, 0, 0, 0)),
-            ),
-            const SizedBox(height: 20),
-
-            // Display form or data depending on the state
-            if (!isSubmitted) ...[
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      // TextField 1: Role Name
-                      TextField(
-                        controller: nameController,
-                        decoration: InputDecoration(
-                          labelText: 'Name',
-                          prefixIcon: Icon(Icons.person),
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // TextField 2: Phone Number
-                      TextField(
-                        controller: phoneController,
-                        decoration: InputDecoration(
-                          labelText: 'Phone number',
-                          prefixIcon: Icon(Icons.phone),
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // TextField 3: Assigned To
-                      TextField(
-                        controller: assignedToController,
-                        decoration: InputDecoration(
-                          labelText: 'Assigned To',
-                          prefixIcon: Icon(Icons.assignment),
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Show additional fields if "camp" is selected as the role
-                      if (assignedToController.text.toLowerCase() == 'camp') ...[
-                        TextField(
-                          controller: campNameController,
-                          decoration: InputDecoration(
-                            labelText: 'Camp Name',
-                            prefixIcon: Icon(Icons.location_city),
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        TextField(
-                          controller: campLocationController,
-                          decoration: InputDecoration(
-                            labelText: 'Camp Location',
-                            prefixIcon: Icon(Icons.location_on),
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-
-                      // Validation message display
-                      if (validationMessage.isNotEmpty) 
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          color: Colors.red[50],
-                          child: Text(
-                            validationMessage,
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        ),
-
-                      // Submit Button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: saveRole,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: const Text('Submit'),
-                        ),
-                      ),
-                    ],
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Text Fields for Role Details
+              _buildTextField(controller: nameController, label: 'Name', icon: Icons.person),
+              const SizedBox(height: 16),
+              _buildTextField(controller: phoneController, label: 'Phone Number', icon: Icons.phone),
+              const SizedBox(height: 16),
+              _buildDropdownField(
+                label: 'Assigned To',
+                value: assignedTo,
+                items: roleOptions,
+                onChanged: (value) {
+                  setState(() {
+                    assignedTo = value!;
+                    location = ''; // Reset location if assignedTo changes
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              // Location Dropdown appears if "Camp Admin" or "Collection Point Admin" is selected
+              if (assignedTo == 'Camp Admin' || assignedTo == 'Collection Point Admin')
+                _buildDropdownField(
+                  label: 'Location',
+                  value: location,
+                  items: locationOptions,
+                  onChanged: (value) {
+                    setState(() {
+                      location = value!;
+                    });
+                  },
+                  icon: Icons.location_on, // Updated icon for location
+                ),
+              
+              // Validation message
+              if (validationMessage.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  color: Colors.red[50],
+                  child: Text(
+                    validationMessage,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+              const SizedBox(height: 16),
+              // Submit Button
+              ElevatedButton(
+                onPressed: _submitForm,
+                child: const Text('Submit'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),
-            ] else ...[
-              // Display the entered data
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      Text('Name: $name', style: TextStyle(fontSize: 18)),
-                      const SizedBox(height: 8),
-                      Text('Phone: $phone', style: TextStyle(fontSize: 18)),
-                      const SizedBox(height: 8),
-                      Text('Assigned To: $assignedTo', style: TextStyle(fontSize: 18)),
-                      if (assignedTo.toLowerCase() == 'camp') ...[
-                        const SizedBox(height: 8),
-                        Text('Camp Name: $campName', style: TextStyle(fontSize: 18)),
-                        const SizedBox(height: 8),
-                        Text('Camp Location: $campLocation', style: TextStyle(fontSize: 18)),
-                      ],
-                      const SizedBox(height: 24),
-
-                      // Edit Button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              // Allow user to edit the data again
-                              isSubmitted = false;
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: const Text('Edit'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              const SizedBox(height: 24),
+              const Text(
+                'All Roles:',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-            ],
-
-            const SizedBox(height: 24),
-
-            // Display the list of all roles added so far
-            const Text(
-              'All Roles:',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.normal, color: Color.fromARGB(255, 0, 0, 0)),
-            ),
-            const SizedBox(height: 8),
-            if (roles.isNotEmpty)
-              for (var i = 0; i < roles.length; i++)
-                Card(
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Name: ${roles[i]['name']}'),
-                        Text('Phone: ${roles[i]['phone']}'),
-                        Text('Assigned To: ${roles[i]['assignedTo']}'),
-                        if (roles[i]['assignedTo']!.toLowerCase() == 'camp') ...[
-                          Text('Camp Name: ${roles[i]['campName']}'),
-                          Text('Camp Location: ${roles[i]['campLocation']}'),
-                        ],
-                        Row(
+              const SizedBox(height: 8),
+              // Display the list of roles
+              if (roles.isNotEmpty)
+                ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: roles.length,
+                  itemBuilder: (context, index) {
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 4,
+                      child: ListTile(
+                        title: Text(roles[index]['name']!),
+                        subtitle: Text('Assigned to: ${roles[index]['assignedTo']}'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            ElevatedButton(
-                              onPressed: () => editRole(i),
-                              child: const Text('Edit'),
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.blue),
+                              onPressed: () => _editRole(index),
                             ),
-                            const SizedBox(width: 8),
-                            ElevatedButton(
-                              onPressed: () {
-                                setState(() {
-                                  roles.removeAt(i); // Remove role at index i
-                                });
-                              },
-                              child: const Text('Delete'),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _deleteRole(index),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
-                      ],
-                    ),
-                  ),
+                      ),
+                    );
+                  },
                 ),
-          ],
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  // Helper method to build TextField widgets with icons and styles
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+  }) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+
+  // Helper method to build Dropdown fields
+  Widget _buildDropdownField({
+    required String label,
+    required String value,
+    required List<String> items,
+    required void Function(String?) onChanged,
+    IconData? icon, // Optional icon parameter for dropdown
+  }) {
+    return DropdownButtonFormField<String>(
+      value: value.isEmpty ? null : value,
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon ?? Icons.assignment), // Use passed icon or default icon
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      items: items.map((String option) {
+        return DropdownMenuItem<String>(
+          value: option,
+          child: Text(option),
+        );
+      }).toList(),
     );
   }
 }
