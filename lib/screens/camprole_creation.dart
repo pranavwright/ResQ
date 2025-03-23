@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:resq/utils/auth/auth_service.dart';
+import 'package:resq/utils/http/token_http.dart';
 
 class CamproleCreation extends StatefulWidget {
   const CamproleCreation({super.key});
@@ -8,25 +10,19 @@ class CamproleCreation extends StatefulWidget {
 }
 
 class _CamproleCreationState extends State<CamproleCreation> {
-  // Define controllers for each text field
   final TextEditingController nameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
 
-  // List to store added roles
-  List<Map<String, String>> roles = [];
+  List<Map<String, dynamic>> roles = [];
 
-  // Flag to track if we are editing a role
   int? editingIndex;
-
-  // Flag to control the visibility of the form
   bool _showForm = false;
 
-  // Variables for additional role fields
+  String role = '';
   String assignedTo = '';
   String location = '';
   String validationMessage = '';
 
-  // List for dropdowns
   List<String> roleOptions = [
     'Statistics',
     'Camp Admin',
@@ -34,78 +30,181 @@ class _CamproleCreationState extends State<CamproleCreation> {
     'Survey Officials',
     'Verify Officials',
   ];
-  List<String> locationOptions = ['St. Joseph', 'SKMJ', 'DePaul'];
+  List<Map<String, dynamic>> campLocationOptions =
+      []; // Dynamic location options
+  List<Map<String, dynamic>> colpLocationOptions =
+      []; // Dynamic location options
+  List<Map<String, dynamic>> admins = [];
 
-  // Function to handle form submission
-  void _submitForm() {
-    final name = nameController.text;
-    final phone = phoneController.text;
+  bool _isLoading = true;
 
-    if (name.isEmpty || phone.isEmpty || assignedTo.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill out all fields!')),
-      );
-      return; // Exit the function if fields are empty
-    }
-
-    if ((assignedTo == 'Camp Admin' ||
-            assignedTo == 'Collection Point Admin') &&
-        location.isEmpty) {
-      setState(() {
-        validationMessage = 'Please select a Location.';
-      });
-      return;
-    }
-
-    setState(() {
-      if (editingIndex == null) {
-        // Add new role
-        roles.add({
-          'name': name,
-          'phone': phone,
-          'assignedTo': assignedTo,
-          'location': location,
-        });
-      } else {
-        // Update existing role
-        roles[editingIndex!] = {
-          'name': name,
-          'phone': phone,
-          'assignedTo': assignedTo,
-          'location': location,
-        };
-        editingIndex = null; // Reset editing mode
-      }
-    });
-
-    // Clear the form fields after submission
-    nameController.clear();
-    phoneController.clear();
-    assignedTo = '';
-    location = '';
-
-    // Show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          editingIndex == null
-              ? 'Role added successfully!'
-              : 'Role updated successfully!',
-        ),
-      ),
-    );
-
-    // Call print function to output the current roles
-    printRoles();
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
   }
 
-  // Function to print the current list of roles (simulating the "print" functionality)
-  void printRoles() {
-    print('Current Roles:');
-    for (var role in roles) {
-      print(
-        'Name: ${role['name']}, Phone Number: ${role['phone']}, Assigned To: ${role['assignedTo']}, Location: ${role['location']}',
+  Future<void> _fetchData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      final camps = await TokenHttp().get(
+        '/disaster/getCamps?disasterId=${AuthService().getDisasterId()}',
       );
+
+      final collectionPoints = await TokenHttp().get(
+        '/disaster/getCollectionPoints?disasterId=${AuthService().getDisasterId()}',
+      );
+
+      final getRoles = await TokenHttp().get(
+        '/auth/getAdmins?disasterId=${AuthService().getDisasterId()}',
+      );
+
+      print("API Responses - Camps: $camps");
+      print("API Responses - Collection Points: $collectionPoints");
+      print("API Responses - Admins: $getRoles");
+
+      // Clear the existing data
+      campLocationOptions.clear();
+      colpLocationOptions.clear();
+
+      // Handle camps data - fixed
+      if (camps is List) {
+        // Direct list response
+        for (var camp in camps) {
+          if (camp != null && camp['name'] != null) {
+            campLocationOptions.add(camp);
+          }
+        }
+      } else if (camps is Map &&
+          camps['data'] != null &&
+          camps['data'] is List) {
+        // Response with 'data' property
+        for (var camp in camps['data']) {
+          if (camp != null && camp['name'] != null) {
+            campLocationOptions.add(camp);
+          }
+        }
+      }
+
+      // Handle collection points data - fixed
+      if (collectionPoints is List) {
+        // Direct list response
+        for (var point in collectionPoints) {
+          if (point != null && point['name'] != null) {
+            colpLocationOptions.add(point);
+          }
+        }
+      } else if (collectionPoints is Map &&
+          collectionPoints['data'] != null &&
+          collectionPoints['data'] is List) {
+        // Response with 'data' property
+        for (var point in collectionPoints['data']) {
+          if (point != null && point['name'] != null) {
+            colpLocationOptions.add(point);
+          }
+        }
+      }
+
+      // Handle admin roles data - fixed
+      admins.clear();
+      if (getRoles is List) {
+        // Direct list response
+        admins.addAll(getRoles.whereType<Map<String, dynamic>>());
+      } else if (getRoles is Map &&
+          getRoles['data'] != null &&
+          getRoles['data'] is List) {
+        // Response with 'data' property
+        admins.addAll(getRoles['data'].whereType<Map<String, dynamic>>());
+      } else if (getRoles != null) {
+        // Special case - it might be an array inside another structure
+        // Print for debugging
+        print("Unhandled format for getRoles: ${getRoles.runtimeType}");
+      }
+
+      print(
+        "Processed ${colpLocationOptions.length + campLocationOptions.length} locations and ${admins.length} admins",
+      );
+    } catch (e) {
+      print("Error fetching data: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load data: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _addAdminToDisaster(
+    String name,
+    String phoneNumber,
+    String role,
+    String assignedTo,
+  ) async {
+    setState(() => _isLoading = true);
+    try {
+      await TokenHttp().post('/auth/register', {
+        'name': name,
+        'phoneNumber': phoneNumber,
+        'role':
+            role == 'Camp Admin'
+                ? 'campAdmin'
+                : role == 'Collection Point Admin'
+                ? 'collectionPointAdmin'
+                : role == 'Statistics'
+                ? 'stat'
+                : role == 'Survey Officials'
+                ? 'surveyOfficial'
+                : 'verifyOfficial',
+        'assignPlace':
+            role == 'Camp Admin' || role == 'Collection Point Admin'
+                ? assignedTo
+                : null,
+        'disasterId': AuthService().getDisasterId(),
+      });
+      await _fetchData();
+    } catch (e) {
+      print("Error adding admin: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to add admin: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> deleteAdmins(String id, String role) async {
+    setState(() => _isLoading = true);
+    try {
+      await TokenHttp().post('/auth/revokeAdmin', {
+        '_id': id,
+        'disasterId': AuthService().getDisasterId(),
+        'role': role,
+      });
+      await _fetchData();
+    } catch (e) {
+      print("Error deleting admin: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to delete admin: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -124,127 +223,263 @@ class _CamproleCreationState extends State<CamproleCreation> {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Show the form if _showForm is true
-              if (_showForm) ...[
-                // Text Fields for Role Details
-                _buildTextField(
-                  controller: nameController,
-                  label: 'Name',
-                  icon: Icons.person,
-                ),
-                const SizedBox(height: 16),
-                _buildTextField(
-                  controller: phoneController,
-                  label: 'Phone Number',
-                  icon: Icons.phone,
-                ),
-                const SizedBox(height: 16),
-                _buildDropdownField(
-                  label: 'Assigned To',
-                  value: assignedTo,
-                  items: roleOptions,
-                  onChanged: (value) {
-                    setState(() {
-                      assignedTo = value!;
-                      location = ''; // Reset location if assignedTo changes
-                    });
-                  },
-                ),
-                const SizedBox(height: 16),
-                // Location Dropdown appears if "Camp Admin" or "Collection Point Admin" is selected
-                if (assignedTo == 'Camp Admin' ||
-                    assignedTo == 'Collection Point Admin')
-                  _buildDropdownField(
-                    label: 'Location',
-                    value: location,
-                    items: locationOptions,
-                    onChanged: (value) {
-                      setState(() {
-                        location = value!;
-                      });
-                    },
-                    icon: Icons.location_on,
-                  ),
-                // Validation message
-                if (validationMessage.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    color: Colors.red[50],
-                    child: Text(
-                      validationMessage,
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                  ),
-                const SizedBox(height: 16),
-                // Submit Button
-                ElevatedButton(
-                  onPressed: _submitForm,
-                  child: const Text('Submit'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_showForm) ...[
+                        _buildTextField(
+                          controller: nameController,
+                          label: 'Name',
+                          icon: Icons.person,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          controller: phoneController,
+                          label: 'Phone Number',
+                          icon: Icons.phone,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildDropdownField(
+                          label: 'Assigned To',
+                          value: role,
+                          items: roleOptions,
+                          onChanged: (value) {
+                            setState(() {
+                              role = value!;
+                              location = '';
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 16),
 
-              // Display the list of roles
-              const Text(
-                'All Roles:',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              if (roles.isNotEmpty)
-                ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: roles.length,
-                  itemBuilder: (context, index) {
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 4,
-                      child: ListTile(
-                        title: Text(roles[index]['name']!),
-                        subtitle: Text(
-                          'Assigned to: ${roles[index]['assignedTo']}',
+                        if (role == 'Camp Admin')
+                          _buildDropdownField(
+                            label: 'Location',
+                            value: location,
+                            items:
+                                campLocationOptions
+                                    .map((e) => (e['name'] ?? '').toString())
+                                    .toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                location = value!;
+                              });
+                            },
+                            icon: Icons.location_on,
+                          ),
+                        if (role == 'Collection Point Admin')
+                          _buildDropdownField(
+                            label: 'Location',
+                            value: location,
+                            items:
+                                colpLocationOptions
+                                    .map((e) => (e['name'] ?? '').toString())
+                                    .toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                location = value!;
+                              });
+                            },
+                            icon: Icons.location_on,
+                          ),
+
+                        if (validationMessage.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            color: Colors.red[50],
+                            child: Text(
+                              validationMessage,
+                              style: const TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            if (nameController.text.isEmpty ||
+                                phoneController.text.isEmpty ||
+                                role.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Please fill out all fields!'),
+                                ),
+                              );
+                              return;
+                            }
+                            if ((role == 'Camp Admin' ||
+                                    role == 'Collection Point Admin') &&
+                                location.isEmpty) {
+                              setState(() {
+                                validationMessage = 'Please select a Location.';
+                              });
+                              return;
+                            }
+                            // Find the location object based on name
+                            Map<String, dynamic> locationObject;
+                            final campLocation = campLocationOptions.firstWhere(
+                              (loc) => loc['name'] == location,
+                              orElse: () => <String, dynamic>{},
+                            );
+                            final colpLocation = colpLocationOptions.firstWhere(
+                              (loc) => loc['name'] == location,
+                              orElse: () => <String, dynamic>{},
+                            );
+                            locationObject =
+                                campLocation.isNotEmpty
+                                    ? campLocation
+                                    : colpLocation.isNotEmpty
+                                    ? colpLocation
+                                    : {'_id': ''};
+
+                            _addAdminToDisaster(
+                              nameController.text,
+                              phoneController.text,
+                              role,
+                              locationObject['_id'] ?? '',
+                            );
+                            nameController.clear();
+                            phoneController.clear();
+                            role = '';
+                            location = '';
+                            setState(() {
+                              _showForm = false;
+                            });
+                          },
+                          child: const Text('Submit'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                      const Text(
+                        'All Roles:',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    );
-                  },
+                      const SizedBox(height: 8),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: admins.length,
+                        itemBuilder: (context, index) {
+                          final admin = admins[index];
+                          return Card(
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 4,
+                            child: ListTile(
+                              title: Text(admin['name'] ?? 'N/A'),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Phone: ${admin['phoneNumber'] ?? 'N/A'}',
+                                  ),
+                                  if (admin['assignedPlace'] != null)
+                                    Text(
+                                      'Assigned Place: ${admin['assignedPlace']['name'] ?? 'N/A'}',
+                                    ),
+                                ],
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.add,
+                                      color: Colors.blue,
+                                    ),
+                                    onPressed: () {
+                                      nameController.text = admin['name'] ?? '';
+                                      phoneController.text =
+                                          admin['phoneNumber'] ?? '';
+                                      role =
+                                          admin['role'] ?? ''; // Set the role
+                                      location =
+                                          admin['location'] ??
+                                          ''; // set location.
+                                      editingIndex =
+                                          index; // Store the index being edited
+                                      setState(() {
+                                        _showForm =
+                                            true; // Show the form with pre-filled data
+                                      });
+                                    },
+                                  ),
+
+                                  Wrap(
+                                    spacing: 8.0,
+                                    children:
+                                        (admin['assignedRoles']
+                                                as List<dynamic>?)
+                                            ?.map<Widget>((assignedRole) {
+                                              return ElevatedButton(
+                                                onPressed:
+                                                    () => deleteAdmins(
+                                                      admin["_id"],
+                                                      assignedRole,
+                                                    ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Text(assignedRole ?? 'N/A'),
+                                                    const SizedBox(width: 4),
+                                                    const Icon(
+                                                      Icons.delete,
+                                                      color: Colors.red,
+                                                      size: 16,
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            })
+                                            .toList() ??
+                                        [],
+                                  ),
+                                ],
+                              ),
+                              // Display assigned roles as chips
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
-            ],
-          ),
-        ),
-      ),
-      // Floating Action Button to toggle form visibility
+              ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           setState(() {
-            _showForm = !_showForm; // Toggle form visibility
+            _showForm = !_showForm;
+            if (!_showForm) {
+              nameController.clear();
+              phoneController.clear();
+              role = '';
+              location = '';
+              validationMessage = '';
+            }
           });
         },
-        child: Icon(
-          _showForm ? Icons.cancel : Icons.add, // Show a plus or cancel icon
-          color: Colors.white, // Set the icon color to white
-        ),
-        backgroundColor:
-            Colors.black, // Set the button background color to black
-        tooltip: _showForm ? 'Cancel' : 'Add Collection Point',
+        child: Icon(_showForm ? Icons.cancel : Icons.add, color: Colors.white),
+        backgroundColor: Colors.black,
+        tooltip: _showForm ? 'Cancel' : 'Add Role',
       ),
     );
   }
 
-  // Helper method to build TextField widgets with icons and styles
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -260,7 +495,6 @@ class _CamproleCreationState extends State<CamproleCreation> {
     );
   }
 
-  // Helper method to build Dropdown fields
   Widget _buildDropdownField({
     required String label,
     required String value,

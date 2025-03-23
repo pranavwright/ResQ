@@ -1,106 +1,186 @@
 import 'package:flutter/material.dart';
+import 'package:resq/utils/auth/auth_service.dart';
+import 'package:resq/utils/http/token_http.dart';
 
-class CollectionPoint extends StatefulWidget {
-  const CollectionPoint({super.key});
+class CollectionPointScreen extends StatefulWidget {
+  const  CollectionPointScreen({super.key});
 
   @override
-  _CollectionPointState createState() => _CollectionPointState();
+  _CollectionPointScreenState createState() => _CollectionPointScreenState();
 }
 
-class _CollectionPointState extends State<CollectionPoint> {
+class _CollectionPointScreenState extends State<CollectionPointScreen> {
   // Define controllers for each text field
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController locationController = TextEditingController();
-  final TextEditingController descriptionController = TextEditingController();
-  final TextEditingController capacityController = TextEditingController();
+  final TextEditingController collectionPointNameController = TextEditingController();
+  final TextEditingController collectionPointStatusController = TextEditingController();
+  final TextEditingController collectionPointLocationController = TextEditingController();
+  final TextEditingController collectionPointIdController = TextEditingController();
 
-  // List to store added collection points
   List<Map<String, String>> collectionPoints = [];
+  bool _isLoading = true;
 
-  // Flag to track if we are editing a collection point
+  @override
+  void initState() {
+    super.initState();
+    _fetchcollectionPoints().then((_) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    });
+  }
+
+  // Flag to track if we are editing a collectionPoint
   int? editingIndex;
 
   // Flag to control the visibility of the form
   bool _showForm = false;
 
-  // Function to handle form submission
-  void _submitForm() {
-    final name = nameController.text;
-    final location = locationController.text;
-    final description = descriptionController.text;
-    final capacity = capacityController.text;
-
-    if (name.isEmpty ||
-        location.isEmpty ||
-        description.isEmpty ||
-        capacity.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill out all fields!')),
+  Future<void> _fetchcollectionPoints() async {
+    try {
+      final response = await TokenHttp().get(
+        '/disaster/getCollectionPoints?disasterId=${AuthService().getDisasterId()}',
       );
-      return; // Exit the function if fields are empty
+      print(response);
+      if (mounted) {
+        setState(() {
+          collectionPoints = List<Map<String, String>>.from(
+            response.map(
+              (collectionPoint) => {
+                'name': collectionPoint['name']?.toString() ?? '',
+                'status': collectionPoint['status']?.toString() ?? '',
+                'location': collectionPoint['location']?.toString() ?? '',
+                '_id': collectionPoint['_id']?.toString() ?? '',
+                'capacity': collectionPoint['capacity']?.toString() ?? '',
+              },
+            ),
+          );
+        });
+      }
+    } catch (e) {
+      print('Error fetching collectionPoints: $e');
+      if (mounted){
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error fetching collectionPoints: $e')));
+      }
+
+    }
+  }
+
+  void _submitForm() async {
+    setState(() {
+      _isLoading = true;
+    });
+    final collectionPointName = collectionPointNameController.text;
+    final collectionPointStatus = collectionPointStatusController.text;
+    final collectionPointLocation = collectionPointLocationController.text;
+    final collectionPointId = collectionPointIdController.text;
+
+    if (collectionPointName.isEmpty || collectionPointStatus.isEmpty || collectionPointLocation.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please fill out all fields!')),
+        );
+      }
+      setState(() {
+        _isLoading = false;
+      });
+      return;
     }
 
-    setState(() {
-      if (editingIndex == null) {
-        collectionPoints.add({
-          'name': name,
-          'location': location,
-          'description': description,
-          'capacity': capacity,
+    try {
+      await TokenHttp().post('/disaster/postCollectionPoint', {
+        'name': collectionPointName,
+        '_id': collectionPointId,
+        'status': collectionPointStatus,
+        'location': collectionPointLocation,
+        'disasterId': AuthService().getDisasterId(),
+      });
+
+      if (mounted) {
+        collectionPointNameController.clear();
+        collectionPointStatusController.clear();
+        collectionPointLocationController.clear();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              editingIndex == null
+                  ? 'collectionPoint added successfully!'
+                  : 'collectionPoint updated successfully!',
+            ),
+          ),
+        );
+         _fetchcollectionPoints().then((_) {
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+          }
         });
-      } else {
-        collectionPoints[editingIndex!] = {
-          'name': name,
-          'location': location,
-          'description': description,
-          'capacity': capacity,
-        };
-        editingIndex = null; // Reset editing mode
       }
-    });
+    } catch (e) {
+      print('Error saving collectionPoint: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        setState(() {
+          _isLoading = false;
+        });
+      }
 
-    // Clear the form fields after submission
-    nameController.clear();
-    locationController.clear();
-    descriptionController.clear();
-    capacityController.clear();
-
-    // Print the data to the debug console
-    printCollectionPoints();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          editingIndex == null
-              ? 'Collection Point added successfully!'
-              : 'Collection Point updated successfully!',
-        ),
-      ),
-    );
+    }
   }
 
-  void _editCollectionPoint(int index) {
+  void _inActivecollectionPoint(int index) async {
+    final collectionPointId = collectionPoints[index]['_id'];
     setState(() {
-      editingIndex = index;
-      nameController.text = collectionPoints[index]['name']!;
-      locationController.text = collectionPoints[index]['location']!;
-      descriptionController.text = collectionPoints[index]['description']!;
-      capacityController.text = collectionPoints[index]['capacity']!;
+      _isLoading = true;
     });
+    try {
+      await TokenHttp().post('/disaster/postCollectionPoint', {
+        '_id': collectionPointId,
+        'status': 'inactive',
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('collectionPoint inactivated successfully!')),
+        );
+        _fetchcollectionPoints().then((_) {
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+          }
+        });
+      }
+    } catch (e) {
+      print('Error deleting collectionPoint: $e');
+      if (mounted){
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error inactivating collectionPoint: $e')));
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
-  void _deleteCollectionPoint(int index) {
-    setState(() {
-      collectionPoints.removeAt(index);
-    });
-    printCollectionPoints();
+  @override
+  void dispose() {
+    // Clean up controllers
+    collectionPointNameController.dispose();
+    collectionPointStatusController.dispose();
+    collectionPointLocationController.dispose();
+    collectionPointIdController.dispose();
+    super.dispose();
   }
 
-  void printCollectionPoints() {
-    print('Current Collection Points:');
-    for (var point in collectionPoints) {
+  void printcollectionPoints() {
+    print('Current collectionPoints:');
+    for (var collectionPoint in collectionPoints) {
       print(
-        'Name: ${point['name']}, Location: ${point['location']}, Description: ${point['description']}, Capacity: ${point['capacity']}',
+        'Name: ${collectionPoint['name']}, Status: ${collectionPoint['status']}, Location: ${collectionPoint['location']}, Capacity: ${collectionPoint['capacity']}',
       );
     }
   }
@@ -111,7 +191,7 @@ class _CollectionPointState extends State<CollectionPoint> {
       appBar: AppBar(
         backgroundColor: Colors.black, // Black background for the app bar
         title: const Text(
-          'Add Collection Point',
+          'Add collectionPoints',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -136,39 +216,35 @@ class _CollectionPointState extends State<CollectionPoint> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Show the form when _showForm is true
+              const SizedBox(height: 20),
+              _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : const SizedBox.shrink(),
+              const SizedBox(height: 16),
+
+              // Show the form if _showForm is true
               if (_showForm) ...[
-                // Collection Point Name Field
+                // collectionPoint Name Field
                 _buildTextField(
-                  controller: nameController,
-                  label: 'Collection Point Name',
+                  controller: collectionPointNameController,
+                  label: 'collectionPoint Name',
                   icon: Icons.location_city,
                 ),
                 const SizedBox(height: 16),
 
-                // Location Field
+                // collectionPoint Status Field
                 _buildTextField(
-                  controller: locationController,
-                  label: 'Location',
+                  controller: collectionPointStatusController,
+                  label: 'collectionPoint Status',
+                  icon: Icons.info,
+                ),
+                const SizedBox(height: 16),
+
+                // collectionPoint Location Field
+                _buildTextField(
+                  controller: collectionPointLocationController,
+                  label: 'collectionPoint Location',
                   icon: Icons.place,
-                ),
-                const SizedBox(height: 16),
-
-                // Description Field
-                _buildTextField(
-                  controller: descriptionController,
-                  label: 'Description',
-                  icon: Icons.description,
-                ),
-                const SizedBox(height: 16),
-
-                // Capacity Field
-                _buildTextField(
-                  controller: capacityController,
-                  label: 'Capacity',
-                  icon: Icons.people,
-                  keyboardType:
-                      TextInputType.number, // Only numbers for capacity
                 ),
                 const SizedBox(height: 16),
 
@@ -186,9 +262,9 @@ class _CollectionPointState extends State<CollectionPoint> {
                 const SizedBox(height: 20),
               ],
 
-              // Display the added collection points
+              // Display the added collectionPoints
               const Text(
-                'Collection Points:',
+                'collectionPoints:',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -211,19 +287,32 @@ class _CollectionPointState extends State<CollectionPoint> {
                             fontSize: 16,
                           ),
                         ),
-                        subtitle: Text(
-                          'Location: ${collectionPoints[index]['location']}',
+                        subtitle: Text('Status: ${collectionPoints[index]['status']}, Location: ${collectionPoints[index]['location']}, Capacity: ${collectionPoints[index]['capacity']}',
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
                               icon: const Icon(Icons.edit, color: Colors.blue),
-                              onPressed: () => _editCollectionPoint(index),
+                              onPressed: () {
+                                setState(() {
+                                  _showForm = true;
+                                  editingIndex = index;
+                                  collectionPointNameController.text = collectionPoints[index]['name']!;
+                                  collectionPointStatusController.text =
+                                      collectionPoints[index]['status']!;
+                                  collectionPointLocationController.text =
+                                      collectionPoints[index]['location']!;
+                                  collectionPointIdController.text = collectionPoints[index]['_id']!;
+                                });
+                              },
                             ),
                             IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _deleteCollectionPoint(index),
+                              icon: const Icon(
+                                Icons.warning,
+                                color: Colors.orange,
+                              ),
+                              onPressed: () => _inActivecollectionPoint(index),
                             ),
                           ],
                         ),
@@ -235,11 +324,19 @@ class _CollectionPointState extends State<CollectionPoint> {
           ),
         ),
       ),
-      // Floating Action Button to add a new collection point
+      // Floating Action Button to add a new collectionPoint
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           setState(() {
             _showForm = !_showForm; // Toggle form visibility
+            if (!_showForm) {
+              // Clear the form and reset editing index when hiding form.
+              collectionPointNameController.clear();
+              collectionPointStatusController.clear();
+              collectionPointLocationController.clear();
+              collectionPointIdController.clear();
+              editingIndex = null;
+            }
           });
         },
         child: Icon(
