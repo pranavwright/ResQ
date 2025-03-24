@@ -1,17 +1,13 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:resq/screens/splash_screen.dart';
-import 'package:resq/wrapper/connectivity_wrapper.dart';
 
-import 'firebase_options.dart';
 import 'utils/auth/auth_service.dart';
 import 'utils/auth/auth_route.dart';
 
 // Screens
-import 'package:resq/screens/mian_home.dart';
 import 'package:resq/screens/otp_screen.dart';
 import 'package:resq/screens/profile_setup.dart';
 import 'package:resq/screens/superAdmin_dashboard.dart';
@@ -39,7 +35,6 @@ import 'package:resq/screens/verification_volunteer_dashboard.dart';
 import 'package:resq/screens/familysurvay_home.dart';
 import 'package:resq/screens/section_a_screen.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
-import 'package:resq/widgets/text_animation.dart';
 
 void main() async {
   if (kIsWeb) setUrlStrategy(PathUrlStrategy());
