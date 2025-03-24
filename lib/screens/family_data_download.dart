@@ -4,6 +4,7 @@ import 'package:excel/excel.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:universal_html/html.dart' as html; // Import for web compatibility
 
 class FamilyDataScreen extends StatefulWidget {
   const FamilyDataScreen({Key? key}) : super(key: key);
@@ -254,14 +255,16 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
 
   Future<void> _generateAndDownloadExcel() async {
     try {
-      var status = await Permission.storage.request();
-      if (!status.isGranted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Storage permission is required to download files'),
-          ),
-        );
-        return;
+      if (!kIsWeb) {
+        var status = await Permission.storage.request();
+        if (!status.isGranted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Storage permission is required to download files'),
+            ),
+          );
+          return;
+        }
       }
 
       final excel = Excel.createExcel();
@@ -333,19 +336,29 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
         }
       }
 
-      final directory =
-          await getExternalStorageDirectory() ??
-              await getApplicationDocumentsDirectory();
-      final String filePath =
-          '${directory.path}/family_data_${DateTime.now().millisecondsSinceEpoch}.xlsx';
-
       final List<int>? excelBytes = excel.encode();
       if (excelBytes != null) {
-        final File file = File(filePath);
-        await file.writeAsBytes(excelBytes);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Excel file downloaded to: $filePath')),
-        );
+        if (kIsWeb) {
+          // Web-specific download logic
+          final blob = html.Blob([excelBytes]);
+          final url = html.Url.createObjectUrlFromBlob(blob);
+          final anchor = html.AnchorElement(href: url)
+            ..setAttribute('download', 'family_data.xlsx')
+            ..click();
+          html.Url.revokeObjectUrl(url);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Excel file downloaded')),
+          );
+        } else {
+          // Mobile download logic
+          final directory = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory();
+          final String filePath = '${directory.path}/family_data_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+          final File file = File(filePath);
+          await file.writeAsBytes(excelBytes);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Excel file downloaded to: $filePath')),
+          );
+        }
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1048,3 +1061,5 @@ class PostDisasterApp extends StatelessWidget {
     );
   }
 }
+
+bool get kIsWeb => identical(0, 0.0);

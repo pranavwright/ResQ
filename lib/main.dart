@@ -1,19 +1,17 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:resq/screens/identity.dart';
 import 'package:resq/screens/splash_screen.dart';
-import 'package:resq/wrapper/connectivity_wrapper.dart';
+import 'dart:io';
 
 import 'firebase_options.dart';
 import 'utils/auth/auth_service.dart';
 import 'utils/auth/auth_route.dart';
 
 // Screens
-import 'package:resq/screens/mian_home.dart';
 import 'package:resq/screens/otp_screen.dart';
 import 'package:resq/screens/profile_setup.dart';
 import 'package:resq/screens/superAdmin_dashboard.dart';
@@ -41,11 +39,48 @@ import 'package:resq/screens/verification_volunteer_dashboard.dart';
 import 'package:resq/screens/familysurvay_home.dart';
 import 'package:resq/screens/section_a_screen.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
-import 'package:resq/widgets/text_animation.dart';
 
 void main() async {
-  if (kIsWeb) setUrlStrategy(PathUrlStrategy());
+  // This is required before calling any platform channels
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  if (kIsWeb) {
+    setUrlStrategy(PathUrlStrategy());
+  } else {
+    // Only request permissions on mobile platforms
+    await requestPermission();
+  }
   runApp(const MyApp());
+}
+
+Future<void> requestPermission() async {
+  print("Requesting storage permissions...");
+  
+  if (Platform.isAndroid) {
+    // For Android 13+ (SDK 33+), we need more specific permissions
+    if (await Permission.storage.isDenied) {
+      await Permission.storage.request();
+    }
+    
+    // For files in external storage on newer Android versions
+    if (await Permission.manageExternalStorage.isDenied) {
+      await Permission.manageExternalStorage.request();
+    }
+    
+    // For photos and media
+    if (await Permission.photos.isDenied) {
+      await Permission.photos.request();
+    }
+  } else if (Platform.isIOS) {
+    // iOS requires specific permissions
+    if (await Permission.photos.isDenied) {
+      await Permission.photos.request();
+    }
+  }
+  
+  // Check final status and log it
+  final storageStatus = await Permission.storage.status;
+  print("Storage permission status: $storageStatus");
 }
 
 class MyApp extends StatelessWidget {
@@ -164,7 +199,7 @@ class MyApp extends StatelessWidget {
               requiredRoles: ['admin', 'stat'],
               child: CamproleCreation(),
             );
-           
+
         break;
       case '/public-donation':
         builder =
@@ -181,13 +216,9 @@ class MyApp extends StatelessWidget {
       case '/test-family':
         builder = (context) => FamilyDataScreen();
         break;
-         case '/identity':
-        builder = (context) =>AuthRoute
-        (
-          requiresAuth: true,
-          child: Identity(),
-        );
-       
+      case '/identity':
+        builder = (context) => AuthRoute(requiresAuth: true, child: Identity());
+
         break;
       case '/admin-collectionpoint':
         builder = (context) => CollectionPoint();
