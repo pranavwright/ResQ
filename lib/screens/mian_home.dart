@@ -27,7 +27,6 @@ class MainHome extends StatelessWidget {
             // Enhanced Hero Section with parallax effect
             Stack(
               children: [
-                // Hero Image with Parallax Scroll Effect
                 Container(
                   width: double.infinity,
                   height: height * 0.65,
@@ -247,6 +246,7 @@ class MainHome extends StatelessWidget {
                   ),
 
                   SizedBox(height: 24),
+                  
 
                   // Features Grid
                   GridView.count(
@@ -268,8 +268,8 @@ class MainHome extends StatelessWidget {
                       _buildFeatureCard(
                         context,
                         icon: Icons.assessment_rounded,
-                        title: 'Disaster Data',
-                        description: 'Real-time information and statistics',
+                        title: 'For donations',
+                        description: 'Donate to the needy',
                         route: '/disaster',
                         color: Color(0xFF2196F3),
                       ),
