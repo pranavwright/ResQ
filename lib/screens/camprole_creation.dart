@@ -8,25 +8,18 @@ class CamproleCreation extends StatefulWidget {
 }
 
 class _CamproleCreationState extends State<CamproleCreation> {
-  // Define controllers for each text field
   final TextEditingController nameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
 
-  // List to store added roles
   List<Map<String, String>> roles = [];
-
-  // Flag to track if we are editing a role
   int? editingIndex;
 
-  // Flag to control the visibility of the form
   bool _showForm = false;
 
-  // Variables for additional role fields
   String assignedTo = '';
   String location = '';
   String validationMessage = '';
 
-  // List for dropdowns
   List<String> roleOptions = [
     'Statistics',
     'Camp Admin',
@@ -36,7 +29,6 @@ class _CamproleCreationState extends State<CamproleCreation> {
   ];
   List<String> locationOptions = ['St. Joseph', 'SKMJ', 'DePaul'];
 
-  // Function to handle form submission
   void _submitForm() {
     final name = nameController.text;
     final phone = phoneController.text;
@@ -45,7 +37,7 @@ class _CamproleCreationState extends State<CamproleCreation> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill out all fields!')),
       );
-      return; // Exit the function if fields are empty
+      return;
     }
 
     if ((assignedTo == 'Camp Admin' ||
@@ -59,7 +51,6 @@ class _CamproleCreationState extends State<CamproleCreation> {
 
     setState(() {
       if (editingIndex == null) {
-        // Add new role
         roles.add({
           'name': name,
           'phone': phone,
@@ -67,7 +58,6 @@ class _CamproleCreationState extends State<CamproleCreation> {
           'location': location,
         });
       } else {
-        // Update existing role
         roles[editingIndex!] = {
           'name': name,
           'phone': phone,
@@ -78,13 +68,11 @@ class _CamproleCreationState extends State<CamproleCreation> {
       }
     });
 
-    // Clear the form fields after submission
     nameController.clear();
     phoneController.clear();
     assignedTo = '';
     location = '';
 
-    // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -94,12 +82,9 @@ class _CamproleCreationState extends State<CamproleCreation> {
         ),
       ),
     );
-
-    // Call print function to output the current roles
     printRoles();
   }
 
-  // Function to print the current list of roles (simulating the "print" functionality)
   void printRoles() {
     print('Current Roles:');
     for (var role in roles) {
@@ -107,6 +92,28 @@ class _CamproleCreationState extends State<CamproleCreation> {
         'Name: ${role['name']}, Phone Number: ${role['phone']}, Assigned To: ${role['assignedTo']}, Location: ${role['location']}',
       );
     }
+  }
+
+  // Method to delete a role
+  void _deleteRole(int index) {
+    setState(() {
+      roles.removeAt(index);
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Role deleted successfully!')),
+    );
+  }
+
+  // Method to edit a role
+  void _editRole(int index) {
+    setState(() {
+      editingIndex = index;
+      nameController.text = roles[index]['name']!;
+      phoneController.text = roles[index]['phone']!;
+      assignedTo = roles[index]['assignedTo']!;
+      location = roles[index]['location']!;
+    });
   }
 
   @override
@@ -130,9 +137,7 @@ class _CamproleCreationState extends State<CamproleCreation> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Show the form if _showForm is true
               if (_showForm) ...[
-                // Text Fields for Role Details
                 _buildTextField(
                   controller: nameController,
                   label: 'Name',
@@ -157,7 +162,6 @@ class _CamproleCreationState extends State<CamproleCreation> {
                   },
                 ),
                 const SizedBox(height: 16),
-                // Location Dropdown appears if "Camp Admin" or "Collection Point Admin" is selected
                 if (assignedTo == 'Camp Admin' ||
                     assignedTo == 'Collection Point Admin')
                   _buildDropdownField(
@@ -171,7 +175,6 @@ class _CamproleCreationState extends State<CamproleCreation> {
                     },
                     icon: Icons.location_on,
                   ),
-                // Validation message
                 if (validationMessage.isNotEmpty)
                   Container(
                     padding: const EdgeInsets.all(8),
@@ -182,7 +185,6 @@ class _CamproleCreationState extends State<CamproleCreation> {
                     ),
                   ),
                 const SizedBox(height: 16),
-                // Submit Button
                 ElevatedButton(
                   onPressed: _submitForm,
                   child: const Text('Submit'),
@@ -195,8 +197,6 @@ class _CamproleCreationState extends State<CamproleCreation> {
                 ),
                 const SizedBox(height: 20),
               ],
-
-              // Display the list of roles
               const Text(
                 'All Roles:',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -218,6 +218,19 @@ class _CamproleCreationState extends State<CamproleCreation> {
                         subtitle: Text(
                           'Assigned to: ${roles[index]['assignedTo']}',
                         ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit),
+                              onPressed: () => _editRole(index),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete),
+                              onPressed: () => _deleteRole(index),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -226,25 +239,22 @@ class _CamproleCreationState extends State<CamproleCreation> {
           ),
         ),
       ),
-      // Floating Action Button to toggle form visibility
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           setState(() {
-            _showForm = !_showForm; // Toggle form visibility
+            _showForm = !_showForm;
           });
         },
         child: Icon(
-          _showForm ? Icons.cancel : Icons.add, // Show a plus or cancel icon
-          color: Colors.white, // Set the icon color to white
+          _showForm ? Icons.cancel : Icons.add,
+          color: Colors.white,
         ),
-        backgroundColor:
-            Colors.black, // Set the button background color to black
+        backgroundColor: Colors.black,
         tooltip: _showForm ? 'Cancel' : 'Add Collection Point',
       ),
     );
   }
 
-  // Helper method to build TextField widgets with icons and styles
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -260,7 +270,6 @@ class _CamproleCreationState extends State<CamproleCreation> {
     );
   }
 
-  // Helper method to build Dropdown fields
   Widget _buildDropdownField({
     required String label,
     required String value,

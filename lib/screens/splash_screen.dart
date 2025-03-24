@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:resq/firebase_options.dart';
 import 'package:resq/screens/mian_home.dart';
 import 'package:resq/widgets/text_animation.dart';
@@ -72,6 +73,22 @@ class _SplashScreenState extends State<SplashScreen> {
         });
         return;
       }
+
+      Future<void> reqStoragePermission() async {
+        try {
+          var status = await Permission.storage.request();
+
+          if (status.isGranted) {
+            print("permission granted");
+          } else {
+            await Permission.storage.request();
+          }
+        } catch (e) {
+          print("error: $e");
+        }
+      }
+
+      reqStoragePermission();
 
       try {
         print("Initializing Firebase...");

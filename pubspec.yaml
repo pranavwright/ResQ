@@ -37,6 +37,9 @@ dependencies:
 
   # Image Picker
   image_picker: ^1.0.4
+  dio: ^5.1.0
+  
+  
 
   # File Handling & Permissions
   file_picker: ^9.1.0

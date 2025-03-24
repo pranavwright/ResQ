@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:resq/screens/identity.dart';
 import 'package:resq/screens/splash_screen.dart';
 import 'package:resq/wrapper/connectivity_wrapper.dart';
 
@@ -61,6 +63,7 @@ class MyApp extends StatelessWidget {
         print('Initial route from URL: $initialRoute');
       }
     }
+
     return MaterialApp(
       title: 'RESQ App',
       theme: ThemeData(
@@ -161,6 +164,7 @@ class MyApp extends StatelessWidget {
               requiredRoles: ['admin', 'stat'],
               child: CamproleCreation(),
             );
+           
         break;
       case '/public-donation':
         builder =
@@ -176,6 +180,14 @@ class MyApp extends StatelessWidget {
         break;
       case '/test-family':
         builder = (context) => FamilyDataScreen();
+        break;
+         case '/identity':
+        builder = (context) =>AuthRoute
+        (
+          requiresAuth: true,
+          child: Identity(),
+        );
+       
         break;
       case '/admin-collectionpoint':
         builder = (context) => CollectionPoint();

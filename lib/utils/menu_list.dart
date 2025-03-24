@@ -72,9 +72,9 @@ final List<Map<String, dynamic>> menuData = [
     "roles": ["admin"]
   },
   {
-    "title": "Profile",
+    "title": "Identity",
     "icon": Icons.person,
-    "route": "/profile",
+    "route": "/identity",
     "roles": ["all"]
   },
   {
@@ -89,6 +89,7 @@ final List<Map<String, dynamic>> menuData = [
     "route": "/logout",
     "roles": ["all"]
   },
+
 ];
             
 List<MenuItem> menuItems = menuData.map((data) => MenuItem.fromJson(data)).toList();
