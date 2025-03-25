@@ -1,6 +1,6 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' as flutter_foundation show kIsWeb;
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:resq/screens/identity.dart';
@@ -43,7 +43,7 @@ void main() async {
   // This is required before calling any platform channels
   WidgetsFlutterBinding.ensureInitialized();
   
-  if (kIsWeb) {
+  if (flutter_foundation.kIsWeb) {
     setUrlStrategy(PathUrlStrategy());
   } else {
     // Only request permissions on mobile platforms
@@ -88,7 +88,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String initialRoute = '/';
-    if (kIsWeb) {
+    if (flutter_foundation.kIsWeb) {
       final uri = Uri.parse(Uri.base.toString());
       final path = uri.path;
 
@@ -128,7 +128,7 @@ class MyApp extends StatelessWidget {
     );
   }
 
-  Color _getPrimaryColor() => kIsWeb ? Colors.green : Colors.blue;
+  Color _getPrimaryColor() => flutter_foundation.kIsWeb ? Colors.green : Colors.blue;
 
   Route<dynamic> _generateRoute(RouteSettings settings) {
     WidgetBuilder builder;

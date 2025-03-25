@@ -36,67 +36,22 @@ class _CamproleCreationState extends State<CamproleCreation> {
       []; // Dynamic location options
   List<Map<String, dynamic>> admins = [];
 
-  void _submitForm() {
-    final name = nameController.text;
-    final phone = phoneController.text;
+  bool _isLoading = true;
 
-    if (name.isEmpty || phone.isEmpty || assignedTo.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill out all fields!')),
-      );
-      return;
-    }
-
-    if ((assignedTo == 'Camp Admin' ||
-            assignedTo == 'Collection Point Admin') &&
-        location.isEmpty) {
-      setState(() {
-        validationMessage = 'Please select a Location.';
-      });
-      return;
-    }
-
-    setState(() {
-      if (editingIndex == null) {
-        roles.add({
-          'name': name,
-          'phone': phone,
-          'assignedTo': assignedTo,
-          'location': location,
-        });
-      } else {
-        roles[editingIndex!] = {
-          'name': name,
-          'phone': phone,
-          'assignedTo': assignedTo,
-          'location': location,
-        };
-        editingIndex = null; // Reset editing mode
-      }
-    });
-
-    nameController.clear();
-    phoneController.clear();
-    assignedTo = '';
-    location = '';
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          editingIndex == null
-              ? 'Role added successfully!'
-              : 'Role updated successfully!',
-        ),
-      ),
-    );
-    printRoles();
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
   }
 
-  void printRoles() {
-    print('Current Roles:');
-    for (var role in roles) {
-      print(
-        'Name: ${role['name']}, Phone Number: ${role['phone']}, Assigned To: ${role['assignedTo']}, Location: ${role['location']}',
+  Future<void> _fetchData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      final camps = await TokenHttp().get(
+        '/disaster/getCamps?disasterId=${AuthService().getDisasterId()}',
       );
 
       final collectionPoints = await TokenHttp().get(
@@ -251,28 +206,6 @@ class _CamproleCreationState extends State<CamproleCreation> {
         setState(() => _isLoading = false);
       }
     }
-  }
-
-  // Method to delete a role
-  void _deleteRole(int index) {
-    setState(() {
-      roles.removeAt(index);
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Role deleted successfully!')),
-    );
-  }
-
-  // Method to edit a role
-  void _editRole(int index) {
-    setState(() {
-      editingIndex = index;
-      nameController.text = roles[index]['name']!;
-      phoneController.text = roles[index]['phone']!;
-      assignedTo = roles[index]['assignedTo']!;
-      location = roles[index]['location']!;
-    });
   }
 
   @override
@@ -433,19 +366,6 @@ class _CamproleCreationState extends State<CamproleCreation> {
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit),
-                              onPressed: () => _editRole(index),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete),
-                              onPressed: () => _deleteRole(index),
-                            ),
-                          ],
-                        ),
                       ),
                       const SizedBox(height: 8),
                       ListView.builder(
@@ -539,22 +459,23 @@ class _CamproleCreationState extends State<CamproleCreation> {
                     ],
                   ),
                 ),
-            ],
-          ),
-        ),
-      ),
+              ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           setState(() {
             _showForm = !_showForm;
+            if (!_showForm) {
+              nameController.clear();
+              phoneController.clear();
+              role = '';
+              location = '';
+              validationMessage = '';
+            }
           });
         },
-        child: Icon(
-          _showForm ? Icons.cancel : Icons.add,
-          color: Colors.white,
-        ),
+        child: Icon(_showForm ? Icons.cancel : Icons.add, color: Colors.white),
         backgroundColor: Colors.black,
-        tooltip: _showForm ? 'Cancel' : 'Add Collection Point',
+        tooltip: _showForm ? 'Cancel' : 'Add Role',
       ),
     );
   }
