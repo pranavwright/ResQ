@@ -198,6 +198,10 @@ class _CampStatusScreenState extends State<CampStatusScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 20),
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : const SizedBox.shrink(),
+                const SizedBox(height: 16),
 
               // Show the form if _showForm is true
               if (_showForm) ...[
@@ -207,10 +211,6 @@ class _CampStatusScreenState extends State<CampStatusScreen> {
                   label: 'Camp Name',
                   icon: Icons.location_city,
                 ),
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : const SizedBox.shrink(),
-                const SizedBox(height: 16),
 
                 // Camp Status Field
                 _buildTextField(

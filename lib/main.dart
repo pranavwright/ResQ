@@ -1,13 +1,12 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:resq/screens/identity.dart';
 import 'package:resq/screens/splash_screen.dart';
 import 'dart:io';
 
-import 'firebase_options.dart';
 import 'utils/auth/auth_service.dart';
 import 'utils/auth/auth_route.dart';
 
@@ -25,7 +24,7 @@ import 'package:resq/screens/no_network_screen.dart';
 import 'package:resq/screens/items_list.dart';
 import 'package:resq/screens/downloading.dart';
 import 'package:resq/screens/families.dart';
-import 'package:resq/screens/camp_status.dart';
+import 'package:resq/screens/camp_status.dart' as camp_status;
 import 'package:resq/screens/role_creation.dart';
 import 'package:resq/screens/create_notice.dart';
 import 'package:resq/screens/camprole_creation.dart';
@@ -101,6 +100,7 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       title: 'RESQ App',
+      themeMode: ThemeMode.dark,
       theme: ThemeData(
         primarySwatch: Colors.blue,
         primaryColor: _getPrimaryColor(),
@@ -174,9 +174,9 @@ class MyApp extends StatelessWidget {
         break;
       case '/camp-status':
         builder =
-            (context) => const AuthRoute(
-              requiredRoles: ['admin', 'campadmin'],
-              child: CampStatusScreen(),
+            (context) => AuthRoute(
+              requiredRoles: const ['admin', 'campadmin'],
+              child: camp_status.CampStatusScreen(),
             );
         break;
       case '/notice-board':
@@ -221,7 +221,7 @@ class MyApp extends StatelessWidget {
 
         break;
       case '/admin-collectionpoint':
-        builder = (context) => CollectionPoint();
+        builder = (context) => AuthRoute(requiredRoles: ['admin', 'stat'],child: CollectionPointScreen());
         break;
       case '/test-statistics':
         builder = (context) => DashboardScreen();
@@ -263,9 +263,9 @@ class MyApp extends StatelessWidget {
     if (roles.contains('admin')) return AdminDashboard();
     if (roles.contains('stat')) return DashboardScreen();
     if (roles.contains('kas')) return KasDashboard();
-    if (roles.contains('collectionpointadmin'))
+    if (roles.contains('collectionPointAdmin'))
       return CollectionPointDashboard();
-    if (roles.contains('campadmin')) return CampAdminRequestScreen();
+    if (roles.contains('campAdmin')) return CampAdminRequestScreen();
     if (roles.contains('collectionpointvolunteer')) return VolunteerDashboard();
     return const Scaffold(body: Center(child: Text("No valid role assigned")));
   }

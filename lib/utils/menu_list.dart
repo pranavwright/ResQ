@@ -56,7 +56,7 @@ final List<Map<String, dynamic>> menuData = [
   {
     "title": "Notice Board",
     "icon": Icons.announcement,
-    "route": "/create-notice", 
+    "route": "/notice-board", 
     "roles": ["admin","stat"]
   },
   {

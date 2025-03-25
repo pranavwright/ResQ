@@ -76,8 +76,10 @@ class TokenHttp {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(response.body);
       } else {
+        final responseBody = response.body;
+        final errorMessage = responseBody.isNotEmpty ? jsonDecode(responseBody)['message'] ?? responseBody : responseBody;
         throw Exception(
-          'POST request failed: ${response.statusCode}, ${response.body}',
+          'POST request failed: ${response.statusCode}, $errorMessage',
         );
       }
     } catch (e) {
