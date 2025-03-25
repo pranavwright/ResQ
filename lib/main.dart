@@ -214,7 +214,7 @@ class MyApp extends StatelessWidget {
             );
         break;
       case '/test-family':
-        builder = (context) => FamilyDataScreen();
+        builder = (context) => FamilyDataDownloadScreen();
         break;
       case '/identity':
         builder = (context) => AuthRoute(requiresAuth: true, child: Identity());
