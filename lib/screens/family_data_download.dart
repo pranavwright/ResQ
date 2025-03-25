@@ -1,991 +1,820 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:excel/excel.dart';
+import 'package:syncfusion_flutter_datagrid/datagrid.dart';
+import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
+import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:open_file/open_file.dart' show OpenFile;
 
-class FamilyDataScreen extends StatefulWidget {
-  const FamilyDataScreen({Key? key}) : super(key: key);
-
+class FamilyDataDownloadScreen extends StatefulWidget {
   @override
-  _FamilyDataScreenState createState() => _FamilyDataScreenState();
+  _FamilyDataDownloadScreenState createState() => _FamilyDataDownloadScreenState();
 }
 
-class _FamilyDataScreenState extends State<FamilyDataScreen> {
-  List<Map<String, dynamic>> allFamilies = [];
-  List<Map<String, dynamic>> filteredFamilies = [];
-
+class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
+  // Family filters
   final TextEditingController _minIncomeController = TextEditingController();
   final TextEditingController _maxIncomeController = TextEditingController();
-  String? _selectedAddress;
-  String? _selectedResidence;
-  String? _selectedWard;
-  bool? _outsideDamagedArea;
-  bool? _receivedAllowance;
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _currentResidenceController = TextEditingController();
+  final TextEditingController _wardNumberController = TextEditingController();
+  bool _outsideDamagedArea = false;
+  bool _receivedAllowance = false;
 
-  String? _selectedName;
-  String? _selectedStatus;
-  RangeValues _ageRange = const RangeValues(0, 100);
-  String? _selectedGender;
-  String? _selectedEducation;
-  String? _selectedIncomeSource;
-  String? _selectedSkill;
-  bool? _needsEmploymentAssistance;
-  bool? _hasHealthIssue;
-  bool? _isBedridden;
-  bool? _needsCounselling;
-  bool? _needsAssistiveDevices;
-  String? _selectedRehabOption;
+  // Individual filters
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _ageController = TextEditingController();
+  String _status = 'All';
+  final TextEditingController _minAgeController = TextEditingController();
+  final TextEditingController _maxAgeController = TextEditingController();
+  String _gender = 'All';
+  String _education = 'All';
+  String _incomeSource = 'All';
+  final TextEditingController _skillsController = TextEditingController();
+  bool _needsEmployment = false;
+  bool _needsAssistance = false;
+  bool _hasHealthIssue = false;
+  bool _isBedridden = false;
+  bool _needsCounselling = false;
+  String _preferredRehabilitation = 'All';
 
-  final List<String> addresses = ['Address 1', 'Address 2', 'Address 3'];
-  final List<String> residences = ['Residence 1', 'Residence 2', 'Residence 3'];
-  final List<String> wards = ['Ward 1', 'Ward 2', 'Ward 3', 'Ward 4', 'Ward 5'];
-  final List<String> statuses = ['Alive', 'Dead'];
-  final List<String> genders = ['Male', 'Female', 'Other'];
-  final List<String> educationSources = [
-    'School',
-    'College',
-    'University',
-    'None',
-  ];
-  final List<String> incomeSources = [
-    'Employment',
-    'Business',
-    'Pension',
-    'Aid',
-  ];
-  final List<String> skills = [
-    'Carpentry',
-    'Plumbing',
-    'Cooking',
-    'Medical',
-    'IT',
-    'Teaching',
-  ];
-  final List<String> rehabOptions = [
-    'Rent',
-    "Relative's House",
-    'Temporary Shelter',
-    'Permanent Housing',
-  ];
+  List<Family> families = [];
+  List<Family> filteredFamilies = [];
+  FamilyDataSource? familyDataSource;
 
   @override
   void initState() {
     super.initState();
-    _generateMockData();
-    filteredFamilies = List.from(allFamilies);
+    _initializeMockData();
+    filteredFamilies = List.from(families);
+    familyDataSource = FamilyDataSource(families: filteredFamilies);
   }
 
-  void _generateMockData() {
-    for (int i = 0; i < 20; i++) {
-      final family = {
-        'id': 'FAM${100 + i}',
-        'address': addresses[i % addresses.length],
-        'currentResidence': residences[i % residences.length],
-        'wardNumber': wards[i % wards.length],
-        'outsideDamagedArea': i % 2 == 0,
-        'receivedAllowance': i % 3 == 0,
-        'totalIncome': 5000 + (i * 1000),
-        'individuals': <Map<String, dynamic>>[],
-      };
-
-      final memberCount = 2 + (i % 4);
-      for (int j = 0; j < memberCount; j++) {
-        (family['individuals'] as List<Map<String, dynamic>>).add({
-          'name': 'Person ${i}-${j}',
-          'status': statuses[j % statuses.length],
-          'age': 20 + (i + j) % 60,
-          'gender': genders[j % genders.length],
-          'educationSource': educationSources[j % educationSources.length],
-          'incomeSource': incomeSources[j % incomeSources.length],
-          'skills': skills[(i + j) % skills.length],
-          'needsEmploymentAssistance': j % 3 == 0,
-          'hasHealthIssue': j % 4 == 0,
-          'isBedridden': j % 7 == 0,
-          'needsCounselling': j % 5 == 0,
-          'needsAssistiveDevices': j % 6 == 0,
-          'preferredRehabOption': rehabOptions[j % rehabOptions.length],
-        });
-      }
-
-      allFamilies.add(family);
-    }
+  @override
+  void dispose() {
+    _minIncomeController.dispose();
+    _maxIncomeController.dispose();
+    _addressController.dispose();
+    _currentResidenceController.dispose();
+    _wardNumberController.dispose();
+    _nameController.dispose();
+    _ageController.dispose();
+    _minAgeController.dispose();
+    _maxAgeController.dispose();
+    _skillsController.dispose();
+    super.dispose();
   }
 
-  void _applyFilters() {
-    setState(() {
-      filteredFamilies = allFamilies.where((family) {
-        final int totalIncome = family['totalIncome'] as int;
-        final minIncome = _minIncomeController.text.isEmpty
-            ? 0
-            : int.parse(_minIncomeController.text);
-        final maxIncome = _maxIncomeController.text.isEmpty
-            ? double.infinity.toInt()
-            : int.parse(_maxIncomeController.text);
-
-        bool matchesFamily = true;
-        if (totalIncome < minIncome || totalIncome > maxIncome) {
-          matchesFamily = false;
-        }
-        if (_selectedAddress != null && family['address'] != _selectedAddress) {
-          matchesFamily = false;
-        }
-        if (_selectedResidence != null &&
-            family['currentResidence'] != _selectedResidence) {
-          matchesFamily = false;
-        }
-        if (_selectedWard != null && family['wardNumber'] != _selectedWard) {
-          matchesFamily = false;
-        }
-        if (_outsideDamagedArea != null &&
-            family['outsideDamagedArea'] != _outsideDamagedArea) {
-          matchesFamily = false;
-        }
-        if (_receivedAllowance != null &&
-            family['receivedAllowance'] != _receivedAllowance) {
-          matchesFamily = false;
-        }
-
-        if (!matchesFamily) {
-          return false;
-        }
-
-        List<Map<String, dynamic>> individuals =
-            List<Map<String, dynamic>>.from(family['individuals']);
-        bool hasMatchingIndividual = false;
-
-        for (var individual in individuals) {
-          bool matchesIndividual = true;
-
-          if (_selectedName != null &&
-              !individual['name']
-                  .toString()
-                  .toLowerCase()
-                  .contains(_selectedName!.toLowerCase())) {
-            matchesIndividual = false;
-          }
-          if (_selectedStatus != null &&
-              individual['status'] != _selectedStatus) {
-            matchesIndividual = false;
-          }
-
-          final int age = individual['age'] as int;
-          if (age < _ageRange.start || age > _ageRange.end) {
-            matchesIndividual = false;
-          }
-          if (_selectedGender != null && individual['gender'] != _selectedGender) {
-            matchesIndividual = false;
-          }
-          if (_selectedEducation != null &&
-              individual['educationSource'] != _selectedEducation) {
-            matchesIndividual = false;
-          }
-          if (_selectedIncomeSource != null &&
-              individual['incomeSource'] != _selectedIncomeSource) {
-            matchesIndividual = false;
-          }
-          if (_selectedSkill != null && individual['skills'] != _selectedSkill) {
-            matchesIndividual = false;
-          }
-          if (_needsEmploymentAssistance != null &&
-              individual['needsEmploymentAssistance'] !=
-                  _needsEmploymentAssistance) {
-            matchesIndividual = false;
-          }
-          if (_hasHealthIssue != null &&
-              individual['hasHealthIssue'] != _hasHealthIssue) {
-            matchesIndividual = false;
-          }
-          if (_isBedridden != null && individual['isBedridden'] != _isBedridden) {
-            matchesIndividual = false;
-          }
-          if (_needsCounselling != null &&
-              individual['needsCounselling'] != _needsCounselling) {
-            matchesIndividual = false;
-          }
-          if (_needsAssistiveDevices != null &&
-              individual['needsAssistiveDevices'] != _needsAssistiveDevices) {
-            matchesIndividual = false;
-          }
-          if (_selectedRehabOption != null &&
-              individual['preferredRehabOption'] != _selectedRehabOption) {
-            matchesIndividual = false;
-          }
-
-          if (matchesIndividual) {
-            hasMatchingIndividual = true;
-            break;
-          }
-        }
-
-        return hasMatchingIndividual;
-      }).toList();
-    });
+  void _initializeMockData() {
+    // Comprehensive mock data
+    families = [
+      Family(
+        id: 'F001',
+        minIncome: 10000,
+        maxIncome: 15000,
+        address: '123 Main St, Disaster Zone A',
+        currentResidence: 'Temporary Shelter A',
+        wardNumber: '5',
+        outsideDamagedArea: true,
+        receivedAllowance: true,
+        members: [
+          FamilyMember(
+            name: 'John Doe',
+            age: 35,
+            status: 'Alive',
+            gender: 'Male',
+            education: 'High School',
+            incomeSource: 'Construction',
+            skills: 'Carpentry, Masonry',
+            needsEmployment: true,
+            needsAssistance: false,
+            hasHealthIssue: false,
+            isBedridden: false,
+            needsCounselling: true,
+            preferredRehabilitation: 'Temporary',
+          ),
+          FamilyMember(
+            name: 'Jane Doe',
+            age: 32,
+            status: 'Alive',
+            gender: 'Female',
+            education: 'College',
+            incomeSource: 'Teaching',
+            skills: 'Teaching, First Aid',
+            needsEmployment: false,
+            needsAssistance: true,
+            hasHealthIssue: true,
+            isBedridden: false,
+            needsCounselling: false,
+            preferredRehabilitation: 'Rent',
+          ),
+          FamilyMember(
+            name: 'Baby Doe',
+            age: 2,
+            status: 'Alive',
+            gender: 'Other',
+            education: 'None',
+            incomeSource: 'None',
+            skills: '',
+            needsEmployment: false,
+            needsAssistance: true,
+            hasHealthIssue: false,
+            isBedridden: false,
+            needsCounselling: false,
+            preferredRehabilitation: 'Government',
+          ),
+        ],
+      ),
+      Family(
+        id: 'F002',
+        minIncome: 8000,
+        maxIncome: 12000,
+        address: '456 Oak Ave, Disaster Zone B',
+        currentResidence: 'With Relatives',
+        wardNumber: '3',
+        outsideDamagedArea: false,
+        receivedAllowance: false,
+        members: [
+          FamilyMember(
+            name: 'Robert Smith',
+            age: 45,
+            status: 'Alive',
+            gender: 'Male',
+            education: 'Primary',
+            incomeSource: 'Agriculture',
+            skills: 'Farming, Animal Husbandry',
+            needsEmployment: true,
+            needsAssistance: false,
+            hasHealthIssue: true,
+            isBedridden: false,
+            needsCounselling: true,
+            preferredRehabilitation: 'Friends House',
+          ),
+          FamilyMember(
+            name: 'Maria Smith',
+            age: 40,
+            status: 'Alive',
+            gender: 'Female',
+            education: 'High School',
+            incomeSource: 'Daily Wage',
+            skills: 'Cleaning, Cooking',
+            needsEmployment: true,
+            needsAssistance: true,
+            hasHealthIssue: false,
+            isBedridden: false,
+            needsCounselling: false,
+            preferredRehabilitation: 'Temporary',
+          ),
+        ],
+      ),
+      Family(
+        id: 'F003',
+        minIncome: 20000,
+        maxIncome: 25000,
+        address: '789 Pine Rd, Disaster Zone A',
+        currentResidence: 'Rented Apartment',
+        wardNumber: '5',
+        outsideDamagedArea: true,
+        receivedAllowance: true,
+        members: [
+          FamilyMember(
+            name: 'David Johnson',
+            age: 50,
+            status: 'Alive',
+            gender: 'Male',
+            education: 'University',
+            incomeSource: 'Business',
+            skills: 'Management, Accounting',
+            needsEmployment: false,
+            needsAssistance: false,
+            hasHealthIssue: false,
+            isBedridden: false,
+            needsCounselling: false,
+            preferredRehabilitation: 'Rent',
+          ),
+          FamilyMember(
+            name: 'Sarah Johnson',
+            age: 48,
+            status: 'Dead',
+            gender: 'Female',
+            education: 'College',
+            incomeSource: 'None',
+            skills: 'Teaching, Nursing',
+            needsEmployment: false,
+            needsAssistance: false,
+            hasHealthIssue: true,
+            isBedridden: true,
+            needsCounselling: true,
+            preferredRehabilitation: 'Government',
+          ),
+        ],
+      ),
+      Family(
+        id: 'F004',
+        minIncome: 5000,
+        maxIncome: 7000,
+        address: '321 Elm St, Disaster Zone C',
+        currentResidence: 'Temporary Shelter B',
+        wardNumber: '2',
+        outsideDamagedArea: false,
+        receivedAllowance: true,
+        members: [
+          FamilyMember(
+            name: 'Michael Brown',
+            age: 60,
+            status: 'Alive',
+            gender: 'Male',
+            education: 'Primary',
+            incomeSource: 'Daily Wage',
+            skills: 'Labor, Driving',
+            needsEmployment: true,
+            needsAssistance: true,
+            hasHealthIssue: true,
+            isBedridden: false,
+            needsCounselling: true,
+            preferredRehabilitation: 'Government',
+          ),
+          FamilyMember(
+            name: 'Emily Brown',
+            age: 55,
+            status: 'Alive',
+            gender: 'Female',
+            education: 'None',
+            incomeSource: 'None',
+            skills: 'Cooking, Sewing',
+            needsEmployment: false,
+            needsAssistance: true,
+            hasHealthIssue: true,
+            isBedridden: true,
+            needsCounselling: true,
+            preferredRehabilitation: 'Government',
+          ),
+        ],
+      ),
+    ];
   }
 
   void _resetFilters() {
     setState(() {
+      // Reset family filters
       _minIncomeController.clear();
       _maxIncomeController.clear();
-      _selectedAddress = null;
-      _selectedResidence = null;
-      _selectedWard = null;
-      _outsideDamagedArea = null;
-      _receivedAllowance = null;
+      _addressController.clear();
+      _currentResidenceController.clear();
+      _wardNumberController.clear();
+      _outsideDamagedArea = false;
+      _receivedAllowance = false;
 
-      _selectedName = null;
-      _selectedStatus = null;
-      _ageRange = const RangeValues(0, 100);
-      _selectedGender = null;
-      _selectedEducation = null;
-      _selectedIncomeSource = null;
-      _selectedSkill = null;
-      _needsEmploymentAssistance = null;
-      _hasHealthIssue = null;
-      _isBedridden = null;
-      _needsCounselling = null;
-      _needsAssistiveDevices = null;
-      _selectedRehabOption = null;
+      // Reset individual filters
+      _nameController.clear();
+      _ageController.clear();
+      _status = 'All';
+      _minAgeController.clear();
+      _maxAgeController.clear();
+      _gender = 'All';
+      _education = 'All';
+      _incomeSource = 'All';
+      _skillsController.clear();
+      _needsEmployment = false;
+      _needsAssistance = false;
+      _hasHealthIssue = false;
+      _isBedridden = false;
+      _needsCounselling = false;
+      _preferredRehabilitation = 'All';
 
-      filteredFamilies = List.from(allFamilies);
+      // Reset filtered data
+      filteredFamilies = List.from(families);
+      familyDataSource = FamilyDataSource(families: filteredFamilies);
     });
   }
 
-  Future<void> _generateAndDownloadExcel() async {
-    try {
-      var status = await Permission.storage.request();
-      if (!status.isGranted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Storage permission is required to download files'),
-          ),
-        );
-        return;
-      }
-
-      final excel = Excel.createExcel();
-      final Sheet sheet = excel['Families Data'];
-
-      final List<String> headerStrings = [
-        'Family ID',
-        'Address',
-        'Current Residence',
-        'Ward Number',
-        'Outside Damaged Area',
-        'Received Allowance',
-        'Total Income',
-        'Member Name',
-        'Status',
-        'Age',
-        'Gender',
-        'Education Source',
-        'Income Source',
-        'Skills',
-        'Needs Employment Assistance',
-        'Has Health Issue',
-        'Is Bedridden',
-        'Needs Counselling',
-        'Needs Assistive Devices',
-        'Preferred Rehab Option',
-      ];
-      
-      final List<CellValue?> headers = headerStrings.map((header) => TextCellValue(header)).toList();
-      sheet.appendRow(headers);
-
-      for (var family in filteredFamilies) {
-        for (var individual in family['individuals']) {
-          final List<dynamic> rowData = [
-            family['id'],
-            family['address'],
-            family['currentResidence'],
-            family['wardNumber'],
-            family['outsideDamagedArea'] ? 'Yes' : 'No',
-            family['receivedAllowance'] ? 'Yes' : 'No',
-            family['totalIncome'],
-            individual['name'],
-            individual['status'],
-            individual['age'],
-            individual['gender'],
-            individual['educationSource'],
-            individual['incomeSource'],
-            individual['skills'],
-            individual['needsEmploymentAssistance'] ? 'Yes' : 'No',
-            individual['hasHealthIssue'] ? 'Yes' : 'No',
-            individual['isBedridden'] ? 'Yes' : 'No',
-            individual['needsCounselling'] ? 'Yes' : 'No',
-            individual['needsAssistiveDevices'] ? 'Yes' : 'No',
-            individual['preferredRehabOption'],
-          ];
-          // Convert each value to TextCellValue or other appropriate CellValue type
-          final List<CellValue?> row = rowData.map((value) {
-            if (value is int) {
-              return IntCellValue(value);
-            } else if (value is double) {
-              return DoubleCellValue(value);
-            } else if (value is bool) {
-              return TextCellValue(value ? 'Yes' : 'No');
-            } else {
-              return TextCellValue(value.toString());
-            }
-          }).toList();
-          sheet.appendRow(row);
+  void _applyFilters() {
+    setState(() {
+      filteredFamilies = families.where((family) {
+        // Apply family filters
+        if (_minIncomeController.text.isNotEmpty && 
+            family.minIncome < int.parse(_minIncomeController.text)) {
+          return false;
         }
-      }
+        if (_maxIncomeController.text.isNotEmpty && 
+            family.maxIncome > int.parse(_maxIncomeController.text)) {
+          return false;
+        }
+        if (_addressController.text.isNotEmpty && 
+            !family.address.toLowerCase().contains(_addressController.text.toLowerCase())) {
+          return false;
+        }
+        if (_currentResidenceController.text.isNotEmpty && 
+            !family.currentResidence.toLowerCase().contains(_currentResidenceController.text.toLowerCase())) {
+          return false;
+        }
+        if (_wardNumberController.text.isNotEmpty && 
+            family.wardNumber != _wardNumberController.text) {
+          return false;
+        }
+        if (_outsideDamagedArea && !family.outsideDamagedArea) {
+          return false;
+        }
+        if (_receivedAllowance && !family.receivedAllowance) {
+          return false;
+        }
 
-      final directory =
-          await getExternalStorageDirectory() ??
-              await getApplicationDocumentsDirectory();
-      final String filePath =
-          '${directory.path}/family_data_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+        // Apply individual filters
+        bool hasMatchingMember = family.members.any((member) {
+          if (_nameController.text.isNotEmpty && 
+              !member.name.toLowerCase().contains(_nameController.text.toLowerCase())) {
+            return false;
+          }
+          if (_ageController.text.isNotEmpty && 
+              member.age != int.parse(_ageController.text)) {
+            return false;
+          }
+          if (_status != 'All' && member.status != _status) {
+            return false;
+          }
+          if (_minAgeController.text.isNotEmpty && 
+              member.age < int.parse(_minAgeController.text)) {
+            return false;
+          }
+          if (_maxAgeController.text.isNotEmpty && 
+              member.age > int.parse(_maxAgeController.text)) {
+            return false;
+          }
+          if (_gender != 'All' && member.gender != _gender) {
+            return false;
+          }
+          if (_education != 'All' && member.education != _education) {
+            return false;
+          }
+          if (_incomeSource != 'All' && member.incomeSource != _incomeSource) {
+            return false;
+          }
+          if (_skillsController.text.isNotEmpty && 
+              !member.skills.toLowerCase().contains(_skillsController.text.toLowerCase())) {
+            return false;
+          }
+          if (_needsEmployment && !member.needsEmployment) {
+            return false;
+          }
+          if (_needsAssistance && !member.needsAssistance) {
+            return false;
+          }
+          if (_hasHealthIssue && !member.hasHealthIssue) {
+            return false;
+          }
+          if (_isBedridden && !member.isBedridden) {
+            return false;
+          }
+          if (_needsCounselling && !member.needsCounselling) {
+            return false;
+          }
+          if (_preferredRehabilitation != 'All' && 
+              member.preferredRehabilitation != _preferredRehabilitation) {
+            return false;
+          }
+          return true;
+        });
 
-      final List<int>? excelBytes = excel.encode();
-      if (excelBytes != null) {
-        final File file = File(filePath);
-        await file.writeAsBytes(excelBytes);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Excel file downloaded to: $filePath')),
-        );
+        return hasMatchingMember;
+      }).toList();
+
+      familyDataSource = FamilyDataSource(families: filteredFamilies);
+    });
+  }
+
+  Future<void> _exportToExcel() async {
+    final xlsio.Workbook workbook = xlsio.Workbook();
+    final xlsio.Worksheet sheet = workbook.worksheets[0];
+
+    // Add headers
+    sheet.getRangeByIndex(1, 1).setText('Family ID');
+    sheet.getRangeByIndex(1, 2).setText('Min Income');
+    sheet.getRangeByIndex(1, 3).setText('Max Income');
+    sheet.getRangeByIndex(1, 4).setText('Address');
+    sheet.getRangeByIndex(1, 5).setText('Current Residence');
+    sheet.getRangeByIndex(1, 6).setText('Ward Number');
+    sheet.getRangeByIndex(1, 7).setText('Outside Damaged Area');
+    sheet.getRangeByIndex(1, 8).setText('Received Allowance');
+    sheet.getRangeByIndex(1, 9).setText('Member Name');
+    sheet.getRangeByIndex(1, 10).setText('Age');
+    sheet.getRangeByIndex(1, 11).setText('Status');
+    sheet.getRangeByIndex(1, 12).setText('Gender');
+    sheet.getRangeByIndex(1, 13).setText('Education');
+    sheet.getRangeByIndex(1, 14).setText('Income Source');
+    sheet.getRangeByIndex(1, 15).setText('Skills');
+    sheet.getRangeByIndex(1, 16).setText('Needs Employment');
+    sheet.getRangeByIndex(1, 17).setText('Needs Assistance');
+    sheet.getRangeByIndex(1, 18).setText('Has Health Issue');
+    sheet.getRangeByIndex(1, 19).setText('Is Bedridden');
+    sheet.getRangeByIndex(1, 20).setText('Needs Counselling');
+    sheet.getRangeByIndex(1, 21).setText('Preferred Rehabilitation');
+
+    // Add data
+    int row = 2;
+    for (var family in filteredFamilies) {
+      for (var member in family.members) {
+        sheet.getRangeByIndex(row, 1).setText(family.id);
+        sheet.getRangeByIndex(row, 2).setNumber(family.minIncome.toDouble());
+        sheet.getRangeByIndex(row, 3).setNumber(family.maxIncome.toDouble());
+        sheet.getRangeByIndex(row, 4).setText(family.address);
+        sheet.getRangeByIndex(row, 5).setText(family.currentResidence);
+        sheet.getRangeByIndex(row, 6).setText(family.wardNumber);
+        sheet.getRangeByIndex(row, 7).setText(family.outsideDamagedArea ? 'Yes' : 'No');
+        sheet.getRangeByIndex(row, 8).setText(family.receivedAllowance ? 'Yes' : 'No');
+        sheet.getRangeByIndex(row, 9).setText(member.name);
+        sheet.getRangeByIndex(row, 10).setNumber(member.age.toDouble());
+        sheet.getRangeByIndex(row, 11).setText(member.status);
+        sheet.getRangeByIndex(row, 12).setText(member.gender);
+        sheet.getRangeByIndex(row, 13).setText(member.education);
+        sheet.getRangeByIndex(row, 14).setText(member.incomeSource);
+        sheet.getRangeByIndex(row, 15).setText(member.skills);
+        sheet.getRangeByIndex(row, 16).setText(member.needsEmployment ? 'Yes' : 'No');
+        sheet.getRangeByIndex(row, 17).setText(member.needsAssistance ? 'Yes' : 'No');
+        sheet.getRangeByIndex(row, 18).setText(member.hasHealthIssue ? 'Yes' : 'No');
+        sheet.getRangeByIndex(row, 19).setText(member.isBedridden ? 'Yes' : 'No');
+        sheet.getRangeByIndex(row, 20).setText(member.needsCounselling ? 'Yes' : 'No');
+        sheet.getRangeByIndex(row, 21).setText(member.preferredRehabilitation);
+        row++;
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error generating Excel file: $e')),
-      );
     }
+
+    // Save and launch the file
+    final List<int> bytes = workbook.saveAsStream();
+    workbook.dispose();
+
+    final Directory directory = await getApplicationDocumentsDirectory();
+    final String path = directory.path;
+    final File file = File('$path/FamilyData_${DateTime.now().millisecondsSinceEpoch}.xlsx');
+    await file.writeAsBytes(bytes);
+    OpenFile.open(file.path);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Family Data'),
+        title: Text('Family Data Download'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.download),
-            onPressed: _generateAndDownloadExcel,
+            icon: Icon(Icons.download),
+            onPressed: _exportToExcel,
             tooltip: 'Download as Excel',
           ),
         ],
       ),
-
-      // Removed the Expanded from the column's child and only keep a single scroll view for the entire screen.
       body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildFilterSection(),
+              SizedBox(height: 20),
+              _buildDataTable(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterSection() {
+    return Card(
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ExpansionTile(
-              title: const Text(
-                'Filters',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Family Filters',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _minIncomeController,
-                              decoration: const InputDecoration(
-                                labelText: 'Min Income',
-                                border: OutlineInputBorder(),
-                              ),
-                              keyboardType: TextInputType.number,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: TextField(
-                              controller: _maxIncomeController,
-                              decoration: const InputDecoration(
-                                labelText: 'Max Income',
-                                border: OutlineInputBorder(),
-                              ),
-                              keyboardType: TextInputType.number,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                labelText: 'Address',
-                                border: OutlineInputBorder(),
-                              ),
-                              value: _selectedAddress,
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedAddress = value;
-                                });
-                              },
-                              items: [
-                                const DropdownMenuItem<String>(
-                                  value: null,
-                                  child: Text('All'),
-                                ),
-                                ...addresses.map((address) {
-                                  return DropdownMenuItem<String>(
-                                    value: address,
-                                    child: Text(address),
-                                  );
-                                }).toList(),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                labelText: 'Current Residence',
-                                border: OutlineInputBorder(),
-                              ),
-                              value: _selectedResidence,
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedResidence = value;
-                                });
-                              },
-                              items: [
-                                const DropdownMenuItem<String>(
-                                  value: null,
-                                  child: Text('All'),
-                                ),
-                                ...residences.map((residence) {
-                                  return DropdownMenuItem<String>(
-                                    value: residence,
-                                    child: Text(residence),
-                                  );
-                                }).toList(),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                labelText: 'Ward Number',
-                                border: OutlineInputBorder(),
-                              ),
-                              value: _selectedWard,
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedWard = value;
-                                });
-                              },
-                              items: [
-                                const DropdownMenuItem<String>(
-                                  value: null,
-                                  child: Text('All'),
-                                ),
-                                ...wards.map((ward) {
-                                  return DropdownMenuItem<String>(
-                                    value: ward,
-                                    child: Text(ward),
-                                  );
-                                }).toList(),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<bool?>(
-                              decoration: const InputDecoration(
-                                labelText: 'Outside Damaged Area',
-                                border: OutlineInputBorder(),
-                              ),
-                              value: _outsideDamagedArea,
-                              onChanged: (value) {
-                                setState(() {
-                                  _outsideDamagedArea = value;
-                                });
-                              },
-                              items: const [
-                                DropdownMenuItem<bool?>(
-                                  value: null,
-                                  child: Text('All'),
-                                ),
-                                DropdownMenuItem<bool?>(
-                                  value: true,
-                                  child: Text('Yes'),
-                                ),
-                                DropdownMenuItem<bool?>(
-                                  value: false,
-                                  child: Text('No'),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: DropdownButtonFormField<bool?>(
-                              decoration: const InputDecoration(
-                                labelText: 'Received Allowance',
-                                border: OutlineInputBorder(),
-                              ),
-                              value: _receivedAllowance,
-                              onChanged: (value) {
-                                setState(() {
-                                  _receivedAllowance = value;
-                                });
-                              },
-                              items: const [
-                                DropdownMenuItem<bool?>(
-                                  value: null,
-                                  child: Text('All'),
-                                ),
-                                DropdownMenuItem<bool?>(
-                                  value: true,
-                                  child: Text('Yes'),
-                                ),
-                                DropdownMenuItem<bool?>(
-                                  value: false,
-                                  child: Text('No'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Individual Filters',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        decoration: const InputDecoration(
-                          labelText: 'Search by Name',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.search),
-                        ),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedName = value.isEmpty ? null : value;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                labelText: 'Status',
-                                border: OutlineInputBorder(),
-                              ),
-                              value: _selectedStatus,
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedStatus = value;
-                                });
-                              },
-                              items: [
-                                const DropdownMenuItem<String>(
-                                  value: null,
-                                  child: Text('All'),
-                                ),
-                                ...statuses.map((status) {
-                                  return DropdownMenuItem<String>(
-                                    value: status,
-                                    child: Text(status),
-                                  );
-                                }).toList(),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                labelText: 'Gender',
-                                border: OutlineInputBorder(),
-                              ),
-                              value: _selectedGender,
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedGender = value;
-                                });
-                              },
-                              items: [
-                                const DropdownMenuItem<String>(
-                                  value: null,
-                                  child: Text('All'),
-                                ),
-                                ...genders.map((gender) {
-                                  return DropdownMenuItem<String>(
-                                    value: gender,
-                                    child: Text(gender),
-                                  );
-                                }).toList(),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Age Range: ${_ageRange.start.round()} - ${_ageRange.end.round()}',
-                          ),
-                          RangeSlider(
-                            values: _ageRange,
-                            min: 0,
-                            max: 100,
-                            divisions: 100,
-                            labels: RangeLabels(
-                              _ageRange.start.round().toString(),
-                              _ageRange.end.round().toString(),
-                            ),
-                            onChanged: (RangeValues values) {
-                              setState(() {
-                                _ageRange = values;
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                labelText: 'Education Source',
-                                border: OutlineInputBorder(),
-                              ),
-                              value: _selectedEducation,
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedEducation = value;
-                                });
-                              },
-                              items: [
-                                const DropdownMenuItem<String>(
-                                  value: null,
-                                  child: Text('All'),
-                                ),
-                                ...educationSources.map((source) {
-                                  return DropdownMenuItem<String>(
-                                    value: source,
-                                    child: Text(source),
-                                  );
-                                }).toList(),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                labelText: 'Income Source',
-                                border: OutlineInputBorder(),
-                              ),
-                              value: _selectedIncomeSource,
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedIncomeSource = value;
-                                });
-                              },
-                              items: [
-                                const DropdownMenuItem<String>(
-                                  value: null,
-                                  child: Text('All'),
-                                ),
-                                ...incomeSources.map((source) {
-                                  return DropdownMenuItem<String>(
-                                    value: source,
-                                    child: Text(source),
-                                  );
-                                }).toList(),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                labelText: 'Skills',
-                                border: OutlineInputBorder(),
-                              ),
-                              value: _selectedSkill,
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedSkill = value;
-                                });
-                              },
-                              items: [
-                                const DropdownMenuItem<String>(
-                                  value: null,
-                                  child: Text('All'),
-                                ),
-                                ...skills.map((skill) {
-                                  return DropdownMenuItem<String>(
-                                    value: skill,
-                                    child: Text(skill),
-                                  );
-                                }).toList(),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<bool?>(
-                              decoration: const InputDecoration(
-                                labelText: 'Needs Employment Assistance',
-                                border: OutlineInputBorder(),
-                              ),
-                              value: _needsEmploymentAssistance,
-                              onChanged: (value) {
-                                setState(() {
-                                  _needsEmploymentAssistance = value;
-                                });
-                              },
-                              items: const [
-                                DropdownMenuItem<bool?>(
-                                  value: null,
-                                  child: Text('All'),
-                                ),
-                                DropdownMenuItem<bool?>(
-                                  value: true,
-                                  child: Text('Yes'),
-                                ),
-                                DropdownMenuItem<bool?>(
-                                  value: false,
-                                  child: Text('No'),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: DropdownButtonFormField<bool?>(
-                              decoration: const InputDecoration(
-                                labelText: 'Has Health Issue',
-                                border: OutlineInputBorder(),
-                              ),
-                              value: _hasHealthIssue,
-                              onChanged: (value) {
-                                setState(() {
-                                  _hasHealthIssue = value;
-                                });
-                              },
-                              items: const [
-                                DropdownMenuItem<bool?>(
-                                  value: null,
-                                  child: Text('All'),
-                                ),
-                                DropdownMenuItem<bool?>(
-                                  value: true,
-                                  child: Text('Yes'),
-                                ),
-                                DropdownMenuItem<bool?>(
-                                  value: false,
-                                  child: Text('No'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<bool?>(
-                              decoration: const InputDecoration(
-                                labelText: 'Is Bedridden',
-                                border: OutlineInputBorder(),
-                              ),
-                              value: _isBedridden,
-                              onChanged: (value) {
-                                setState(() {
-                                  _isBedridden = value;
-                                });
-                              },
-                              items: const [
-                                DropdownMenuItem<bool?>(
-                                  value: null,
-                                  child: Text('All'),
-                                ),
-                                DropdownMenuItem<bool?>(
-                                  value: true,
-                                  child: Text('Yes'),
-                                ),
-                                DropdownMenuItem<bool?>(
-                                  value: false,
-                                  child: Text('No'),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: DropdownButtonFormField<bool?>(
-                              decoration: const InputDecoration(
-                                labelText: 'Needs Counselling',
-                                border: OutlineInputBorder(),
-                              ),
-                              value: _needsCounselling,
-                              onChanged: (value) {
-                                setState(() {
-                                  _needsCounselling = value;
-                                });
-                              },
-                              items: const [
-                                DropdownMenuItem<bool?>(
-                                  value: null,
-                                  child: Text('All'),
-                                ),
-                                DropdownMenuItem<bool?>(
-                                  value: true,
-                                  child: Text('Yes'),
-                                ),
-                                DropdownMenuItem<bool?>(
-                                  value: false,
-                                  child: Text('No'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<bool?>(
-                              decoration: const InputDecoration(
-                                labelText: 'Needs Assistive Devices',
-                                border: OutlineInputBorder(),
-                              ),
-                              value: _needsAssistiveDevices,
-                              onChanged: (value) {
-                                setState(() {
-                                  _needsAssistiveDevices = value;
-                                });
-                              },
-                              items: const [
-                                DropdownMenuItem<bool?>(
-                                  value: null,
-                                  child: Text('All'),
-                                ),
-                                DropdownMenuItem<bool?>(
-                                  value: true,
-                                  child: Text('Yes'),
-                                ),
-                                DropdownMenuItem<bool?>(
-                                  value: false,
-                                  child: Text('No'),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                labelText: 'Preferred Rehab Option',
-                                border: OutlineInputBorder(),
-                              ),
-                              value: _selectedRehabOption,
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedRehabOption = value;
-                                });
-                              },
-                              items: [
-                                const DropdownMenuItem<String>(
-                                  value: null,
-                                  child: Text('All'),
-                                ),
-                                ...rehabOptions.map((option) {
-                                  return DropdownMenuItem<String>(
-                                    value: option,
-                                    child: Text(option),
-                                  );
-                                }).toList(),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          OutlinedButton(
-                            onPressed: _resetFilters,
-                            child: const Text('Reset Filters'),
-                          ),
-                          const SizedBox(width: 16),
-                          ElevatedButton(
-                            onPressed: _applyFilters,
-                            child: const Text('Apply Filters'),
-                          ),
-                        ],
-                      ),
-                    ],
+                Text('Filters', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                TextButton(
+                  onPressed: _resetFilters,
+                  child: Text('Reset All'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.red,
                   ),
                 ),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${filteredFamilies.length} families found',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+            SizedBox(height: 10),
+            Text('Family Filters', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _minIncomeController,
+                    decoration: InputDecoration(
+                      labelText: 'Min Income',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
                   ),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.download),
-                    label: const Text('Download Excel'),
-                    onPressed: _generateAndDownloadExcel,
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: _maxIncomeController,
+                    decoration: InputDecoration(
+                      labelText: 'Max Income',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
                   ),
-                ],
+                ),
+              ],
+            ),
+            SizedBox(height: 10),
+            TextField(
+              controller: _addressController,
+              decoration: InputDecoration(
+                labelText: 'Address',
+                border: OutlineInputBorder(),
               ),
             ),
-            // Removed Expanded; just use a SingleChildScrollView horizontally for the DataTable.
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columns: const [
-                  DataColumn(label: Text('Family ID')),
-                  DataColumn(label: Text('Address')),
-                  DataColumn(label: Text('Ward')),
-                  DataColumn(label: Text('Income')),
-                  DataColumn(label: Text('Member')),
-                  DataColumn(label: Text('Status')),
-                  DataColumn(label: Text('Age')),
-                  DataColumn(label: Text('Gender')),
-                  DataColumn(label: Text('Education')),
-                  DataColumn(label: Text('Income Source')),
-                  DataColumn(label: Text('Skills')),
-                  DataColumn(label: Text('Health Issues')),
-                  DataColumn(label: Text('Rehab Option')),
-                ],
-                rows: _buildDataTableRows(),
+            SizedBox(height: 10),
+            TextField(
+              controller: _currentResidenceController,
+              decoration: InputDecoration(
+                labelText: 'Current Residence',
+                border: OutlineInputBorder(),
               ),
+            ),
+            SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _wardNumberController,
+                    decoration: InputDecoration(
+                      labelText: 'Ward Number',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: CheckboxListTile(
+                    title: Text('Outside Damaged Area'),
+                    value: _outsideDamagedArea,
+                    onChanged: (value) {
+                      setState(() {
+                        _outsideDamagedArea = value ?? false;
+                      });
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: CheckboxListTile(
+                    title: Text('Received Allowance'),
+                    value: _receivedAllowance,
+                    onChanged: (value) {
+                      setState(() {
+                        _receivedAllowance = value ?? false;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+            Divider(),
+            Text('Individual Filters', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            SizedBox(height: 10),
+            TextField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                labelText: 'Name',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _ageController,
+                    decoration: InputDecoration(
+                      labelText: 'Age',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _status,
+                    decoration: InputDecoration(
+                      labelText: 'Status',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: ['All', 'Alive', 'Dead'].map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _status = value ?? 'All';
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _minAgeController,
+                    decoration: InputDecoration(
+                      labelText: 'Min Age',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: _maxAgeController,
+                    decoration: InputDecoration(
+                      labelText: 'Max Age',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _gender,
+                    decoration: InputDecoration(
+                      labelText: 'Gender',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: ['All', 'Male', 'Female', 'Other'].map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _gender = value ?? 'All';
+                      });
+                    },
+                  ),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _education,
+                    decoration: InputDecoration(
+                      labelText: 'Education',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: ['All', 'None', 'Primary', 'High School', 'College', 'University'].map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _education = value ?? 'All';
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 10),
+            DropdownButtonFormField<String>(
+              value: _incomeSource,
+              decoration: InputDecoration(
+                labelText: 'Income Source',
+                border: OutlineInputBorder(),
+              ),
+              items: ['All', 'Agriculture', 'Construction', 'Teaching', 'Business', 'Daily Wage', 'None'].map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _incomeSource = value ?? 'All';
+                });
+              },
+            ),
+            SizedBox(height: 10),
+            TextField(
+              controller: _skillsController,
+              decoration: InputDecoration(
+                labelText: 'Skills',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 10),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                FilterChip(
+                  label: Text('Needs Employment'),
+                  selected: _needsEmployment,
+                  onSelected: (bool selected) {
+                    setState(() {
+                      _needsEmployment = selected;
+                    });
+                  },
+                ),
+                FilterChip(
+                  label: Text('Needs Assistance'),
+                  selected: _needsAssistance,
+                  onSelected: (bool selected) {
+                    setState(() {
+                      _needsAssistance = selected;
+                    });
+                  },
+                ),
+                FilterChip(
+                  label: Text('Has Health Issue'),
+                  selected: _hasHealthIssue,
+                  onSelected: (bool selected) {
+                    setState(() {
+                      _hasHealthIssue = selected;
+                    });
+                  },
+                ),
+                FilterChip(
+                  label: Text('Is Bedridden'),
+                  selected: _isBedridden,
+                  onSelected: (bool selected) {
+                    setState(() {
+                      _isBedridden = selected;
+                    });
+                  },
+                ),
+                FilterChip(
+                  label: Text('Needs Counselling'),
+                  selected: _needsCounselling,
+                  onSelected: (bool selected) {
+                    setState(() {
+                      _needsCounselling = selected;
+                    });
+                  },
+                ),
+              ],
+            ),
+            SizedBox(height: 10),
+            DropdownButtonFormField<String>(
+              value: _preferredRehabilitation,
+              decoration: InputDecoration(
+                labelText: 'Preferred Rehabilitation',
+                border: OutlineInputBorder(),
+              ),
+              items: ['All', 'Government', 'Friends House', 'Temporary', 'Rent'].map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _preferredRehabilitation = value ?? 'All';
+                });
+              },
+            ),
+            SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: _resetFilters,
+                  child: Text('Reset Filters'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: _applyFilters,
+                  child: Text('Apply Filters'),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -993,58 +822,169 @@ class _FamilyDataScreenState extends State<FamilyDataScreen> {
     );
   }
 
-  List<DataRow> _buildDataTableRows() {
-    final List<DataRow> rows = [];
-    for (var family in filteredFamilies) {
-      bool isFirstMember = true;
-      for (var individual in family['individuals']) {
-        rows.add(
-          DataRow(
-            cells: [
-              DataCell(Text(isFirstMember ? family['id'] : '')),
-              DataCell(Text(isFirstMember ? family['address'] : '')),
-              DataCell(Text(isFirstMember ? family['wardNumber'] : '')),
-              DataCell(
-                Text(isFirstMember ? family['totalIncome'].toString() : ''),
+  Widget _buildDataTable() {
+    return Card(
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            Text('Filtered Families: ${filteredFamilies.length}', 
+                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            SizedBox(height: 10),
+            Container(
+              height: MediaQuery.of(context).size.height * 0.5,
+              child: SfDataGrid(
+                source: familyDataSource!,
+                columnWidthMode: ColumnWidthMode.fill,
+                columns: [
+                  GridColumn(
+                    columnName: 'id',
+                    label: Container(
+                      padding: EdgeInsets.all(8),
+                      alignment: Alignment.center,
+                      child: Text('Family ID'),
+                    ),
+                  ),
+                  GridColumn(
+                    columnName: 'income',
+                    label: Container(
+                      padding: EdgeInsets.all(8),
+                      alignment: Alignment.center,
+                      child: Text('Income Range'),
+                    ),
+                  ),
+                  GridColumn(
+                    columnName: 'address',
+                    label: Container(
+                      padding: EdgeInsets.all(8),
+                      alignment: Alignment.center,
+                      child: Text('Address'),
+                    ),
+                  ),
+                  GridColumn(
+                    columnName: 'residence',
+                    label: Container(
+                      padding: EdgeInsets.all(8),
+                      alignment: Alignment.center,
+                      child: Text('Current Residence'),
+                    ),
+                  ),
+                  GridColumn(
+                    columnName: 'members',
+                    label: Container(
+                      padding: EdgeInsets.all(8),
+                      alignment: Alignment.center,
+                      child: Text('Members Count'),
+                    ),
+                  ),
+                ],
               ),
-              DataCell(Text(individual['name'])),
-              DataCell(Text(individual['status'])),
-              DataCell(Text(individual['age'].toString())),
-              DataCell(Text(individual['gender'])),
-              DataCell(Text(individual['educationSource'])),
-              DataCell(Text(individual['incomeSource'])),
-              DataCell(Text(individual['skills'])),
-              DataCell(Text(individual['hasHealthIssue'] ? 'Yes' : 'No')),
-              DataCell(Text(individual['preferredRehabOption'])),
-            ],
-          ),
-        );
-        isFirstMember = false;
-      }
-    }
-    return rows;
-  }
-
-  @override
-  void dispose() {
-    _minIncomeController.dispose();
-    _maxIncomeController.dispose();
-    super.dispose();
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
-class PostDisasterApp extends StatelessWidget {
-  const PostDisasterApp({Key? key}) : super(key: key);
+class Family {
+  final String id;
+  final int minIncome;
+  final int maxIncome;
+  final String address;
+  final String currentResidence;
+  final String wardNumber;
+  final bool outsideDamagedArea;
+  final bool receivedAllowance;
+  final List<FamilyMember> members;
+
+  Family({
+    required this.id,
+    required this.minIncome,
+    required this.maxIncome,
+    required this.address,
+    required this.currentResidence,
+    required this.wardNumber,
+    required this.outsideDamagedArea,
+    required this.receivedAllowance,
+    required this.members,
+  });
+}
+
+class FamilyMember {
+  final String name;
+  final int age;
+  final String status;
+  final String gender;
+  final String education;
+  final String incomeSource;
+  final String skills;
+  final bool needsEmployment;
+  final bool needsAssistance;
+  final bool hasHealthIssue;
+  final bool isBedridden;
+  final bool needsCounselling;
+  final String preferredRehabilitation;
+
+  FamilyMember({
+    required this.name,
+    required this.age,
+    required this.status,
+    required this.gender,
+    required this.education,
+    required this.incomeSource,
+    required this.skills,
+    required this.needsEmployment,
+    required this.needsAssistance,
+    required this.hasHealthIssue,
+    required this.isBedridden,
+    required this.needsCounselling,
+    required this.preferredRehabilitation,
+  });
+}
+
+class FamilyDataSource extends DataGridSource {
+  FamilyDataSource({required List<Family> families}) {
+    _families = families;
+    buildDataGridRows();
+  }
+
+  List<Family> _families = [];
+  List<DataGridRow> _dataGridRows = [];
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Post Disaster Management',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: const FamilyDataScreen(),
-    );
+  List<DataGridRow> get rows => _dataGridRows;
+
+  @override
+  DataGridRowAdapter? buildRow(DataGridRow row) {
+    return DataGridRowAdapter(
+        cells: row.getCells().map<Widget>((dataGridCell) {
+      return Container(
+        alignment: Alignment.center,
+        padding: EdgeInsets.all(8.0),
+        child: Text(dataGridCell.value.toString()),
+      );
+    }).toList());
+  }
+
+  void buildDataGridRows() {
+    _dataGridRows = _families.map<DataGridRow>((family) {
+      return DataGridRow(cells: [
+        DataGridCell<String>(columnName: 'id', value: family.id),
+        DataGridCell<String>(
+            columnName: 'income',
+            value: '${family.minIncome} - ${family.maxIncome}'),
+        DataGridCell<String>(columnName: 'address', value: family.address),
+        DataGridCell<String>(
+            columnName: 'residence', value: family.currentResidence),
+        DataGridCell<String>(
+            columnName: 'members', value: '${family.members.length}'),
+      ]);
+    }).toList();
+  }
+
+  void updateDataGridSource() {
+    notifyListeners();
   }
 }

@@ -57,6 +57,7 @@ import 'package:resq/screens/loan_relief_upload.dart' as loan_relief;
 import 'package:resq/screens/profile_updation.dart';
 import 'package:resq/screens/donations_screen.dart';
 import 'package:resq/screens/verification_volunteer_dashboard.dart';
+import 'package:resq/screens/notice_display_screen.dart';
 
 void main() async {
   if (kIsWeb) {
@@ -127,12 +128,14 @@ class MyApp extends StatelessWidget {
     final isAuthenticated = authService.isAuthenticated;
     List<String> roles = authService.getCurrentUserRoles() ?? [];
 
-    String initialRoute =
-        isAuthenticated
-            ? '/profile-setup'
-            : kIsWeb
-            ? '/'
-            : '/otp';
+    // String initialRoute =
+    //     isAuthenticated
+    //         ? '/profile-setup'
+    //         : kIsWeb
+    //         ? '/'
+    //         : '/otp';
+    // String initialRoute = '/notices';  // Set notices as initial route for testing
+  String initialRoute =  '/test-family';
 
     return ConnectivityWrapper(
       child: MaterialApp(
@@ -151,9 +154,12 @@ class MyApp extends StatelessWidget {
                     ).pushReplacementNamed(initialRoute),
               ),
 
+          // '/':
+          //     (context) =>
+          //         AuthRoute(requiresAuth: false, child: Familysurveyhome()),
           '/':
               (context) =>
-                  AuthRoute(requiresAuth: false, child: Familysurveyhome()),
+                 AuthRoute(requiresAuth: false, child: FamilyDataDownloadScreen()),
 
           '/otp':
               (context) =>
@@ -242,6 +248,7 @@ class MyApp extends StatelessWidget {
           '/skill': (context) => Skill(),
 
           '/add-famili': (context) => AddFamilies(),
+          '/notices': (context) => const NoticeScreen(userId: '',),
 
           '/profile-setup':
               (context) => AuthRoute(
@@ -255,7 +262,7 @@ class MyApp extends StatelessWidget {
                 child:
                     loan_relief.LoanReliefUploadScreen(), // Add the prefix here
               ),
-          '/test-family': (context) => FamilyDataScreen(),
+          '/test-family': (context) => FamilyDataDownloadScreen(),
           '/test-collectionpoint': (context) => CollectionPointDashboard(),
           '/test-statistics': (context) => DashboardScreen(),
           '/test-profile': (context) => ProfileUpdateScreen(),
@@ -372,6 +379,7 @@ class MyApp extends StatelessWidget {
             );
           },
         },
+          
 
         onUnknownRoute:
             (settings) => MaterialPageRoute(
