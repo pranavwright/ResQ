@@ -5,6 +5,7 @@ import 'package:resq/screens/camprole_creation.dart';
 import 'package:resq/screens/collection_point.dart';
 import 'package:resq/screens/create_notice.dart';
 import 'package:resq/utils/menu_list.dart';
+import 'package:resq/utils/resq_menu.dart';
 import 'family_data_download.dart';
 import 'login_screen.dart';
 import '../utils/auth/auth_service.dart';
@@ -29,7 +30,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Future<void> _loadMenuItems() async {
     try {
-      final items =  getFilteredMenuItems([]);
+      final items = getFilteredMenuItems([]);
 
       // Only update state if widget is still mounted
       if (mounted) {
@@ -78,88 +79,25 @@ class _AdminDashboardState extends State<AdminDashboard> {
     'Deceased': Colors.red,
   };
 
-  void _logout() {
-    AuthService().logout().then((_) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => LoginScreen()),
-        (Route<dynamic> route) => false,
-      );
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Admin Dashboard'),
-        actions: [
-          IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Admin Dashboard')),
       drawer:
-          MediaQuery.of(context).size.width <
-                  800 // Hamburger menu for smaller screen sizes (mobile)
-              ? Drawer(
-                child:
-                    _isLoading // Show loading indicator if loading
-                        ? const Center(child: CircularProgressIndicator())
-                        : ListView(
-                          padding: const EdgeInsets.only(top: 46),
-                          children:
-                              filteredMenuItems.map((item) {
-                                return ListTile(
-                                  leading: Icon(item.icon),
-                                  title: Text(item.title),
-                                  onTap: () {
-                                    Navigator.pushNamed(context, item.route);
-                                  },
-                                );
-                              }).toList(),
-                        ),
-              )
-              : null, // No Drawer on Web/Desktop
+          MediaQuery.of(context).size.width < 800
+              ? const ResQMenu(roles: ['admin']) // Pass the user's roles here
+              : null,
       body: SafeArea(
         child: Container(
           color: Colors.white,
           child: Column(
             children: [
-              // Show navigation bar on Web/Desktop
+              // Show horizontal menu on Web/Desktop
               if (MediaQuery.of(context).size.width >= 800)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  child:
-                      _isLoading // Show loading indicator if loading
-                          ? const Center(child: CircularProgressIndicator())
-                          : Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children:
-                                filteredMenuItems.map((item) {
-                                  return GestureDetector(
-                                    onTap: () {
-                                      Navigator.pushNamed(context, item.route);
-                                    },
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(item.icon, color: Colors.black),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          item.title,
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey[600],
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                      ],
-                                    ),
-                                  );
-                                }).toList(),
-                          ),
-                ),
+                const ResQMenu(roles: ['admin'], showDrawer: false),
 
               const Divider(),
+
               const Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Align(

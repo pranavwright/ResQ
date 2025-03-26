@@ -259,7 +259,7 @@ class MyApp extends StatelessWidget {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             AuthService().logout().then((_) {
               Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => LoginScreen()),
+                MaterialPageRoute(builder: (context) => OtpScreen()),
                 (Route<dynamic> route) => false,
               );
             });

@@ -78,12 +78,6 @@ final List<Map<String, dynamic>> menuData = [
     "roles": ["all"]
   },
   {
-    "title": "Settings",
-    "icon": Icons.settings,
-    "route": "/settings",
-    "roles": ["all"]
-  },
-  {
     "title": "Logout",
     "icon": Icons.exit_to_app,
     "route": "/logout",
