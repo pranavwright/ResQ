@@ -134,6 +134,7 @@ class MyApp extends StatelessWidget {
     WidgetBuilder builder;
     final authService = AuthService();
     final roles = authService.getCurrentUserRoles() ?? [];
+     // or '/public-donation'
 
     switch (settings.name) {
       case '/':

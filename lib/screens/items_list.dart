@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:resq/screens/donation_request_form.dart';
 import 'package:resq/screens/donations_screen.dart';
 
 class ItemsList extends StatefulWidget {
@@ -247,7 +248,19 @@ class _ItemsListState extends State<ItemsList> {
                   style: ButtonStyle(
                     backgroundColor: MaterialStateProperty.all(Colors.green.shade400), // Green color for button
                   ),
-                  child: const Text('Donate'),
+                  child: const Text('special donations'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const DonationRequestForm()),
+                    );
+                  },
+                  style: ButtonStyle(
+                    backgroundColor: MaterialStateProperty.all(Colors.green.shade400), // Green color for button
+                  ),
+                  child: const Text('donations'),
                 ),
               ],
             ],
