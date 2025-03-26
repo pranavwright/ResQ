@@ -17,7 +17,6 @@ import 'package:resq/screens/profile_setup.dart';
 import 'package:resq/screens/superAdmin_dashboard.dart';
 import 'package:resq/screens/admin_dashboard.dart';
 import 'package:resq/screens/stat_dashboard.dart';
-import 'package:resq/screens/kas_dashboard.dart';
 import 'package:resq/screens/collectionpoint_dashboard.dart';
 import 'package:resq/screens/campadmin_dashboard.dart';
 import 'package:resq/screens/volunteer_dashboard.dart';
@@ -285,9 +284,7 @@ class MyApp extends StatelessWidget {
     if (roles.contains('superAdmin')) return SuperAdminDashboard();
     if (roles.contains('admin')) return AdminDashboard();
     if (roles.contains('stat')) return DashboardScreen();
-    if (roles.contains('kas')) return KasDashboard();
-    if (roles.contains('collectionPointAdmin'))
-      return CollectionPointDashboard();
+    if (roles.contains('collectionPointAdmin')) return CollectionPointDashboard();
     if (roles.contains('campAdmin')) return CampAdminRequestScreen();
     if (roles.contains('collectionpointvolunteer')) return VolunteerDashboard();
     return const Scaffold(body: Center(child: Text("No valid role assigned")));
