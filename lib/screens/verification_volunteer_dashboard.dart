@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:resq/utils/resq_menu.dart'; // Make sure this import path is correct
 
 class VerificationVolunteerDashboard extends StatefulWidget {
   const VerificationVolunteerDashboard({Key? key}) : super(key: key);
@@ -51,8 +52,12 @@ class _VerificationVolunteerDashboardState extends State<VerificationVolunteerDa
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: MediaQuery.of(context).size.width < 800
+          ? const ResQMenu(roles: ['volunteer'])
+          : null,
       appBar: AppBar(
         title: const Text('Verification Dashboard'),
+        backgroundColor: Colors.blueGrey[800],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -61,12 +66,26 @@ class _VerificationVolunteerDashboardState extends State<VerificationVolunteerDa
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildAreasTab(),
-          _buildRecentVerificationsTab(),
-        ],
+      body: SafeArea(
+        child: Container(
+          color: Colors.white,
+          child: Column(
+            children: [
+              if (MediaQuery.of(context).size.width >= 800)
+                const ResQMenu(roles: ['volunteer'], showDrawer: false),
+              const Divider(),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildAreasTab(),
+                    _buildRecentVerificationsTab(),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -36,9 +36,10 @@ import 'package:resq/screens/collection_point.dart';
 import 'package:resq/screens/profile_updation.dart';
 import 'package:resq/screens/donations_screen.dart';
 import 'package:resq/screens/verification_volunteer_dashboard.dart';
-import 'package:resq/screens/familysurvay_home.dart';
+import 'package:resq/screens/familysurvey_home.dart';
 import 'package:resq/screens/section_a_screen.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
+import 'package:resq/screens/change_disaster.dart';
 
 void main() async {
   // This is required before calling any platform channels
@@ -135,7 +136,7 @@ class MyApp extends StatelessWidget {
     WidgetBuilder builder;
     final authService = AuthService();
     final roles = authService.getCurrentUserRoles() ?? [];
-     // or '/public-donation'
+    // or '/public-donation'
 
     switch (settings.name) {
       case '/':
@@ -215,13 +216,17 @@ class MyApp extends StatelessWidget {
               child: loan_relief.LoanReliefUploadScreen(),
             );
         break;
-      case '/test-family':
-        builder = (context) => FamilyDataDownloadScreen();
-        break;
-      case '/identity':
-        builder = (context) => AuthRoute(requiresAuth: true, child: Identity());
-
-        break;
+      case '/family-data-download':
+  builder = (context) => AuthRoute(
+    requiredRoles: ['admin','stat'],
+    child: FamilyDataDownloadScreen(),
+  );
+     case '/identity':
+  builder = (context) => AuthRoute(
+    requiredRoles: ['all'], 
+    child: Identity(),
+  );
+  break;
       case '/admin-collectionpoint':
         builder =
             (context) => AuthRoute(
@@ -229,23 +234,35 @@ class MyApp extends StatelessWidget {
               child: CollectionPointScreen(),
             );
         break;
-      case '/test-statistics':
-        builder = (context) => DashboardScreen();
-        break;
-      case '/test-profile':
-        builder = (context) => ProfileUpdateScreen();
-        break;
-      case '/donations':
-        builder = (context) => const DonationsScreen();
-        break;
+    case '/stat-dashboard':
+  builder = (context) => AuthRoute(
+    requiredRoles: ['stat'], 
+    child: DashboardScreen(),
+  );
+  break;
+     case '/profile-update':
+  builder = (context) => AuthRoute(
+    requiredRoles: ['all'], 
+    child: ProfileUpdateScreen(),
+  );
+  break;
+     case '/donations':
+  builder = (context) => AuthRoute(
+    requiredRoles: ['noAuth'], 
+    child: const DonationsScreen(),
+  );
+  break;
       case '/verification-volunteer':
-        builder = (context) => const VerificationVolunteerDashboard();
-        break;
-      case '/add-fam-home':
+  builder = (context) => AuthRoute(
+    requiredRoles: ['verifyOfficial'], 
+    child: const VerificationVolunteerDashboard(),
+  );
+  break;
+      case '/family-survey':
         builder =
             (context) => AuthRoute(
-              requiredRoles: ['familiySurvey'],
-              child: FamiliSurveyHomeScreen(),
+              requiredRoles: ['surveyOfficial'],
+              child: FamilySurveyHomeScreen(),
             );
         break;
       case '/sectionA':
@@ -254,6 +271,16 @@ class MyApp extends StatelessWidget {
             (context) =>
                 AuthRoute(requiresAuth: false, child: ScreenA(data: data));
         break;
+        case '/collectionpoint-volunteer':
+        builder = (context) => AuthRoute(
+          requiredRoles: ['collectionpointvolunteer'],
+          child: VolunteerDashboard(),
+        );
+        case '/change-disaster':
+        builder = (context) => AuthRoute(
+          requiredRoles: [ 'superAdmin'],
+          child: ChangeDisasterScreen(),
+        );
       case '/logout':
         builder = (BuildContext context) {
           // Execute logout in the next frame after the route is built
@@ -285,11 +312,12 @@ class MyApp extends StatelessWidget {
     if (roles.contains('superAdmin')) return SuperAdminDashboard();
     if (roles.contains('admin')) return AdminDashboard();
     if (roles.contains('stat')) return DashboardScreen();
-    if (roles.contains('kas')) return KasDashboard();
-    if (roles.contains('collectionPointAdmin'))
-      return CollectionPointDashboard();
+    
+    if (roles.contains('collectionPointAdmin'))return CollectionPointDashboard();
     if (roles.contains('campAdmin')) return CampAdminRequestScreen();
     if (roles.contains('collectionpointvolunteer')) return VolunteerDashboard();
+    if (roles.contains('surveyOfficial')) return FamilySurveyHomeScreen();
+    if (roles.contains('verifyOfficial')) return VerificationVolunteerDashboard();
     return const Scaffold(body: Center(child: Text("No valid role assigned")));
   }
 }
