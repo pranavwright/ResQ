@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:flutter/services.dart';
+import 'package:resq/screens/items_list.dart';
 
 class DonationsScreen extends StatefulWidget {
   const DonationsScreen({Key? key}) : super(key: key);
@@ -11,29 +10,83 @@ class DonationsScreen extends StatefulWidget {
 
 class _DonationsScreenState extends State<DonationsScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _donorNameController = TextEditingController();
-  final _donorEmailController = TextEditingController();
-  final _donorPhoneController = TextEditingController();
-  final _donorAddressController = TextEditingController();
   final _valueController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _itemQuantityController = TextEditingController();
-  final _pickupAddressController = TextEditingController();
-  
+  final _emailController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _otherItemController = TextEditingController();
+  final _quantityController = TextEditingController();
+
   String _selectedType = 'money';
-  String _selectedPaymentMethod = 'cash';
-  DateTime? _donationDate;
-  TimeOfDay? _donationTime;
-  bool _requiresPickup = false;
-  bool _anonymousDonation = false;
+  String? _selectedItem;
+  bool _isAnonymous = false;
+  bool _showOtherItemField = false;
+
+  final List<String> _donationItems = [
+    'Clothing',
+    'Food',
+    'Furniture',
+    'Books',
+    'Electronics',
+    'Toys',
+    'Other',
+  ];
+
+  void _showQRCodeDialog(BuildContext context) {
+    final amount = double.tryParse(_valueController.text) ?? 0.0;
+    final qrUrl =
+        'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='
+        'upi://pay?pa=pranavpspranav2005@okhdfcbank&pn=Pranav%20PS'
+        '&am=${amount.toStringAsFixed(2)}&cu=INR&aid=uGICAgIC31N2IIg';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Scan to Complete Donation'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.network(qrUrl),
+              const SizedBox(height: 20),
+              Text(
+                'Amount: ₹${amount.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Please scan this QR code to complete your payment',
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close QR dialog
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => ItemsList()),
+                );
+              },
+              child: const Text('Done'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Disaster Relief Donation'),
-        backgroundColor: Colors.blue[800],
-        elevation: 0,
+        title: const Text('Add Donation'),
+        backgroundColor: Colors.blueGrey[800],
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -43,114 +96,26 @@ class _DonationsScreenState extends State<DonationsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Donor Information Section
-                _buildSectionHeader('Donor Information'),
+                // Donation Type Selector
                 Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Anonymous Donation Toggle
-                        SwitchListTile(
-                          title: const Text('Anonymous Donation'),
-                          value: _anonymousDonation,
-                          onChanged: (value) {
-                            setState(() {
-                              _anonymousDonation = value;
-                            });
-                          },
+                        const Text(
+                          'Select Donation Type',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        
-                        if (!_anonymousDonation) ...[
-                          const SizedBox(height: 10),
-                          TextFormField(
-                            controller: _donorNameController,
-                            decoration: const InputDecoration(
-                              labelText: 'Full Name',
-                              prefixIcon: Icon(Icons.person),
-                              border: OutlineInputBorder(),
-                            ),
-                            validator: (value) {
-                              if (!_anonymousDonation && (value == null || value.isEmpty)) {
-                                return 'Please enter your name';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _donorEmailController,
-                            keyboardType: TextInputType.emailAddress,
-                            decoration: const InputDecoration(
-                              labelText: 'Email Address',
-                              prefixIcon: Icon(Icons.email),
-                              border: OutlineInputBorder(),
-                            ),
-                            validator: (value) {
-                              if (!_anonymousDonation && (value == null || value.isEmpty)) {
-                                return 'Please enter your email';
-                              }
-                              if (value != null && value.isNotEmpty && !value.contains('@')) {
-                                return 'Please enter a valid email';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _donorPhoneController,
-                            keyboardType: TextInputType.phone,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                            decoration: const InputDecoration(
-                              labelText: 'Phone Number',
-                              prefixIcon: Icon(Icons.phone),
-                              border: OutlineInputBorder(),
-                            ),
-                            validator: (value) {
-                              if (!_anonymousDonation && (value == null || value.isEmpty)) {
-                                return 'Please enter your phone number';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _donorAddressController,
-                            decoration: const InputDecoration(
-                              labelText: 'Address (Optional)',
-                              prefixIcon: Icon(Icons.location_on),
-                              border: OutlineInputBorder(),
-                            ),
-                            maxLines: 2,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Donation Details Section
-                _buildSectionHeader('Donation Details'),
-                Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        // Donation Type Selector
+                        const SizedBox(height: 16),
                         Row(
                           children: [
                             Expanded(
                               child: RadioListTile<String>(
-                                title: const Text('Monetary'),
+                                title: const Text('Money'),
                                 value: 'money',
                                 groupValue: _selectedType,
                                 onChanged: (value) {
@@ -162,7 +127,7 @@ class _DonationsScreenState extends State<DonationsScreen> {
                             ),
                             Expanded(
                               child: RadioListTile<String>(
-                                title: const Text('Goods/Items'),
+                                title: const Text('Items'),
                                 value: 'items',
                                 groupValue: _selectedType,
                                 onChanged: (value) {
@@ -174,22 +139,115 @@ class _DonationsScreenState extends State<DonationsScreen> {
                             ),
                           ],
                         ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Donor Information Card
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Checkbox(
+                              value: _isAnonymous,
+                              onChanged: (value) {
+                                setState(() {
+                                  _isAnonymous = value!;
+                                });
+                              },
+                            ),
+                            const Text(
+                              'Donate Anonymously (your name won\'t be shown publicly)',
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 16),
 
-                        // Value/Quantity Input
-                        if (_selectedType == 'money') ...[
+                        // Name field (only shown when not anonymous)
+                        if (!_isAnonymous) ...[
+                          TextFormField(
+                            controller: _nameController,
+                            decoration: const InputDecoration(
+                              labelText: 'Full Name',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.person),
+                            ),
+                            validator: (value) {
+                              if (!_isAnonymous && (value == null || value.isEmpty)) {
+                                return 'Please enter your name';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+
+                        // Email field (always shown)
+                        TextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: const InputDecoration(
+                            labelText: 'Email Address (required for receipt)',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.email),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your email for donation receipt';
+                            }
+                            if (!value.contains('@')) {
+                              return 'Please enter a valid email';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'We need your email to send a donation receipt',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Value Input (for money) or Item Selection (for items)
+                if (_selectedType == 'money')
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Amount',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
                           TextFormField(
                             controller: _valueController,
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
-                              labelText: 'Donation Amount',
-                              prefixIcon: Icon(Icons.attach_money),
+                              labelText: 'Enter amount in ₹',
                               border: OutlineInputBorder(),
-                              suffixText: 'USD',
+                              prefixIcon: Icon(Icons.attach_money),
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Please enter donation amount';
+                                return 'Please enter an amount';
                               }
                               if (double.tryParse(value) == null) {
                                 return 'Please enter a valid number';
@@ -197,189 +255,140 @@ class _DonationsScreenState extends State<DonationsScreen> {
                               return null;
                             },
                           ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Item Details',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           const SizedBox(height: 16),
                           DropdownButtonFormField<String>(
-                            value: _selectedPaymentMethod,
+                            value: _selectedItem,
                             decoration: const InputDecoration(
-                              labelText: 'Payment Method',
+                              labelText: 'Select Item',
                               border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.payment),
                             ),
-                            items: const [
-                              DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                              DropdownMenuItem(value: 'bank', child: Text('Bank Transfer')),
-                              DropdownMenuItem(value: 'card', child: Text('Credit/Debit Card')),
-                              DropdownMenuItem(value: 'online', child: Text('Online Payment')),
-                              DropdownMenuItem(value: 'check', child: Text('Check')),
-                            ],
+                            items: _donationItems.map((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            }).toList(),
                             onChanged: (value) {
                               setState(() {
-                                _selectedPaymentMethod = value!;
+                                _selectedItem = value;
+                                _showOtherItemField = value == 'Other';
                               });
                             },
                             validator: (value) {
-                              if (value == null) {
-                                return 'Please select payment method';
-                              }
-                              return null;
-                            },
-                          ),
-                        ] else ...[
-                          TextFormField(
-                            controller: _descriptionController,
-                            decoration: const InputDecoration(
-                              labelText: 'Item Description',
-                              prefixIcon: Icon(Icons.description),
-                              border: OutlineInputBorder(),
-                            ),
-                            validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Please describe the items';
+                                return 'Please select an item';
                               }
                               return null;
                             },
                           ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _itemQuantityController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: 'Quantity',
-                              prefixIcon: Icon(Icons.format_list_numbered),
-                              border: OutlineInputBorder(),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter quantity';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _valueController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: 'Estimated Value (Optional)',
-                              prefixIcon: Icon(Icons.attach_money),
-                              border: OutlineInputBorder(),
-                              suffixText: 'USD',
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          SwitchListTile(
-                            title: const Text('Requires Pickup'),
-                            value: _requiresPickup,
-                            onChanged: (value) {
-                              setState(() {
-                                _requiresPickup = value;
-                              });
-                            },
-                          ),
-                          if (_requiresPickup) ...[
+                          if (_showOtherItemField) ...[
                             const SizedBox(height: 16),
                             TextFormField(
-                              controller: _pickupAddressController,
+                              controller: _otherItemController,
                               decoration: const InputDecoration(
-                                labelText: 'Pickup Address',
-                                prefixIcon: Icon(Icons.location_on),
+                                labelText: 'Specify Item',
                                 border: OutlineInputBorder(),
                               ),
-                              maxLines: 2,
                               validator: (value) {
-                                if (_requiresPickup && (value == null || value.isEmpty)) {
-                                  return 'Please provide pickup address';
+                                if (_showOtherItemField && (value == null || value.isEmpty)) {
+                                  return 'Please specify the item';
                                 }
                                 return null;
                               },
                             ),
                           ],
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _quantityController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Quantity',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.format_list_numbered),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter quantity';
+                              }
+                              if (int.tryParse(value) == null) {
+                                return 'Please enter a valid number';
+                              }
+                              return null;
+                            },
+                          ),
                         ],
-                      ],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                // Donation Date/Time Section
-                _buildSectionHeader('Donation Schedule'),
+                // Description Input
                 Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ListTile(
-                          leading: const Icon(Icons.calendar_today),
-                          title: Text(
-                            _donationDate == null
-                                ? 'Select Donation Date'
-                                : 'Date: ${DateFormat('MMM dd, yyyy').format(_donationDate!)}',
+                        Text(
+                          _selectedType == 'money'
+                              ? 'Purpose of Donation'
+                              : 'Additional Notes',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
-                          trailing: const Icon(Icons.arrow_drop_down),
-                          onTap: () => _selectDate(context),
                         ),
-                        const Divider(),
-                        ListTile(
-                          leading: const Icon(Icons.access_time),
-                          title: Text(
-                            _donationTime == null
-                                ? 'Select Donation Time'
-                                : 'Time: ${_donationTime!.format(context)}',
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _descriptionController,
+                          maxLines: 3,
+                          decoration: const InputDecoration(
+                            labelText: 'Enter description',
+                            border: OutlineInputBorder(),
                           ),
-                          trailing: const Icon(Icons.arrow_drop_down),
-                          onTap: () => _selectTime(context),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter a description';
+                            }
+                            return null;
+                          },
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
-
-                // Additional Notes
-                _buildSectionHeader('Additional Information'),
-                Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: TextFormField(
-                      decoration: const InputDecoration(
-                        labelText: 'Special Instructions (Optional)',
-                        border: InputBorder.none,
-                        prefixIcon: Icon(Icons.note),
-                      ),
-                      maxLines: 3,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 24),
 
                 // Submit Button
                 ElevatedButton(
-                  onPressed: _submitDonation,
+                  onPressed: () => _submitDonation(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[700],
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                    padding: const EdgeInsets.all(16),
+                    backgroundColor: Colors.green,
                   ),
                   child: const Text(
-                    'SUBMIT DONATION',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                    'Submit Donation',
+                    style: TextStyle(fontSize: 18),
                   ),
                 ),
-                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -388,111 +397,62 @@ class _DonationsScreenState extends State<DonationsScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Colors.blue[800],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-    if (picked != null && picked != _donationDate) {
-      setState(() {
-        _donationDate = picked;
-      });
-    }
-  }
-
-  Future<void> _selectTime(BuildContext context) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-    );
-    if (picked != null && picked != _donationTime) {
-      setState(() {
-        _donationTime = picked;
-      });
-    }
-  }
-
-  void _submitDonation() {
+  void _submitDonation(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
-      // Prepare donation data for API submission
-      final donationData = {
-        'donor': {
-          'name': _anonymousDonation ? 'Anonymous' : _donorNameController.text,
-          'email': _anonymousDonation ? null : _donorEmailController.text,
-          'phone': _anonymousDonation ? null : _donorPhoneController.text,
-          'address': _anonymousDonation ? null : _donorAddressController.text,
-          'isAnonymous': _anonymousDonation,
-        },
-        'donation': {
-          'type': _selectedType,
-          'description': _descriptionController.text,
-          if (_selectedType == 'money') ...{
-            'amount': double.parse(_valueController.text),
-            'paymentMethod': _selectedPaymentMethod,
+      // For money donations, show QR code immediately
+      if (_selectedType == 'money') {
+        _showQRCodeDialog(context);
+      } else {
+        // For item donations, show loading and then navigate
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return const Center(child: CircularProgressIndicator());
           },
-          if (_selectedType == 'items') ...{
-            'quantity': int.parse(_itemQuantityController.text),
-            'estimatedValue': _valueController.text.isNotEmpty 
-                ? double.parse(_valueController.text) 
-                : null,
-            'requiresPickup': _requiresPickup,
-            'pickupAddress': _requiresPickup ? _pickupAddressController.text : null,
-          },
-        },
-        'schedule': {
-          'date': _donationDate != null 
-              ? DateFormat('yyyy-MM-dd').format(_donationDate!) 
-              : null,
-          'time': _donationTime != null 
-              ? _donationTime!.format(context) 
-              : null,
-        },
-        'submittedAt': DateTime.now().toIso8601String(),
-      };
+        );
 
-      // TODO: Implement API call to submit donationData
-      print('Donation Data: $donationData');
+        await Future.delayed(const Duration(seconds: 2));
+        
+        if (mounted) {
+          Navigator.of(context).pop(); // Close loading
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => ItemsList()),
+          );
+        }
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Thank you for your donation!'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 3),
-        ),
-      );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Item donation submitted successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
 
-      // Optionally: Clear form or navigate away
-      // _resetForm();
+      // Clear form
+      _valueController.clear();
+      _descriptionController.clear();
+      _emailController.clear();
+      _nameController.clear();
+      _otherItemController.clear();
+      _quantityController.clear();
+      setState(() {
+        _selectedItem = null;
+        _showOtherItemField = false;
+        _isAnonymous = false;
+      });
     }
   }
 
   @override
   void dispose() {
-    _donorNameController.dispose();
-    _donorEmailController.dispose();
-    _donorPhoneController.dispose();
-    _donorAddressController.dispose();
     _valueController.dispose();
     _descriptionController.dispose();
-    _itemQuantityController.dispose();
-    _pickupAddressController.dispose();
+    _emailController.dispose();
+    _nameController.dispose();
+    _otherItemController.dispose();
+    _quantityController.dispose();
     super.dispose();
   }
 }
