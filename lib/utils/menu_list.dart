@@ -119,6 +119,12 @@ final List<Map<String, dynamic>> menuData = [
     'route': '/change-disaster',
     'roles': ['all'],
   },
+  {
+    'title':'loan',
+    'icon': Icons.money,
+    'route': '/loan-relief',
+    'roles': ['stat'],
+  }
 ];
 
 List<MenuItem> menuItems =
