@@ -98,7 +98,8 @@ class _ItemsListState extends State<ItemsList> {
               DropdownButton<String>(
                 value: _selectedLocation,
                 hint: const Text("Select Location"),
-                style: TextStyle(color: Colors.black),
+                isExpanded: true, // Makes the dropdown fill the available width
+                style: TextStyle(color: Colors.black, fontSize: 18), // Increased font size
                 items: const [
                   DropdownMenuItem<String>(
                     value: "Churalmala",
@@ -114,7 +115,6 @@ class _ItemsListState extends State<ItemsList> {
                     _selectedLocation = newValue;
                   });
                 },
-                // Added decoration to make dropdown more attractive
                 icon: const Icon(
                   Icons.arrow_drop_down,
                   size: 28, // Adjusted icon size
@@ -248,8 +248,9 @@ class _ItemsListState extends State<ItemsList> {
                   style: ButtonStyle(
                     backgroundColor: MaterialStateProperty.all(Colors.green.shade400), // Green color for button
                   ),
-                  child: const Text('special donations'),
+                  child: const Text('Special Donations'),
                 ),
+                const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () {
                     Navigator.push(
@@ -260,7 +261,7 @@ class _ItemsListState extends State<ItemsList> {
                   style: ButtonStyle(
                     backgroundColor: MaterialStateProperty.all(Colors.green.shade400), // Green color for button
                   ),
-                  child: const Text('donations'),
+                  child: const Text('Donations'),
                 ),
               ],
             ],
