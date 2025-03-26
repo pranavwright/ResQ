@@ -53,10 +53,15 @@ dependencies:
   
   excel: ^4.0.6
 
+ # Dependency for fetching location
+  geolocator: ^9.0.1
 
 
   # Persistent Storage
   shared_preferences: ^2.2.2
+
+  
+ 
 
   # URL Handling
   url_launcher: ^6.1.14
