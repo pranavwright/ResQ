@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:resq/screens/identity.dart';
+import 'package:resq/screens/login_screen.dart';
 import 'package:resq/screens/splash_screen.dart';
 import 'dart:io';
 
@@ -42,7 +43,7 @@ import 'package:resq/models/NeedAssessmentData.dart';
 void main() async {
   // This is required before calling any platform channels
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   if (kIsWeb) {
     setUrlStrategy(PathUrlStrategy());
   } else {
@@ -54,18 +55,18 @@ void main() async {
 
 Future<void> requestPermission() async {
   print("Requesting storage permissions...");
-  
+
   if (Platform.isAndroid) {
     // For Android 13+ (SDK 33+), we need more specific permissions
     if (await Permission.storage.isDenied) {
       await Permission.storage.request();
     }
-    
+
     // For files in external storage on newer Android versions
     if (await Permission.manageExternalStorage.isDenied) {
       await Permission.manageExternalStorage.request();
     }
-    
+
     // For photos and media
     if (await Permission.photos.isDenied) {
       await Permission.photos.request();
@@ -76,7 +77,7 @@ Future<void> requestPermission() async {
       await Permission.photos.request();
     }
   }
-  
+
   // Check final status and log it
   final storageStatus = await Permission.storage.status;
   print("Storage permission status: $storageStatus");
@@ -221,7 +222,11 @@ class MyApp extends StatelessWidget {
 
         break;
       case '/admin-collectionpoint':
-        builder = (context) => AuthRoute(requiredRoles: ['admin', 'stat'],child: CollectionPointScreen());
+        builder =
+            (context) => AuthRoute(
+              requiredRoles: ['admin', 'stat'],
+              child: CollectionPointScreen(),
+            );
         break;
       case '/test-statistics':
         builder = (context) => DashboardScreen();
@@ -247,6 +252,23 @@ class MyApp extends StatelessWidget {
         builder =
             (context) =>
                 AuthRoute(requiresAuth: false, child: ScreenA(data: data));
+        break;
+      case '/logout':
+        builder = (BuildContext context) {
+          // Execute logout in the next frame after the route is built
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            AuthService().logout().then((_) {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => LoginScreen()),
+                (Route<dynamic> route) => false,
+              );
+            });
+          });
+          // Return a loading screen while logout is processing
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        };
         break;
       default:
         builder =
