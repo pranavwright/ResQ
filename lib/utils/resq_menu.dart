@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:resq/utils/auth/auth_service.dart';
 import 'package:resq/utils/menu_list.dart';
 
 class ResQMenu extends StatefulWidget {
@@ -28,7 +29,7 @@ class _ResQMenuState extends State<ResQMenu> {
   Future<void> _loadMenuItems() async {
     try {
       // Get menu items filtered by user roles
-      final items = getFilteredMenuItems(widget.roles);
+      final items = getFilteredMenuItems([]);
       
       if (mounted) {
         setState(() {
