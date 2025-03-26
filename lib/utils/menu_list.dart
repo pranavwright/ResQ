@@ -14,14 +14,8 @@ class MenuItem {
     required this.roles,
   });
 
-
   Map<String, dynamic> toJson() {
-    return {
-      'title': title,
-      'icon': icon,
-      'route': route,
-      'roles': roles,
-    };
+    return {'title': title, 'icon': icon, 'route': route, 'roles': roles};
   }
 
   factory MenuItem.fromJson(Map<String, dynamic> json) {
@@ -39,64 +33,107 @@ final List<Map<String, dynamic>> menuData = [
     "title": "Home",
     "icon": Icons.home,
     "route": "/app",
-    "roles": ["all"]
+    "roles": ["all"],
   },
   {
     "title": "Families",
     "icon": Icons.people,
     "route": "/test-family",
-    "roles": ["admin", "stat"]
+    "roles": ["admin", "stat"],
   },
   {
     "title": "Camp Status",
     "icon": Icons.home_work,
     "route": "/camp-status", // screen route
-    "roles": ["admin"]
+    "roles": ["admin"],
   },
   {
     "title": "Notice Board",
     "icon": Icons.announcement,
-    "route": "/notice-board", 
-    "roles": ["admin","stat"]
+    "route": "/notice-board",
+    "roles": ["admin", "stat"],
   },
   {
     "title": "Officals",
     "icon": Icons.assignment_ind,
-    "route": "/role-creation", 
-    "roles": ["admin"]
+    "route": "/role-creation",
+    "roles": ["admin"],
   },
   {
     "title": "Collection Points",
     "icon": Icons.add_location,
-    "route": '/admin-collectionpoint', 
-    "roles": ["admin"]
+    "route": '/admin-collectionpoint',
+    "roles": ["admin"],
   },
   {
     "title": "Identity",
     "icon": Icons.person,
     "route": "/identity",
-    "roles": ["all"]
+    "roles": ["all"],
   },
   {
     "title": "Logout",
     "icon": Icons.exit_to_app,
     "route": "/logout",
-    "roles": ["all"]
+    "roles": ["all"],
   },
-
+  {
+    "title": "Family Survey",
+    "icon": Icons.family_restroom,
+    "route": "/family-survey",
+    "roles": ['surveyOfficial'],
+  },
+  {
+    'title': 'Verification ',
+    'icon': Icons.verified_user,
+    'route': '/verification-volunteer',
+    'roles': ['verifyOfficial'],
+  },
+  {
+    'title': 'Manage Camp',
+    'icon': Icons.cabin,
+    'route': '/manage-camp',
+    'roles': ['campAdmin'],
+  },
+  {
+    'title': 'Manage Collection Point',
+    'icon': Icons.cabin,
+    'route': '/manage-collectionpoint',
+    'roles': ['collectionPointAdmin'],
+  },
+  {
+    'title': 'Need Assessment Surveys',
+    'icon': Icons.assignment,
+    'route': '/need-assessment-surveys',
+    'roles': ['surveyOfficial'],
+  },
+  {
+    'title': 'Collection Point Requests',
+    'icon': Icons.request_page,
+    'route': '/collectionpoint-volunteer',
+    'roles': ['collectionpointvolunteer'],
+  },
+  {
+    'title': 'Change Disaster',
+    'icon': Icons.change_circle,
+    'route': '/change-disaster',
+    'roles': ['all'],
+  },
 ];
-            
-List<MenuItem> menuItems = menuData.map((data) => MenuItem.fromJson(data)).toList();
+
+List<MenuItem> menuItems =
+    menuData.map((data) => MenuItem.fromJson(data)).toList();
 
 // Function to get filtered menu items based on user roles
 List<MenuItem> getFilteredMenuItems(List<dynamic> userRoles) {
   // Convert dynamic userRoles to string list
   final roles = List<String>.from(userRoles.whereType<String>());
-  
+
   // Use current user roles if userRoles is empty
-  List<dynamic> updatedUserRoles = userRoles.isNotEmpty 
-      ? userRoles 
-      : AuthService().getCurrentUserRoles() ?? [];
+  List<dynamic> updatedUserRoles =
+      userRoles.isNotEmpty
+          ? userRoles
+          : AuthService().getCurrentUserRoles() ?? [];
 
   if (updatedUserRoles.isNotEmpty && roles.isEmpty) {
     roles.add("all");
