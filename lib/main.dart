@@ -252,7 +252,7 @@ class MyApp extends StatelessWidget {
       case '/manage-camp':
         builder =
             (context) =>
-                AuthRoute(requiredRoles: ['campAdmin'], child: CampAdminRequestScreen());
+                AuthRoute(requiredRoles: ['campAdmin'], child: CampAdminDashboard());
         break;
       case '/profile-update':
         builder =
@@ -334,7 +334,7 @@ class MyApp extends StatelessWidget {
 
     if (roles.contains('collectionPointAdmin'))
       return CollectionPointDashboard();
-    if (roles.contains('campAdmin')) return CampAdminRequestScreen();
+    if (roles.contains('campAdmin')) return CampAdminDashboard();
     if (roles.contains('collectionpointvolunteer')) return VolunteerDashboard();
     if (roles.contains('surveyOfficial')) return FamilySurveyHomeScreen();
     if (roles.contains('verifyOfficial'))

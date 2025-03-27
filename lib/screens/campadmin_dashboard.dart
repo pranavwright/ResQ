@@ -1,8 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:resq/utils/resq_menu.dart';
-import '../utils/auth/auth_service.dart';
-import 'package:resq/utils/menu_list.dart';
+import 'package:resq/utils/resq_menu.dart'; // Assuming this exists
+import 'package:resq/utils/auth/auth_service.dart'; // Assuming this exists
+import 'package:resq/utils/menu_list.dart'; // Assuming this exists
+
+// Request History Screen
+class RequestHistoryScreen extends StatelessWidget {
+  final List<Map<String, dynamic>> requestHistory;
+
+  const RequestHistoryScreen({Key? key, required this.requestHistory})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Request History'),
+        centerTitle: true,
+      ),
+      body: ListView.builder(
+        itemCount: requestHistory.length,
+        itemBuilder: (context, index) {
+          var request = requestHistory[index];
+          String requestType = request['Request Type'];
+          String details = '';
+
+          // Show specific details based on the request type
+          switch (requestType) {
+            case 'Food':
+              details =
+                  'Food Type: ${request['Food Type']}, Quantity: ${request['Food Quantity']}';
+              break;
+            case 'Medicine':
+              details =
+                  'Medicine Type: ${request['Medicine Type']}, Quantity: ${request['Medicine Quantity']}';
+              break;
+            case 'Essential Items':
+              details =
+                  'Item: ${request['Item']}, Quantity: ${request['Item Quantity']}';
+              if (request['Item'] == 'Other') {
+                details += ', Specific Item: ${request['Item Type']}';
+              }
+              break;
+            default:
+              details = 'No details available';
+              break;
+          }
+
+          return ListTile(
+            title: Text('Request Type: $requestType'),
+            subtitle: Text('Details: $details, Priority: ${request['Priority']}'),
+          );
+        },
+      ),
+    );
+  }
+}
 
 class CampAdminRequestScreen extends StatefulWidget {
   const CampAdminRequestScreen({Key? key}) : super(key: key);
@@ -12,11 +65,11 @@ class CampAdminRequestScreen extends StatefulWidget {
 }
 
 class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
-  final AuthService _authService = AuthService();
+  final AuthService _authService = AuthService(); // Assuming this is for logout
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  bool _isMenuLoading = true;
-  List<dynamic> filteredMenuItems = [];
+  bool _isMenuLoading = true; // You might not need this here, but I'll keep it
+  List<dynamic> filteredMenuItems = []; // You might not need this here
   List<Map<String, dynamic>> requestHistory = []; // Store requests here
 
   final List<Map<String, TextEditingController>> _requestControllers = [];
@@ -42,12 +95,12 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
   @override
   void initState() {
     super.initState();
-    _loadMenuItems();
+    _loadMenuItems(); //  load menu items is used in the main menu, not here.
   }
 
   Future<void> _loadMenuItems() async {
     try {
-      final items = getFilteredMenuItems(['admin']);
+      final items = getFilteredMenuItems(['admin']); // Assuming this function exists
       if (mounted) {
         setState(() {
           filteredMenuItems = items;
@@ -165,27 +218,9 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
     );
   }
 
-  void _showLogoutConfirmationDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Logout'),
-          content: const Text('Are you sure you want to logout?'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   Widget _buildRequestTypeSpecificFields(
-    Map<String, TextEditingController> requestDetails,
-  ) {
+      Map<String, TextEditingController> requestDetails) {
     switch (_selectedRequestType) {
       case 'Food':
         return Column(
@@ -195,10 +230,9 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
                 labelText: 'Food Type',
                 border: OutlineInputBorder(),
               ),
-              value:
-                  requestDetails['foodType']?.text.isNotEmpty ?? false
-                      ? requestDetails['foodType']!.text
-                      : null,
+              value: requestDetails['foodType']?.text.isNotEmpty ?? false
+                  ? requestDetails['foodType']!.text
+                  : null,
               hint: const Text('Select Food Type'),
               items: const [
                 DropdownMenuItem<String>(value: 'Rice', child: Text('Rice')),
@@ -211,11 +245,8 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
                   requestDetails['foodType']?.text = newValue ?? '';
                 });
               },
-              validator:
-                  (value) =>
-                      value == null || value.isEmpty
-                          ? 'Please specify food type'
-                          : null,
+              validator: (value) =>
+                  value == null || value.isEmpty ? 'Please specify food type' : null,
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -225,11 +256,8 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
                 hintText: 'e.g., 50 kg, 100 packets, etc.',
                 border: OutlineInputBorder(),
               ),
-              validator:
-                  (value) =>
-                      value?.isEmpty ?? true
-                          ? 'Please enter food quantity'
-                          : null,
+              validator: (value) =>
+                  value?.isEmpty ?? true ? 'Please enter food quantity' : null,
             ),
           ],
         );
@@ -243,11 +271,8 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
                 hintText: 'e.g., Paracetamol, ORS, Bandages, etc.',
                 border: OutlineInputBorder(),
               ),
-              validator:
-                  (value) =>
-                      value?.isEmpty ?? true
-                          ? 'Please specify medicine type'
-                          : null,
+              validator: (value) =>
+                  value?.isEmpty ?? true ? 'Please specify medicine type' : null,
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -257,11 +282,8 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
                 hintText: 'e.g., 100 tablets, 50 packets, etc.',
                 border: OutlineInputBorder(),
               ),
-              validator:
-                  (value) =>
-                      value?.isEmpty ?? true
-                          ? 'Please enter medicine quantity'
-                          : null,
+              validator: (value) =>
+                  value?.isEmpty ?? true ? 'Please enter medicine quantity' : null,
             ),
           ],
         );
@@ -274,13 +296,12 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
                 border: OutlineInputBorder(),
               ),
               value: _selectedEssentialItem,
-              items:
-                  _essentialItems.map((String item) {
-                    return DropdownMenuItem<String>(
-                      value: item,
-                      child: Text(item),
-                    );
-                  }).toList(),
+              items: _essentialItems.map((String item) {
+                return DropdownMenuItem<String>(
+                  value: item,
+                  child: Text(item),
+                );
+              }).toList(),
               onChanged: (String? newValue) {
                 setState(() {
                   _selectedEssentialItem = newValue;
@@ -317,9 +338,8 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
               ),
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              validator:
-                  (value) =>
-                      value?.isEmpty ?? true ? 'Please enter quantity' : null,
+              validator: (value) =>
+                  value?.isEmpty ?? true ? 'Please enter quantity' : null,
             ),
           ],
         );
@@ -337,27 +357,26 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
-            onPressed: _viewRequestHistory, // Show request history when clicked
+            onPressed:
+                _viewRequestHistory, // Show request history when clicked
             tooltip: 'View Request History',
           ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _showLogoutConfirmationDialog,
-            tooltip: 'Logout',
-          ),
+       
         ],
       ),
-      drawer:
-          MediaQuery.of(context).size.width < 800
-              ? const ResQMenu(roles: ['admin'])
-              : null,
+      drawer: MediaQuery.of(context).size.width < 800
+          ? const ResQMenu(roles: ['admin']) // Assuming this is your menu
+          : null,
       body: SafeArea(
         child: Container(
           color: Colors.white,
           child: Column(
             children: [
               if (MediaQuery.of(context).size.width >= 800)
-                const ResQMenu(roles: ['admin'], showDrawer: false),
+                const ResQMenu(
+                    roles: ['admin'],
+                    showDrawer:
+                        false), // Assuming this is your menu for larger screens
               const Divider(),
               Expanded(
                 child: GestureDetector(
@@ -378,7 +397,8 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
                               child: Padding(
                                 padding: const EdgeInsets.all(16.0),
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
                                   children: [
                                     Row(
                                       mainAxisAlignment:
@@ -411,23 +431,20 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
                                       ),
                                       value: _selectedRequestType,
                                       hint: const Text('Select what you need'),
-                                      items:
-                                          _requestTypes.map((String type) {
-                                            return DropdownMenuItem<String>(
-                                              value: type,
-                                              child: Text(type),
-                                            );
-                                          }).toList(),
+                                      items: _requestTypes.map((String type) {
+                                        return DropdownMenuItem<String>(
+                                          value: type,
+                                          child: Text(type),
+                                        );
+                                      }).toList(),
                                       onChanged: (String? newValue) {
                                         setState(() {
                                           _selectedRequestType = newValue;
                                         });
                                       },
-                                      validator:
-                                          (value) =>
-                                              value == null
-                                                  ? 'Please select a request type'
-                                                  : null,
+                                      validator: (value) => value == null
+                                          ? 'Please select a request type'
+                                          : null,
                                     ),
                                     const SizedBox(height: 16),
                                     DropdownButtonFormField<String>(
@@ -436,15 +453,15 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
                                         border: OutlineInputBorder(),
                                       ),
                                       value: _selectedPriority,
-                                      items:
-                                          _priorityLevels.map((
-                                            String priority,
-                                          ) {
-                                            return DropdownMenuItem<String>(
-                                              value: priority,
-                                              child: Text(priority),
-                                            );
-                                          }).toList(),
+                                      items: _priorityLevels.map(
+                                        (
+                                          String priority,
+                                        ) {
+                                          return DropdownMenuItem<String>(
+                                            value: priority,
+                                            child: Text(priority),
+                                          );
+                                        }).toList(),
                                       onChanged: (String? newValue) {
                                         if (newValue != null) {
                                           setState(() {
@@ -508,54 +525,124 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
   }
 }
 
-// Request History Screen
-class RequestHistoryScreen extends StatelessWidget {
-  final List<Map<String, dynamic>> requestHistory;
+// Main Camp Admin Dashboard
+class CampAdminDashboard extends StatelessWidget {
+  // Placeholder for the list of family members.  In a real app, this would
+  // come from your data source.
+    final List<Map<String, dynamic>> familyMembers = [
+    {'name': 'John Doe', 'age': 30, 'relationship': 'Head'},
+    {'name': 'Jane Doe', 'age': 25, 'relationship': 'Spouse'},
+    {'name': 'Peter Pan', 'age': 10, 'relationship': 'Child'},
+    {'name': 'Alice Wonderland', 'age': 5, 'relationship': 'Child'},
+    {'name': 'Bob The Builder', 'age': 40, 'relationship': 'Other'},
+  ];
 
-  const RequestHistoryScreen({Key? key, required this.requestHistory})
-      : super(key: key);
+  CampAdminDashboard({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Request History'),
+        title: const Text('Camp Admin Dashboard'),
         centerTitle: true,
+        
       ),
-      body: ListView.builder(
-        itemCount: requestHistory.length,
-        itemBuilder: (context, index) {
-          var request = requestHistory[index];
-          String requestType = request['Request Type'];
-          String details = '';
-
-          // Show specific details based on the request type
-          switch (requestType) {
-            case 'Food':
-              details =
-                  'Food Type: ${request['Food Type']}, Quantity: ${request['Food Quantity']}';
-              break;
-            case 'Medicine':
-              details =
-                  'Medicine Type: ${request['Medicine Type']}, Quantity: ${request['Medicine Quantity']}';
-              break;
-            case 'Essential Items':
-              details =
-                  'Item: ${request['Item']}, Quantity: ${request['Item Quantity']}';
-              if (request['Item'] == 'Other') {
-                details += ', Specific Item: ${request['Item Type']}';
-              }
-              break;
-            default:
-              details = 'No details available';
-              break;
-          }
-
-          return ListTile(
-            title: Text('Request Type: $requestType'),
-            subtitle: Text('Details: $details'),
-          );
-        },
+      drawer:
+          MediaQuery.of(context).size.width < 800
+              ? const ResQMenu(roles: ['admin'])
+              : null, // Assuming this is your menu
+      body: SafeArea(
+        child: Container(
+          color: Colors.white,
+          child: Column(
+            children: [
+              if (MediaQuery.of(context).size.width >= 800)
+                const ResQMenu(
+                    roles: ['admin'],
+                    showDrawer:
+                        false), // Assuming this is your menu for larger screens
+              const Divider(),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: ListView(
+                    children: [
+                      const Text(
+                        'Welcome, Camp Admin!',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Family Members in Camp:',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      // Display the list of family members
+                      ...familyMembers.map((member) {
+                        return Card(
+                          elevation: 2,
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Name: ${member['name']}'),
+                                Text('Age: ${member['age']}'),
+                                Text('Relationship: ${member['relationship']}'),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                      const SizedBox(height: 20),
+                      // Button to navigate to the request screen
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const CampAdminRequestScreen(),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 50),
+                        ),
+                        child: const Text('Request Supplies',
+                            style: TextStyle(fontSize: 16)),
+                      ),
+                      const SizedBox(height: 10),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => RequestHistoryScreen(
+                                  requestHistory: const []), // Pass the request history
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 50),
+                        ),
+                        child: const Text('View Request History',
+                            style: TextStyle(fontSize: 16)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
