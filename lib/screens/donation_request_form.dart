@@ -1,7 +1,8 @@
 import 'dart:math' as Math;
-
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:resq/screens/items_list.dart';
 import 'package:resq/utils/http/token_less_http.dart';
 
@@ -19,7 +20,11 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _donationDateController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  // Date selection
+  DateTime? _selectedDonationDate;
 
   // Donation types
   final List<String> _donationTypes = [
@@ -29,19 +34,10 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
     'Other',
   ];
 
-  List<Map<String, dynamic>> _foodItemsData = [];
-  List<Map<String, dynamic>> _utilityItemsData = [];
-  List<Map<String, dynamic>> _medicineItemsData = [];
-
-  // Predefined options
-  List<String> _utilityItems = [];
-  List<String> _medicineItems = [];
-  List<String> _foodItems = []; // To be fetched from API
-  List<String> _enteredFoodItems = []; // Track all entered food items
-  String? _tempFoodItem; // Track temporary food item input
-
-  // List to store all donations
-  List<Map<String, dynamic>> _donations = [];
+  // Lists to store all items with their units
+  List<Map<String, dynamic>> _allFoodItems = [];
+  List<Map<String, dynamic>> _allUtilityItems = [];
+  List<Map<String, dynamic>> _allMedicineItems = [];
 
   // Current donation being edited
   Map<String, dynamic> _currentDonation = {
@@ -50,7 +46,6 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
     'utilityQty': '',
     'foodItem': null,
     'foodQty': '',
-    'foodUnit': 'kg', // Fixed unit for food
     'medicineItem': null,
     'medicineQty': '',
     'otherDetails': '',
@@ -63,6 +58,17 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
   final TextEditingController _medicineQtyController = TextEditingController();
   final TextEditingController _otherDonationController =
       TextEditingController();
+
+  // Temporary variables for new items
+  String? _tempFoodItem;
+  String? _tempUtilityItem;
+  String? _tempMedicineItem;
+  String? _tempFoodUnit;
+  String? _tempUtilityUnit;
+  String? _tempMedicineUnit;
+
+  // List to store all donations
+  List<Map<String, dynamic>> _donations = [];
 
   @override
   void initState() {
@@ -81,81 +87,113 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
         queryParameters: {'disasterId': widget.disasterId},
       );
       if (response != null && response['list'] is List) {
-        List<String> foodItemsFromServer = [];
         List<Map<String, dynamic>> foodItemsData = [];
-        List<String> utilityItemsFromServer = [];
         List<Map<String, dynamic>> utilityItemsData = [];
-        List<String> medicineItemsFromServer = [];
         List<Map<String, dynamic>> medicineItemsData = [];
 
         for (var item in response['list']) {
           if (item['category'] == 'Food') {
-            foodItemsFromServer.add(item['name']);
             foodItemsData.add({
               'name': item['name'],
               '_id': item['_id'],
               'category': item['category'],
               'unit': item['unit'] ?? 'kg',
+              'isCustom': false,
             });
           } else if (item['category'] == 'Utilities') {
-            utilityItemsFromServer.add(item['name']);
             utilityItemsData.add({
               'name': item['name'],
               '_id': item['_id'],
               'category': item['category'],
               'unit': item['unit'] ?? 'pieces',
+              'isCustom': false,
             });
           } else if (item['category'] == 'Medicine') {
-            medicineItemsFromServer.add(item['name']);
             medicineItemsData.add({
               'name': item['name'],
               '_id': item['_id'],
               'category': item['category'],
-              'unit': item['unit'] ?? 'pieces',
+              'unit': item['unit'] ?? 'tablets',
+              'isCustom': false,
             });
           }
         }
 
         setState(() {
-          _foodItems = [...foodItemsFromServer, 'Other'];
-          _utilityItems = [...utilityItemsFromServer, 'Other'];
-          _medicineItems = [...medicineItemsFromServer, 'Other'];
-
-          _foodItemsData = foodItemsData;
-          _utilityItemsData = utilityItemsData;
-          _medicineItemsData = medicineItemsData;
+          _allFoodItems = [...foodItemsData];
+          _allUtilityItems = [...utilityItemsData];
+          _allMedicineItems = [...medicineItemsData];
         });
       }
     } catch (e) {
       print('Error fetching items: $e');
-      // Handle error, maybe show a snackbar
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error loading items: $e')));
+    }
+  }
+
+  Future<void> _selectDonationDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDonationDate ?? DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null && picked != _selectedDonationDate) {
+      setState(() {
+        _selectedDonationDate = picked;
+        _donationDateController.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
     }
   }
 
   void _addDonation() {
     if (_validateCurrentDonation()) {
       setState(() {
-        // For food items, if it's a new item, add it to the list
-        if (_currentDonation['type'] == 'Food') {
-          String foodItem =
-              _currentDonation['foodItem'] == 'Other'
-                  ? _tempFoodItem ?? ''
-                  : _currentDonation['foodItem']!;
-
-          if (foodItem.isNotEmpty &&
-              !_enteredFoodItems.contains(foodItem) &&
-              !_foodItems.contains(foodItem)) {
-            _enteredFoodItems.add(foodItem);
-            // Update dropdown items - show all entered items + "Other"
-            _foodItems = [
-              ..._foodItems.where((item) => item != 'Other'),
-              ..._enteredFoodItems,
-              'Other',
-            ];
+        // Add the new item to the appropriate list if it's a custom entry
+        if (_currentDonation['type'] == 'Food' && _tempFoodItem != null) {
+          // Check if item already exists before adding
+          if (!_allFoodItems.any((item) => item['name'] == _tempFoodItem)) {
+            _allFoodItems.add({
+              'name': _tempFoodItem!,
+              'unit': _tempFoodUnit ?? 'kg',
+              'isCustom': true,
+            });
           }
-
-          // Set the actual food item in the donation
-          _currentDonation['foodItem'] = foodItem;
+          _currentDonation['foodItem'] = _tempFoodItem;
+          _tempFoodItem = null;
+          _tempFoodUnit = null;
+        } else if (_currentDonation['type'] == 'Utilities' &&
+            _tempUtilityItem != null) {
+          // Check if item already exists before adding
+          if (!_allUtilityItems.any(
+            (item) => item['name'] == _tempUtilityItem,
+          )) {
+            _allUtilityItems.add({
+              'name': _tempUtilityItem!,
+              'unit': _tempUtilityUnit ?? 'pieces',
+              'isCustom': true,
+            });
+          }
+          _currentDonation['utilityItem'] = _tempUtilityItem;
+          _tempUtilityItem = null;
+          _tempUtilityUnit = null;
+        } else if (_currentDonation['type'] == 'Medicine' &&
+            _tempMedicineItem != null) {
+          // Check if item already exists before adding
+          if (!_allMedicineItems.any(
+            (item) => item['name'] == _tempMedicineItem,
+          )) {
+            _allMedicineItems.add({
+              'name': _tempMedicineItem!,
+              'unit': _tempMedicineUnit ?? 'tablets',
+              'isCustom': true,
+            });
+          }
+          _currentDonation['medicineItem'] = _tempMedicineItem;
+          _tempMedicineItem = null;
+          _tempMedicineUnit = null;
         }
 
         _donations.add({
@@ -163,7 +201,6 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
           'details': _getDonationDetails(_currentDonation['type']),
         });
         _resetCurrentDonation();
-        _tempFoodItem = null; // Reset temporary food item
       });
     }
   }
@@ -178,7 +215,8 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
 
     switch (_currentDonation['type']) {
       case 'Utilities':
-        if (_currentDonation['utilityItem'] == null ||
+        if ((_currentDonation['utilityItem'] == null &&
+                _tempUtilityItem == null) ||
             _utilityQtyController.text.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -189,28 +227,19 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
         }
         break;
       case 'Food':
-        if (_currentDonation['foodItem'] == null) {
+        if ((_currentDonation['foodItem'] == null && _tempFoodItem == null) ||
+            _foodQtyController.text.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please select or enter a food item')),
-          );
-          return false;
-        }
-        if (_currentDonation['foodItem'] == 'Other' &&
-            (_tempFoodItem == null || _tempFoodItem!.isEmpty)) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please specify the food item')),
-          );
-          return false;
-        }
-        if (_foodQtyController.text.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please enter the quantity')),
+            const SnackBar(
+              content: Text('Please fill all food donation details'),
+            ),
           );
           return false;
         }
         break;
       case 'Medicine':
-        if (_currentDonation['medicineItem'] == null ||
+        if ((_currentDonation['medicineItem'] == null &&
+                _tempMedicineItem == null) ||
             _medicineQtyController.text.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -235,37 +264,43 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
   Map<String, dynamic> _getDonationDetails(String? type) {
     switch (type) {
       case 'Utilities':
+        final itemName = _currentDonation['utilityItem'] ?? _tempUtilityItem;
+        final existingItem = _allUtilityItems.firstWhere(
+          (item) => item['name'] == itemName,
+          orElse: () => {'unit': 'pieces', '_id': ''},
+        );
         return {
-          'item': _currentDonation['utilityItem'],
+          'item': itemName,
           'quantity': _utilityQtyController.text,
-          'itemId':
-              _currentDonation['utilityItem_id'] ??
-              '', // Use the item's ID or empty string
+          'itemId': existingItem['_id'] ?? '',
           'category': 'Utilities',
-          'unit': 'pieces',
+          'unit': existingItem['unit'],
         };
       case 'Food':
+        final itemName = _currentDonation['foodItem'] ?? _tempFoodItem;
+        final existingItem = _allFoodItems.firstWhere(
+          (item) => item['name'] == itemName,
+          orElse: () => {'unit': 'kg', '_id': ''},
+        );
         return {
-          'item':
-              _currentDonation['foodItem'] == 'Other'
-                  ? _tempFoodItem ?? ''
-                  : _currentDonation['foodItem']!,
+          'item': itemName,
           'quantity': _foodQtyController.text,
-          'itemId':
-              _currentDonation['foodItem_id'] ??
-              '', // Use the item's ID or empty string
+          'itemId': existingItem['_id'] ?? '',
           'category': 'Food',
-          'unit': _currentDonation['foodUnit'],
+          'unit': existingItem['unit'],
         };
       case 'Medicine':
+        final itemName = _currentDonation['medicineItem'] ?? _tempMedicineItem;
+        final existingItem = _allMedicineItems.firstWhere(
+          (item) => item['name'] == itemName,
+          orElse: () => {'unit': 'tablets', '_id': ''},
+        );
         return {
-          'item': _currentDonation['medicineItem'],
+          'item': itemName,
           'quantity': _medicineQtyController.text,
-          'itemId':
-              _currentDonation['medicineItem_id'] ??
-              '', // Use the item's ID or empty string
+          'itemId': existingItem['_id'] ?? '',
           'category': 'Medicine',
-          'unit': 'pieces',
+          'unit': existingItem['unit'],
         };
       case 'Other':
         return {
@@ -277,7 +312,7 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
                 Math.min(20, _otherDonationController.text.length),
               ),
           'quantity': '1',
-          'itemId': '', // No ID for other items
+          'itemId': '',
           'category': 'Other',
           'unit': 'pieces',
         };
@@ -294,7 +329,6 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
         'utilityQty': '',
         'foodItem': null,
         'foodQty': '',
-        'foodUnit': 'kg', // Keep unit fixed
         'medicineItem': null,
         'medicineQty': '',
         'otherDetails': '',
@@ -304,7 +338,6 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
       _foodItemController.clear();
       _medicineQtyController.clear();
       _otherDonationController.clear();
-      _tempFoodItem = null; // Reset temporary food item
     });
   }
 
@@ -316,12 +349,19 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
 
   Future<void> _submitDonationRequest() async {
     if (_formKey.currentState!.validate() && _donations.isNotEmpty) {
-      // Prepare complete donation request with properly structured donations
+      if (_selectedDonationDate == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a donation date')),
+        );
+        return;
+      }
+
       Map<String, dynamic> donationRequest = {
         'disasterId': widget.disasterId,
         'name': _nameController.text.trim(),
         'email': _emailController.text.trim(),
         'phone': _phoneController.text.trim(),
+        'donationDate': _selectedDonationDate?.toIso8601String(),
         'items':
             _donations.map((donation) {
               final details = donation['details'];
@@ -329,8 +369,7 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
                 'type': donation['type'],
                 'name': details['item'],
                 'quantity': details['quantity'],
-                'itemId':
-                    details['itemId'] ?? '', // Send itemId or empty string
+                'itemId': details['itemId'] ?? '', // Ensure itemId is included
                 'category': details['category'],
                 'unit': details['unit'],
                 'description':
@@ -344,47 +383,18 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
           '/donation/generalDonation',
           donationRequest,
         );
-        if (response != null &&
-            response['message'] == 'Donation request submitted successfully') {
-          // Show success confirmation dialog
+        if (response != null) {
           _showConfirmationDialog(donationRequest);
-
-          // Reset form
-          _resetCurrentDonation();
-          _nameController.clear();
-          _emailController.clear();
-          _phoneController.clear();
-          _donations.clear();
-          _enteredFoodItems.clear(); // Clear entered food items
-          _foodItems =
-              _foodItems
-                  .where(
-                    (item) =>
-                        _utilityItems.contains(item) ||
-                        _medicineItems.contains(item),
-                  )
-                  .toList();
-          if (!_foodItems.contains('Other')) {
-            _foodItems.add('Other'); // Reset to include "Other" option
-          }
+          _resetForm();
         } else {
-          // Show error message
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Failed to submit donation request. Please try again.',
-              ),
-            ),
+            SnackBar(content: Text('Failed to submit donation request')),
           );
         }
       } catch (e) {
         print('Error submitting donation: $e');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'An error occurred while submitting. Please try again later.',
-            ),
-          ),
+          SnackBar(content: Text('An error occurred while submitting')),
         );
       }
     } else if (_donations.isEmpty) {
@@ -392,6 +402,16 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
         const SnackBar(content: Text('Please add at least one donation')),
       );
     }
+  }
+
+  void _resetForm() {
+    _resetCurrentDonation();
+    _nameController.clear();
+    _emailController.clear();
+    _phoneController.clear();
+    _donationDateController.clear();
+    _selectedDonationDate = null;
+    _donations.clear();
   }
 
   void _showConfirmationDialog(Map<String, dynamic> request) {
@@ -412,16 +432,22 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                ...(request['donations'] as List).map<Widget>((donation) {
-                  //Explicitly cast request['donations'] to List
+                ...(request['items'] as List).map<Widget>((item) {
                   return Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
-                      '• ${donation['type']}: ${_formatDetailsForDialog(donation['details'])}',
+                      '• ${item['type']}: ${_formatDetailsForDialog(item)}',
                       style: const TextStyle(fontSize: 14),
                     ),
                   );
                 }).toList(),
+                const SizedBox(height: 16),
+                const Text(
+                  'Preferred Donation Date:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(_donationDateController.text),
                 const SizedBox(height: 16),
                 const Text(
                   'We will contact you shortly at:',
@@ -437,7 +463,7 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
             TextButton(
               child: const Text('OK'),
               onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
+                Navigator.of(context).pop();
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(builder: (context) => ItemsList()),
                 );
@@ -459,6 +485,14 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
     return '';
   }
 
+  String _formatDonationDetails(Map<String, dynamic> donation) {
+    final details = donation['details'];
+    if (donation['type'] == 'Other') {
+      return details['details'];
+    }
+    return '${details['item']} - ${details['quantity']} ${details['unit']}';
+  }
+
   Widget _buildDonationTypeSpecificFields() {
     switch (_currentDonation['type']) {
       case 'Utilities':
@@ -470,35 +504,82 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
                 border: OutlineInputBorder(),
               ),
               value: _currentDonation['utilityItem'],
-              items:
-                  _utilityItems.map((String item) {
-                    return DropdownMenuItem<String>(
-                      value: item,
-                      child: Text(item),
-                    );
-                  }).toList(),
+              items: [
+                ..._allUtilityItems.map(
+                  (item) => DropdownMenuItem<String>(
+                    value: item['name'],
+                    child: Text(item['name']),
+                  ),
+                ),
+                const DropdownMenuItem<String>(
+                  value: 'Other',
+                  child: Text('Other (Specify)'),
+                ),
+              ],
               onChanged: (String? newValue) {
                 setState(() {
-                  _currentDonation['utilityItem'] = newValue;
-                  // Find and store the ID of the selected item
-                  if (newValue != 'Other') {
-                    final selectedItem = _utilityItemsData.firstWhere(
-                      (item) => item['name'] == newValue,
-                      orElse: () => {'_id': ''},
-                    );
-                    _currentDonation['utilityItem_id'] = selectedItem['_id'];
+                  if (newValue == 'Other') {
+                    _currentDonation['utilityItem'] = null;
+                    _tempUtilityItem = '';
+                    _tempUtilityUnit = 'pieces';
                   } else {
-                    _currentDonation['utilityItem_id'] = '';
+                    _currentDonation['utilityItem'] = newValue;
+                    _tempUtilityItem = null;
                   }
                 });
               },
             ),
+            if (_currentDonation['utilityItem'] == null &&
+                _tempUtilityItem != null) ...[
+              const SizedBox(height: 16),
+              TextFormField(
+                decoration: const InputDecoration(
+                  labelText: 'Specify Utility Item',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _tempUtilityItem = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: 'Unit',
+                  border: OutlineInputBorder(),
+                ),
+                value: _tempUtilityUnit,
+                items:
+                    ['pieces', 'kg', 'liters', 'boxes', 'sets'].map((
+                      String unit,
+                    ) {
+                      return DropdownMenuItem<String>(
+                        value: unit,
+                        child: Text(unit),
+                      );
+                    }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _tempUtilityUnit = newValue;
+                  });
+                },
+              ),
+            ],
             const SizedBox(height: 16),
             TextFormField(
               controller: _utilityQtyController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Quantity',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                suffixText:
+                    _currentDonation['utilityItem'] != null
+                        ? _allUtilityItems.firstWhere(
+                          (item) =>
+                              item['name'] == _currentDonation['utilityItem'],
+                          orElse: () => {'unit': 'pieces'},
+                        )['unit']
+                        : _tempUtilityUnit ?? 'pieces',
               ),
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -518,69 +599,92 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
                 labelText: 'Food Item',
                 border: OutlineInputBorder(),
               ),
-              value:
-                  _currentDonation['foodItem'] == 'Other' &&
-                          _tempFoodItem != null
-                      ? 'Other'
-                      : _currentDonation['foodItem'],
-              items:
-                  _foodItems.map((String item) {
-                    return DropdownMenuItem<String>(
-                      value: item,
-                      child: Text(item),
-                    );
-                  }).toList(),
+              value: _currentDonation['foodItem'],
+              items: [
+                ..._allFoodItems.map(
+                  (item) => DropdownMenuItem<String>(
+                    value: item['name'],
+                    child: Text(item['name']),
+                  ),
+                ),
+                const DropdownMenuItem<String>(
+                  value: 'Other',
+                  child: Text('Other (Specify)'),
+                ),
+              ],
               onChanged: (String? newValue) {
                 setState(() {
-                  _currentDonation['foodItem'] = newValue;
-                  if (newValue != 'Other') {
-                    final selectedItem = _foodItemsData.firstWhere(
-                      (item) => item['name'] == newValue,
-                      orElse: () => {'_id': ''},
-                    );
-                    _currentDonation['foodItem_id'] = selectedItem['_id'];
-                    _tempFoodItem = null;
+                  if (newValue == 'Other') {
+                    _currentDonation['foodItem'] = null;
+                    _tempFoodItem = '';
+                    _tempFoodUnit = 'kg';
                   } else {
-                    _currentDonation['foodItem_id'] = '';
+                    _currentDonation['foodItem'] = newValue;
+                    _tempFoodItem = null;
                   }
                 });
               },
             ),
-
-            if (_currentDonation['foodItem'] == 'Other') ...[
+            if (_currentDonation['foodItem'] == null &&
+                _tempFoodItem != null) ...[
               const SizedBox(height: 16),
               TextFormField(
-                controller: _foodItemController,
                 decoration: const InputDecoration(
                   labelText: 'Specify Food Item',
                   border: OutlineInputBorder(),
                 ),
                 onChanged: (value) {
                   setState(() {
-                    _tempFoodItem = value; // Store the typed value separately
+                    _tempFoodItem = value;
                   });
                 },
               ),
-            ],
-
-            if (_currentDonation['foodItem'] != null) ...[
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _foodQtyController,
+              DropdownButtonFormField<String>(
                 decoration: const InputDecoration(
-                  labelText: 'Quantity (kg)',
+                  labelText: 'Unit',
                   border: OutlineInputBorder(),
-                  suffixText: 'kg', // Fixed unit display
                 ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                onChanged: (value) {
+                value: _tempFoodUnit,
+                items:
+                    ['kg', 'g', 'liters', 'ml', 'packets', 'boxes'].map((
+                      String unit,
+                    ) {
+                      return DropdownMenuItem<String>(
+                        value: unit,
+                        child: Text(unit),
+                      );
+                    }).toList(),
+                onChanged: (String? newValue) {
                   setState(() {
-                    _currentDonation['foodQty'] = value;
+                    _tempFoodUnit = newValue;
                   });
                 },
               ),
             ],
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _foodQtyController,
+              decoration: InputDecoration(
+                labelText: 'Quantity',
+                border: const OutlineInputBorder(),
+                suffixText:
+                    _currentDonation['foodItem'] != null
+                        ? _allFoodItems.firstWhere(
+                          (item) =>
+                              item['name'] == _currentDonation['foodItem'],
+                          orElse: () => {'unit': 'kg'},
+                        )['unit']
+                        : _tempFoodUnit ?? 'kg',
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              onChanged: (value) {
+                setState(() {
+                  _currentDonation['foodQty'] = value;
+                });
+              },
+            ),
           ],
         );
       case 'Medicine':
@@ -592,45 +696,96 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
                 border: OutlineInputBorder(),
               ),
               value: _currentDonation['medicineItem'],
-              items:
-                  _medicineItems.map((String item) {
-                    return DropdownMenuItem<String>(
-                      value: item,
-                      child: Text(item),
-                    );
-                  }).toList(),
+              items: [
+                ..._allMedicineItems.map(
+                  (item) => DropdownMenuItem<String>(
+                    value: item['name'],
+                    child: Text(item['name']),
+                  ),
+                ),
+                const DropdownMenuItem<String>(
+                  value: 'Other',
+                  child: Text('Other (Specify)'),
+                ),
+              ],
               onChanged: (String? newValue) {
                 setState(() {
-                  _currentDonation['medicineItem'] = newValue;
-                  if (newValue != 'Other') {
-                    final selectedItem = _medicineItemsData.firstWhere(
-                      (item) => item['name'] == newValue,
-                      orElse: () => {'_id': ''},
-                    );
-                    _currentDonation['medicineItem_id'] = selectedItem['_id'];
+                  if (newValue == 'Other') {
+                    _currentDonation['medicineItem'] = null;
+                    _tempMedicineItem = '';
+                    _tempMedicineUnit = 'tablets';
                   } else {
-                    _currentDonation['medicineItem_id'] = '';
+                    _currentDonation['medicineItem'] = newValue;
+                    _tempMedicineItem = null;
                   }
                 });
               },
             ),
-            if (_currentDonation['medicineItem'] != null) ...[
+            if (_currentDonation['medicineItem'] == null &&
+                _tempMedicineItem != null) ...[
               const SizedBox(height: 16),
               TextFormField(
-                controller: _medicineQtyController,
                 decoration: const InputDecoration(
-                  labelText: 'Quantity',
+                  labelText: 'Specify Medicine Item',
                   border: OutlineInputBorder(),
                 ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 onChanged: (value) {
                   setState(() {
-                    _currentDonation['medicineQty'] = value;
+                    _tempMedicineItem = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: 'Unit',
+                  border: OutlineInputBorder(),
+                ),
+                value: _tempMedicineUnit,
+                items:
+                    [
+                      'tablets',
+                      'bottles',
+                      'boxes',
+                      'strips',
+                      'vials',
+                      'pieces',
+                    ].map((String unit) {
+                      return DropdownMenuItem<String>(
+                        value: unit,
+                        child: Text(unit),
+                      );
+                    }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _tempMedicineUnit = newValue;
                   });
                 },
               ),
             ],
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _medicineQtyController,
+              decoration: InputDecoration(
+                labelText: 'Quantity',
+                border: const OutlineInputBorder(),
+                suffixText:
+                    _currentDonation['medicineItem'] != null
+                        ? _allMedicineItems.firstWhere(
+                          (item) =>
+                              item['name'] == _currentDonation['medicineItem'],
+                          orElse: () => {'unit': 'tablets'},
+                        )['unit']
+                        : _tempMedicineUnit ?? 'tablets',
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              onChanged: (value) {
+                setState(() {
+                  _currentDonation['medicineQty'] = value;
+                });
+              },
+            ),
           ],
         );
       case 'Other':
@@ -685,21 +840,6 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
     );
   }
 
-  String _formatDonationDetails(Map<String, dynamic> donation) {
-    switch (donation['type']) {
-      case 'Utilities':
-        return '${donation['details']['item']} (Qty: ${donation['details']['quantity']})';
-      case 'Food':
-        return '${donation['details']['item']} (${donation['details']['quantity']} ${donation['details']['unit']})';
-      case 'Medicine':
-        return '${donation['details']['item']} (Qty: ${donation['details']['quantity']})';
-      case 'Other':
-        return donation['details']['details'];
-      default:
-        return '';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -716,7 +856,6 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Personal Information Card
               Card(
                 elevation: 2,
                 child: Padding(
@@ -787,16 +926,34 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
                           return null;
                         },
                       ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _donationDateController,
+                        decoration: const InputDecoration(
+                          labelText: 'Preferred Donation Date',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.calendar_today),
+                        ),
+                        readOnly: true,
+                        onTap: () => _selectDonationDate(context),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please select a donation date';
+                          }
+                          if (_selectedDonationDate!.isBefore(
+                            DateTime.now().subtract(const Duration(days: 1)),
+                          )) {
+                            return 'Please select a date in the future';
+                          }
+                          return null;
+                        },
+                      ),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 24),
-
-              // Display current donations
               _buildDonationList(),
-
-              // Add Donation Section
               Card(
                 elevation: 2,
                 child: Padding(
@@ -813,8 +970,6 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
                         ),
                       ),
                       const SizedBox(height: 16),
-
-                      // Donation Type Dropdown
                       DropdownButtonFormField<String>(
                         decoration: const InputDecoration(
                           labelText: 'Donation Type',
@@ -836,13 +991,9 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
                         },
                       ),
                       const SizedBox(height: 16),
-
-                      // Conditional Fields based on Donation Type
                       if (_currentDonation['type'] != null)
                         _buildDonationTypeSpecificFields(),
                       const SizedBox(height: 16),
-
-                      // Add Donation Button
                       ElevatedButton(
                         onPressed: _addDonation,
                         style: ElevatedButton.styleFrom(
@@ -856,8 +1007,6 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
                 ),
               ),
               const SizedBox(height: 24),
-
-              // Submit Button
               ElevatedButton(
                 onPressed: _submitDonationRequest,
                 style: ElevatedButton.styleFrom(
@@ -878,10 +1027,10 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
 
   @override
   void dispose() {
-    // Dispose all controllers
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _donationDateController.dispose();
     _utilityQtyController.dispose();
     _foodQtyController.dispose();
     _foodItemController.dispose();
@@ -891,10 +1040,11 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
   }
 }
 
-// Wrapper for easy usage in routes
 class DonationRequestPage extends StatelessWidget {
   final String disasterId;
-  DonationRequestPage({required this.disasterId});
+  const DonationRequestPage({required this.disasterId, Key? key})
+    : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return DonationRequestForm(disasterId: disasterId);
