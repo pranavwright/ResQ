@@ -17,6 +17,7 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _isMenuLoading = true;
   List<dynamic> filteredMenuItems = [];
+  List<Map<String, dynamic>> requestHistory = []; // Store requests here
 
   final List<Map<String, TextEditingController>> _requestControllers = [];
   String? _selectedRequestType;
@@ -63,13 +64,6 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
     }
   }
 
-  Future<void> _handleLogout() async {
-    await _authService.logout();
-    if (context.mounted) {
-      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-    }
-  }
-
   void _submitRequest() {
     if (_formKey.currentState!.validate()) {
       for (var requestDetails in _requestControllers) {
@@ -102,7 +96,11 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
             break;
         }
 
-        print('Camp Request: $campRequest');
+        // Add to the request history list
+        setState(() {
+          requestHistory.add(campRequest);
+        });
+
         _showConfirmationDialog(campRequest);
       }
       _resetRequestFields();
@@ -149,11 +147,21 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
               child: const Text('View All Requests'),
               onPressed: () {
                 Navigator.of(context).pop();
+                _viewRequestHistory();
               },
             ),
           ],
         );
       },
+    );
+  }
+
+  void _viewRequestHistory() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RequestHistoryScreen(requestHistory: requestHistory),
+      ),
     );
   }
 
@@ -168,13 +176,6 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
             TextButton(
               child: const Text('Cancel'),
               onPressed: () => Navigator.of(context).pop(),
-            ),
-            TextButton(
-              child: const Text('Logout'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                _handleLogout();
-              },
             ),
           ],
         );
@@ -336,7 +337,7 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
-            onPressed: () {},
+            onPressed: _viewRequestHistory, // Show request history when clicked
             tooltip: 'View Request History',
           ),
           IconButton(
@@ -480,26 +481,18 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
                             label: const Text('Add Another Request'),
                             style: ElevatedButton.styleFrom(
                               minimumSize: const Size(double.infinity, 50),
-                              backgroundColor: Theme.of(context).primaryColor,
-                              foregroundColor: Colors.white,
+                              backgroundColor: Colors.blue,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 24),
                           ElevatedButton.icon(
                             onPressed: _submitRequest,
-                            icon: const Icon(Icons.send),
+                            icon: const Icon(Icons.check),
                             label: const Text('Submit Request'),
                             style: ElevatedButton.styleFrom(
                               minimumSize: const Size(double.infinity, 50),
-                              backgroundColor: Theme.of(context).primaryColor,
-                              foregroundColor: Colors.white,
+                              backgroundColor: Colors.green,
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextButton.icon(
-                            onPressed: _resetRequestFields,
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Reset Form'),
                           ),
                         ],
                       ),
@@ -513,18 +506,57 @@ class _CampAdminRequestScreenState extends State<CampAdminRequestScreen> {
       ),
     );
   }
+}
+
+// Request History Screen
+class RequestHistoryScreen extends StatelessWidget {
+  final List<Map<String, dynamic>> requestHistory;
+
+  const RequestHistoryScreen({Key? key, required this.requestHistory})
+      : super(key: key);
 
   @override
-  void dispose() {
-    _scrollController.dispose();
-    for (var request in _requestControllers) {
-      request['foodType']?.dispose();
-      request['foodQty']?.dispose();
-      request['medicineType']?.dispose();
-      request['medicineQty']?.dispose();
-      request['otherItemType']?.dispose();
-      request['otherItemQty']?.dispose();
-    }
-    super.dispose();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Request History'),
+        centerTitle: true,
+      ),
+      body: ListView.builder(
+        itemCount: requestHistory.length,
+        itemBuilder: (context, index) {
+          var request = requestHistory[index];
+          String requestType = request['Request Type'];
+          String details = '';
+
+          // Show specific details based on the request type
+          switch (requestType) {
+            case 'Food':
+              details =
+                  'Food Type: ${request['Food Type']}, Quantity: ${request['Food Quantity']}';
+              break;
+            case 'Medicine':
+              details =
+                  'Medicine Type: ${request['Medicine Type']}, Quantity: ${request['Medicine Quantity']}';
+              break;
+            case 'Essential Items':
+              details =
+                  'Item: ${request['Item']}, Quantity: ${request['Item Quantity']}';
+              if (request['Item'] == 'Other') {
+                details += ', Specific Item: ${request['Item Type']}';
+              }
+              break;
+            default:
+              details = 'No details available';
+              break;
+          }
+
+          return ListTile(
+            title: Text('Request Type: $requestType'),
+            subtitle: Text('Details: $details'),
+          );
+        },
+      ),
+    );
   }
 }

@@ -162,6 +162,11 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
             });
           }
           _currentDonation['foodItem'] = _tempFoodItem;
+          _currentDonation['foodItemId'] =
+              _allFoodItems.firstWhere(
+                (item) => item['name'] == _tempFoodItem,
+                orElse: () => {'_id': ''},
+              )['_id'];
           _tempFoodItem = null;
           _tempFoodUnit = null;
         } else if (_currentDonation['type'] == 'Utilities' &&
@@ -177,6 +182,11 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
             });
           }
           _currentDonation['utilityItem'] = _tempUtilityItem;
+          _currentDonation['utilityItemId'] =
+              _allUtilityItems.firstWhere(
+                (item) => item['name'] == _tempUtilityItem,
+                orElse: () => {'_id': ''},
+              )['_id'];
           _tempUtilityItem = null;
           _tempUtilityUnit = null;
         } else if (_currentDonation['type'] == 'Medicine' &&
@@ -192,6 +202,11 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
             });
           }
           _currentDonation['medicineItem'] = _tempMedicineItem;
+          _currentDonation['medicineItemId'] =
+              _allMedicineItems.firstWhere(
+                (item) => item['name'] == _tempMedicineItem,
+                orElse: () => {'_id': ''},
+              )['_id'];
           _tempMedicineItem = null;
           _tempMedicineUnit = null;
         }
@@ -309,8 +324,8 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
               'Other - ' +
               _otherDonationController.text.substring(
                 0,
-                Math.min(20, _otherDonationController.text.length),
-              ),
+                10,
+              ), // Limit to 10 chars
           'quantity': '1',
           'itemId': '',
           'category': 'Other',
@@ -369,7 +384,7 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
                 'type': donation['type'],
                 'name': details['item'],
                 'quantity': details['quantity'],
-                'itemId': details['itemId'] ?? '', // Ensure itemId is included
+                'itemId': details['itemId'] ?? '', // Send item ID here
                 'category': details['category'],
                 'unit': details['unit'],
                 'description':
@@ -980,7 +995,8 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
                         items:
                             _donationTypes.map((String type) {
                               return DropdownMenuItem<String>(
-                                value: type,
+                                value:
+                                    type, // Ensure each item has a unique value
                                 child: Text(type),
                               );
                             }).toList(),

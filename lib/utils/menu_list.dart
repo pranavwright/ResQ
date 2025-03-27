@@ -72,12 +72,6 @@ final List<Map<String, dynamic>> menuData = [
     "roles": ["all"],
   },
   {
-    "title": "Logout",
-    "icon": Icons.exit_to_app,
-    "route": "/logout",
-    "roles": ["all"],
-  },
-  {
     "title": "Family Survey",
     "icon": Icons.family_restroom,
     "route": "/family-survey",
@@ -120,11 +114,23 @@ final List<Map<String, dynamic>> menuData = [
     'roles': ['all'],
   },
   {
+    'title': 'Disaster Data',
+    'icon': Icons.data_usage,
+    'route':'/disaster',
+    'roles': ['noAuth'],
+  },
+  {
     'title':'loan',
     'icon': Icons.money,
     'route': '/loan-relief',
     'roles': ['stat'],
-  }
+  },
+  {
+    "title": "Logout",
+    "icon": Icons.exit_to_app,
+    "route": "/logout",
+    "roles": ["all"],
+  },
 ];
 
 List<MenuItem> menuItems =
