@@ -18,7 +18,6 @@ import 'package:resq/screens/profile_setup.dart';
 import 'package:resq/screens/superAdmin_dashboard.dart';
 import 'package:resq/screens/admin_dashboard.dart';
 import 'package:resq/screens/stat_dashboard.dart';
-import 'package:resq/screens/kas_dashboard.dart';
 import 'package:resq/screens/collectionpoint_dashboard.dart';
 import 'package:resq/screens/campadmin_dashboard.dart';
 import 'package:resq/screens/volunteer_dashboard.dart';

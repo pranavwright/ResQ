@@ -1,12 +1,11 @@
 import 'dart:io';
-import 'dart:math' as math;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:resq/utils/http/token_http.dart';
-import 'package:resq/widgets/pdf_generation.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:dio/dio.dart';
+import 'package:path/path.dart' as path;
 
 class Identity extends StatefulWidget {
   const Identity({super.key});
@@ -17,19 +16,19 @@ class Identity extends StatefulWidget {
 
 class _IdentityState extends State<Identity> {
   String name = 'Loading...';
-  String phone = 'Loading...';
   String email = 'Loading...';
-  String imageUrl = '';
+  String imageUrl = 'https://storage.googleapis.com/resq_user_images/USR-20250321093705880Z-22F6.jpg';
   String userId = '';
+  List<Map<String, dynamic>> roles = [];
 
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
 
   final ImagePicker _picker = ImagePicker();
   File? _imageFile;
+  Uint8List? _webImage;
   bool _isLoading = true;
-  bool _isRequestingPermission = false;
-  final GlobalKey _cardKey = GlobalKey();
+  bool _isUploading = false;
 
   @override
   void initState() {
@@ -40,14 +39,13 @@ class _IdentityState extends State<Identity> {
   Future<void> _fetchUserData() async {
     try {
       final response = await TokenHttp().get('/auth/getUser');
-      print(response);
       if (response != null) {
         setState(() {
           name = response['name'] ?? 'Not provided';
-          phone = response['phone'] ?? 'Not provided';
-          email = response['email'] ?? 'Not provided';
+          email = response['emailId'] ?? response['email'] ?? 'Not provided';
+          imageUrl = response['photoUrl'] ?? imageUrl;
           userId = response['_id'] ?? '';
-          imageUrl = response['profilePicture'] ?? '';
+          roles = List<Map<String, dynamic>>.from(response['roles'] ?? []);
           _isLoading = false;
         });
       }
@@ -61,42 +59,127 @@ class _IdentityState extends State<Identity> {
     }
   }
 
-  void _showEditDialog() {
-    nameController.text = name;
-    emailController.text = email;
+  Future<void> _uploadImage(dynamic imageFile) async {
+    setState(() {
+      _isUploading = true;
+    });
+
+    try {
+      final response = await TokenHttp().putWithFileUpload(
+        endpoint: '/auth/updateProfilePicture',
+        file: imageFile,
+        fieldName: 'profilePicture',
+      );
+
+      if (response != null && response['photoUrl'] != null) {
+        setState(() {
+          imageUrl = response['photoUrl'];
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile picture updated successfully')),
+          );
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to upload image: $e')),
+      );
+    } finally {
+      setState(() {
+        _isUploading = false;
+      });
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final pickedFile = await showDialog<XFile?>( 
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Select Image Source'),
+        children: <Widget>[
+          if (!kIsWeb)
+            SimpleDialogOption(
+              onPressed: () async {
+                Navigator.pop(context, await _picker.pickImage(source: ImageSource.camera));
+              },
+              child: const Text('Take a Photo'),
+            ),
+          SimpleDialogOption(
+            onPressed: () async {
+              Navigator.pop(context, await _picker.pickImage(source: ImageSource.gallery));
+            },
+            child: const Text('Choose from Gallery'),
+          ),
+        ],
+      ),
+    );
+
+    if (pickedFile != null) {
+      try {
+        if (kIsWeb) {
+          final bytes = await pickedFile.readAsBytes();
+          setState(() {
+            _webImage = bytes;
+          });
+          await _uploadImage(MultipartFile.fromBytes(
+            bytes,
+            filename: path.basename(pickedFile.path),
+          ));
+        } else {
+          final file = File(pickedFile.path);
+          setState(() {
+            _imageFile = file;
+          });
+          await _uploadImage(file);
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error processing image: $e')),
+        );
+      }
+    }
+  }
+
+  ImageProvider _getImageProvider() {
+    if (kIsWeb) {
+      if (_webImage != null) return MemoryImage(_webImage!);
+      return NetworkImage(imageUrl);
+    } else {
+      if (_imageFile != null) return FileImage(_imageFile!);
+      return NetworkImage(imageUrl);
+    }
+  }
+
+  void _showEditDialog(String field) {
+    if (field == 'name') {
+      nameController.text = name;
+    } else if (field == 'email') {
+      emailController.text = email;
+    }
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Edit Profile'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: 'Name'),
-              ),
-              const SizedBox(height: 10.0),
-              TextField(
-                controller: emailController,
-                decoration: const InputDecoration(labelText: 'Email'),
-              ),
-            ],
+          title: Text('Edit $field'),
+          content: TextField(
+            controller: field == 'name' ? nameController : emailController,
+            decoration: InputDecoration(labelText: field),
           ),
           actions: [
             TextButton(
               onPressed: () async {
                 try {
                   final response = await TokenHttp().post('/auth/updateUser', {
-                    'name': nameController.text,
-                    'email': emailController.text,
+                    field: field == 'name' ? nameController.text : emailController.text,
                   });
-                  
+
                   if (response != null && response['success'] == true) {
                     setState(() {
-                      name = nameController.text;
-                      email = emailController.text;
+                      if (field == 'name') {
+                        name = nameController.text;
+                      } else {
+                        email = emailController.text;
+                      }
                     });
                     Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -105,7 +188,7 @@ class _IdentityState extends State<Identity> {
                   }
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to update profile: $e')),
+                    SnackBar(content: Text('Failed to update $field: $e')),
                   );
                 }
               },
@@ -121,94 +204,6 @@ class _IdentityState extends State<Identity> {
     );
   }
 
-  Future<void> _pickImage() async {
-    final pickedFile = await showDialog<XFile?>(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: const Text('Select Image Source'),
-        children: <Widget>[
-          SimpleDialogOption(
-            onPressed: () async {
-              final image = await _picker.pickImage(source: ImageSource.camera);
-              Navigator.pop(context, image);
-            },
-            child: const Text('Take a Photo'),
-          ),
-          SimpleDialogOption(
-            onPressed: () async {
-              final image = await _picker.pickImage(source: ImageSource.gallery);
-              Navigator.pop(context, image);
-            },
-            child: const Text('Pick from Gallery'),
-          ),
-        ],
-      ),
-    );
-
-    if (pickedFile != null) {
-      try {
-        setState(() {
-          _isLoading = true;
-        });
-
-        final response = await TokenHttp().putWithFileUpload(
-          endpoint: '/auth/updateUser',
-          file: File(pickedFile.path),
-          fieldName: 'photoUrl',
-        );
-
-        if (response != null && response['imageUrl'] != null) {
-          setState(() {
-            _imageFile = File(pickedFile.path);
-            imageUrl = response['imageUrl'];
-            _isLoading = false;
-          });
-        }
-      } catch (e) {
-        setState(() {
-          _isLoading = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to upload image: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _shareIDCard() async {
-    try {
-      setState(() {
-        _isRequestingPermission = true;
-      });
-
-      if (!kIsWeb) {
-        PermissionStatus status = await Permission.storage.request();
-        if (!status.isGranted) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Storage permission required')),
-            );
-          }
-          return;
-        }
-      }
-
-      await PdfService.createAndPreviewPdf(_cardKey, context);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isRequestingPermission = false;
-        });
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -216,12 +211,6 @@ class _IdentityState extends State<Identity> {
         backgroundColor: Colors.blue,
         title: const Text('Resq ID Card'),
         centerTitle: true,
-        actions: [
-          IconButton(
-            onPressed: _showEditDialog,
-            icon: const Icon(Icons.edit, size: 30.0, color: Colors.white),
-          ),
-        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -231,25 +220,25 @@ class _IdentityState extends State<Identity> {
                   padding: const EdgeInsets.all(20.0),
                   child: Column(
                     children: [
-                      RepaintBoundary(
-                        key: _cardKey,
-                        child: Container(
-                          width: 350.0,
-                          height: 600.0,
-                          child: Card(
-                            elevation: 15.0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20.0),
-                            ),
+                      Container(
+                        width: 350.0,
+                        constraints: BoxConstraints(
+                          minHeight: 500.0,
+                        ),
+                        child: Card(
+                          elevation: 15.0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20.0),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
                             child: Column(
                               children: [
                                 Container(
                                   padding: const EdgeInsets.all(16.0),
-                                  decoration: const BoxDecoration(
+                                  decoration: BoxDecoration(
                                     color: Colors.black,
-                                    borderRadius: BorderRadius.vertical(
-                                      top: Radius.circular(20.0),
-                                    ),
+                                    borderRadius: BorderRadius.circular(12.0),
                                   ),
                                   child: Row(
                                     children: [
@@ -281,41 +270,34 @@ class _IdentityState extends State<Identity> {
                                 Stack(
                                   alignment: Alignment.center,
                                   children: [
-                                    GestureDetector(
-                                      onTap: _pickImage,
-                                      child: CircleAvatar(
-                                        radius: 50.0,
-                                        backgroundImage: _imageFile != null
-                                            ? FileImage(_imageFile!)
-                                            : imageUrl.isNotEmpty
-                                                ? NetworkImage(imageUrl)
-                                                : const AssetImage('assets/images/default_profile.png')
-                                                    as ImageProvider,
-                                        onBackgroundImageError: (exception, stackTrace) {
-                                          print('Image error: $exception');
-                                        },
-                                      ),
+                                    CircleAvatar(
+                                      radius: 50.0,
+                                      backgroundColor: Colors.grey[200],
+                                      backgroundImage: _getImageProvider(),
+                                      child: _isUploading
+                                          ? const CircularProgressIndicator()
+                                          : null,
                                     ),
                                     Positioned(
                                       bottom: 0,
                                       right: 0,
                                       child: GestureDetector(
-                                        onTap: _pickImage,
+                                        onTap: _isUploading ? null : _pickImage,
                                         child: Container(
-                                          width: 30.0,
-                                          height: 30.0,
+                                          width: 25.0,
+                                          height: 25.0,
                                           decoration: BoxDecoration(
-                                            color: Colors.blue,
-                                            shape: BoxShape.circle,
+                                            color: Colors.blue, // Blue background color
+                                            shape: BoxShape.circle, // Circular shape
                                             border: Border.all(
-                                              color: Colors.white,
-                                              width: 2,
+                                              color: Colors.white, // White border to make the icon pop
+                                              width: 2.0,
                                             ),
                                           ),
                                           child: const Icon(
-                                            Icons.add,
-                                            color: Colors.white,
-                                            size: 20.0,
+                                            Icons.add, // Plus icon
+                                            color: Colors.white, // White color for the icon
+                                            size: 18.0, // Icon size
                                           ),
                                         ),
                                       ),
@@ -323,66 +305,31 @@ class _IdentityState extends State<Identity> {
                                   ],
                                 ),
                                 const SizedBox(height: 20.0),
-                                Text(
-                                  name,
-                                  style: const TextStyle(
-                                    fontSize: 26.0,
-                                    fontWeight: FontWeight.bold,
+                                GestureDetector(
+                                  onTap: () => _showEditDialog('name'),
+                                  child: Text(
+                                    name,
+                                    style: const TextStyle(
+                                      fontSize: 26.0,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 20.0),
-                                Text(
-                                  'Phone: $phone',
-                                  style: const TextStyle(
-                                    fontSize: 16.0,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black54,
+                                GestureDetector(
+                                  onTap: () => _showEditDialog('email'),
+                                  child: Text(
+                                    'Email: $email',
+                                    style: const TextStyle(
+                                      fontSize: 16.0,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black54,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 20.0),
-                                Text(
-                                  'Email: $email',
-                                  style: const TextStyle(
-                                    fontSize: 16.0,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black54,
-                                  ),
-                                ),
-                                const SizedBox(height: 20.0),
-                                Text(
-                                  'User ID: ${userId.isEmpty ? 'N/A' : userId.substring(0, math.min(8, userId.length))}${userId.length > 8 ? '...' : ''}',
-                                  style: const TextStyle(
-                                    fontSize: 14.0,
-                                    color: Colors.grey,
-                                  ),
-                                ),
                               ],
                             ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20.0),
-                      ElevatedButton.icon(
-                        onPressed: _isRequestingPermission ? null : _shareIDCard,
-                        icon: _isRequestingPermission
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.picture_as_pdf),
-                        label: Text(
-                          _isRequestingPermission ? 'Processing...' : 'Save as PDF',
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
                           ),
                         ),
                       ),
