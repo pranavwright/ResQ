@@ -9,50 +9,43 @@ class VolunteerScreen extends StatefulWidget {
 
 class _VolunteerScreenState extends State<VolunteerScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+
+  // Controllers for editable fields
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _itemController = TextEditingController();
+  final TextEditingController _roomController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
   final TextEditingController _sourceController = TextEditingController();
   final TextEditingController _destinationController = TextEditingController();
-  
+
   // Sample data for arriving items
   List<Map<String, dynamic>> arrivingItems = [
     {
       'id': 1,
-      'name': 'Canned Food',
-      'quantity': 45,
+      'name': 'Vehicle',
+      'items': [
+        {'item': 'bed', 'room': 3, 'quantity': 2},
+        {'item': 'blanket', 'room': 3, 'quantity': 1}
+      ],
       'status': 'Pending',
       'expectedArrival': DateTime.now().add(const Duration(hours: 2)),
       'source': 'NGO Relief',
     },
     {
-      'id': 2,
-      'name': 'Water Bottles',
-      'quantity': 100,
-      'status': 'In Transit',
-      'expectedArrival': DateTime.now().add(const Duration(hours: 1)),
-      'source': 'Local Donation',
+      'id': 4,
+      'name': 'vehicle 2',
+      'items': [
+        {'item': 'bed', 'room': 3, 'quantity': 2},
+        {'item': 'blanket', 'room': 3, 'quantity': 1}
+      ],
+      'status': 'Pending',
+      'expectedArrival': DateTime.now().add(const Duration(hours: 4)),
+      'source': 'Local Charity',
     },
   ];
-  
+
   // Sample data for dispatched items
-  List<Map<String, dynamic>> dispatchedItems = [
-    {
-      'id': 1,
-      'name': 'Blankets',
-      'quantity': 30,
-      'destination': 'Camp A',
-      'dispatchDate': DateTime.now().subtract(const Duration(hours: 5)),
-      'status': 'Delivered',
-    },
-    {
-      'id': 2,
-      'name': 'First Aid Kits',
-      'quantity': 20,
-      'destination': 'Camp B',
-      'dispatchDate': DateTime.now().subtract(const Duration(hours: 2)),
-      'status': 'In Transit',
-    },
-  ];
+  List<Map<String, dynamic>> dispatchedItems = [];
 
   @override
   void initState() {
@@ -64,7 +57,9 @@ class _VolunteerScreenState extends State<VolunteerScreen> with SingleTickerProv
   void dispose() {
     _tabController.dispose();
     _nameController.dispose();
+    _itemController.dispose();
     _quantityController.dispose();
+    _roomController.dispose();
     _sourceController.dispose();
     _destinationController.dispose();
     super.dispose();
@@ -90,57 +85,95 @@ class _VolunteerScreenState extends State<VolunteerScreen> with SingleTickerProv
           _buildDispatchedItemsTab(),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _tabController.index == 0 ? _showAddArrivingDialog : _showAddDispatchDialog,
-        child: const Icon(Icons.add),
-        tooltip: _tabController.index == 0 ? 'Add Arriving Item' : 'Add Dispatch',
-      ),
     );
   }
 
+  // Method to build the Arriving Items tab
   Widget _buildArrivingItemsTab() {
     return ListView.builder(
       itemCount: arrivingItems.length,
       itemBuilder: (context, index) {
-        final item = arrivingItems[index];
+        final arrival = arrivingItems[index];
         return Card(
+          margin: const EdgeInsets.all(8.0),
           child: ListTile(
-            title: Text(item['name']),
-            subtitle: Text('Quantity: ${item['quantity']}, Source: ${item['source']}'),
-            trailing: Text(item['status']),
-            onTap: () => _showItemDetailsDialog(item),
+            title: Text(arrival['name']),
+            subtitle: Text('Source: ${arrival['source']}'),
+            trailing: Text(arrival['status']),
+            onTap: () => _showArrivalDetailsDialog(arrival, index),
           ),
         );
       },
     );
   }
 
-  // Method to show item details dialog
-  void _showItemDetailsDialog(Map<String, dynamic> item) {
+  // Method to build the Dispatched Items tab
+  Widget _buildDispatchedItemsTab() {
+    return ListView.builder(
+      itemCount: dispatchedItems.length,
+      itemBuilder: (context, index) {
+        final item = dispatchedItems[index];
+        return Card(
+          margin: const EdgeInsets.all(8.0),
+          child: ListTile(
+            title: Text(item['item']),
+            subtitle: Text('Quantity: ${item['quantity']}, Destination: ${item['destination']}'),
+            trailing: Text(item['status']),
+          ),
+        );
+      },
+    );
+  }
+
+  // Method to show details of an arriving item with its individual items
+  void _showArrivalDetailsDialog(Map<String, dynamic> arrival, int arrivalIndex) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(item['name']),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Quantity: ${item['quantity']}'),
-            if (item.containsKey('source')) Text('Source: ${item['source']}'),
-            if (item.containsKey('destination')) Text('Destination: ${item['destination']}'),
-            if (item.containsKey('status')) Text('Status: ${item['status']}'),
-            if (item.containsKey('expectedArrival'))
-              Text('Expected Arrival: ${_formatDateTime(item['expectedArrival'])}'),
-            if (item.containsKey('dispatchDate'))
-              Text('Dispatch Date: ${_formatDateTime(item['dispatchDate'])}'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Arriving: ${arrival['name']}'),
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.directions_car, size: 20), // Vehicle icon
+                  const SizedBox(width: 8),
+                  Text('Vehicle: ${arrival['name']}'),
+                  const Icon(Icons.arrow_forward, size: 20), // Arrow icon (Vehicle -> Source)
+                  const SizedBox(width: 8),
+                  Text('Source: ${arrival['source']}'),
+                ],
+              ),
+              const SizedBox(height: 8.0),
+              Text('Expected Arrival: ${_formatDateTime(arrival['expectedArrival'])}'),
+              const SizedBox(height: 8.0),
+              Text('Items:'),
+              Column(
+                children: arrival['items'].map<Widget>((item) {
+                  return ListTile(
+                    title: Text('${item['item']}'),
+                    subtitle: Text('(Room): ${item['room']}, Quantity: ${item['quantity']}'),
+                    trailing: ElevatedButton(
+                      onPressed: () {
+                        _dispatchItem(arrivalIndex, item); // Dispatch item individually
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Dispatch'),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
           ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -149,211 +182,33 @@ class _VolunteerScreenState extends State<VolunteerScreen> with SingleTickerProv
     return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute}';
   }
 
-  Widget _buildDispatchedItemsTab() {
-    return ListView.builder(
-      itemCount: dispatchedItems.length,
-      itemBuilder: (context, index) {
-        final item = dispatchedItems[index];
-        return Card(
-          child: ListTile(
-            title: Text(item['name']),
-            subtitle: Text('Quantity: ${item['quantity']}, Destination: ${item['destination']}'),
-            trailing: Text(item['status']),
-            onTap: () => _showItemDetailsDialog(item),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showAddArrivingDialog() {
-    _nameController.clear();
-    _quantityController.clear();
-    _sourceController.clear();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Arriving Item'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Item Name',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _quantityController,
-                decoration: const InputDecoration(
-                  labelText: 'Quantity',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _sourceController,
-                decoration: const InputDecoration(
-                  labelText: 'Source',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (_validateArrivingInput()) {
-                _addArrivingItem();
-                Navigator.pop(context);
-                _showSuccessMessage('Item added successfully');
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAddDispatchDialog() {
-    _nameController.clear();
-    _quantityController.clear();
-    _destinationController.clear();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Dispatch'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Item Name',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _quantityController,
-                decoration: const InputDecoration(
-                  labelText: 'Quantity',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _destinationController,
-                decoration: const InputDecoration(
-                  labelText: 'Destination',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (_validateDispatchInput()) {
-                _addDispatchItem();
-                Navigator.pop(context);
-                _showSuccessMessage('Dispatch added successfully');
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  bool _validateArrivingInput() {
-    if (_nameController.text.isEmpty || 
-        _quantityController.text.isEmpty ||
-        _sourceController.text.isEmpty) {
-      _showErrorMessage('Please fill all fields');
-      return false;
-    }
-    if (int.tryParse(_quantityController.text) == null) {
-      _showErrorMessage('Please enter a valid quantity');
-      return false;
-    }
-    return true;
-  }
-
-  bool _validateDispatchInput() {
-    if (_nameController.text.isEmpty || 
-        _quantityController.text.isEmpty ||
-        _destinationController.text.isEmpty) {
-      _showErrorMessage('Please fill all fields');
-      return false;
-    }
-    if (int.tryParse(_quantityController.text) == null) {
-      _showErrorMessage('Please enter a valid quantity');
-      return false;
-    }
-    return true;
-  }
-
-  void _addArrivingItem() {
+  // Method to dispatch a single item
+  void _dispatchItem(int arrivalIndex, Map<String, dynamic> item) {
     setState(() {
-      arrivingItems.add({
-        'id': arrivingItems.length + 1,
-        'name': _nameController.text,
-        'quantity': int.parse(_quantityController.text),
-        'status': 'Pending',
-        'expectedArrival': DateTime.now().add(const Duration(hours: 2)),
-        'source': _sourceController.text,
-      });
+      item['status'] = 'Dispatched'; // Change the status of the item
+      item['destination'] = _destinationController.text.isEmpty ? 'Unknown' : _destinationController.text;
+
+      // Move the dispatched item to dispatched items list
+      dispatchedItems.add(item);
+
+      // Remove the item from the arriving list
+      arrivingItems[arrivalIndex]['items'].remove(item);
+
+      // If no items are left in the arrival, remove the entire arrival entry
+      if (arrivingItems[arrivalIndex]['items'].isEmpty) {
+        arrivingItems.removeAt(arrivalIndex);
+      }
     });
+
+    _showSuccessMessage('Item dispatched successfully');
   }
 
-  void _addDispatchItem() {
-    setState(() {
-      dispatchedItems.add({
-        'id': dispatchedItems.length + 1,
-        'name': _nameController.text,
-        'quantity': int.parse(_quantityController.text),
-        'status': 'In Transit',
-        'dispatchDate': DateTime.now(),
-        'destination': _destinationController.text,
-      });
-    });
-  }
-
+  // Show success message
   void _showSuccessMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  void _showErrorMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
       ),
     );
   }
