@@ -38,7 +38,7 @@ final List<Map<String, dynamic>> menuData = [
   {
     "title": "Families",
     "icon": Icons.people,
-    "route": "/test-family",
+    "route": "/family-data-download",
     "roles": ["admin", "stat"],
   },
   {
@@ -57,7 +57,7 @@ final List<Map<String, dynamic>> menuData = [
     "title": "Officals",
     "icon": Icons.assignment_ind,
     "route": "/role-creation",
-    "roles": ["admin"],
+    "roles": ["admin","stat"],
   },
   {
     "title": "Collection Points",

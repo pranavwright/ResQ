@@ -9,26 +9,35 @@ class TokenLessHttp {
   final String baseUrl = ApiConstants.baseUrl;
 
   // Default headers
-  Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-      };
+  Map<String, String> get _headers => {'Content-Type': 'application/json'};
 
   /// Perform GET request without authentication
-  Future<Map<String, dynamic>> get(String endpoint) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl$endpoint'),
-      headers: _headers,
+  Future<dynamic> get(
+    String endpoint, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    final uri = Uri.parse('$baseUrl$endpoint').replace(
+      queryParameters: queryParameters?.map(
+        (key, value) => MapEntry(key, value.toString()),
+      ),
     );
+
+    final response = await http.get(uri, headers: _headers);
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw Exception('GET request failed: ${response.statusCode}, ${response.body}');
+      throw Exception(
+        'GET request failed: ${response.statusCode}, ${response.body}',
+      );
     }
   }
 
   /// Perform POST request without authentication
-  Future<Map<String, dynamic>> post(String endpoint, Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> post(
+    String endpoint,
+    Map<String, dynamic> data,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl$endpoint'),
       headers: _headers,
@@ -38,12 +47,17 @@ class TokenLessHttp {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return jsonDecode(response.body);
     } else {
-      throw Exception('POST request failed: ${response.statusCode}, ${response.body}');
+      throw Exception(
+        'POST request failed: ${response.statusCode}, ${response.body}',
+      );
     }
   }
 
   /// Perform PUT request without authentication
-  Future<Map<String, dynamic>> put(String endpoint, Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> put(
+    String endpoint,
+    Map<String, dynamic> data,
+  ) async {
     final response = await http.put(
       Uri.parse('$baseUrl$endpoint'),
       headers: _headers,
@@ -53,7 +67,9 @@ class TokenLessHttp {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw Exception('PUT request failed: ${response.statusCode}, ${response.body}');
+      throw Exception(
+        'PUT request failed: ${response.statusCode}, ${response.body}',
+      );
     }
   }
 
@@ -67,7 +83,9 @@ class TokenLessHttp {
     if (response.statusCode == 200 || response.statusCode == 204) {
       return response.body.isEmpty ? {} : jsonDecode(response.body);
     } else {
-      throw Exception('DELETE request failed: ${response.statusCode}, ${response.body}');
+      throw Exception(
+        'DELETE request failed: ${response.statusCode}, ${response.body}',
+      );
     }
   }
 
@@ -111,7 +129,9 @@ class TokenLessHttp {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return jsonDecode(response.body);
     } else {
-      throw Exception('File upload failed: ${response.statusCode}, ${response.body}');
+      throw Exception(
+        'File upload failed: ${response.statusCode}, ${response.body}',
+      );
     }
   }
 
@@ -131,7 +151,8 @@ class TokenLessHttp {
       final file = fileData['file'] as File;
       final fieldName = fileData['fieldName'] as String;
       final fileName = fileData['fileName'] as String;
-      final contentType = fileData['contentType'] as String? ?? 'application/octet-stream';
+      final contentType =
+          fileData['contentType'] as String? ?? 'application/octet-stream';
 
       final fileStream = http.ByteStream(file.openRead());
       final fileLength = await file.length();
@@ -159,7 +180,9 @@ class TokenLessHttp {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return jsonDecode(response.body);
     } else {
-      throw Exception('Multiple file upload failed: ${response.statusCode}, ${response.body}');
+      throw Exception(
+        'Multiple file upload failed: ${response.statusCode}, ${response.body}',
+      );
     }
   }
 }

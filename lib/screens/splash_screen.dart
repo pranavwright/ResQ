@@ -56,6 +56,18 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _initialize(String initialRoute) async {
     try {
+
+      try {
+        print("Initializing Firebase...");
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+        print("Firebase initialized successfully");
+      } catch (e) {
+        print("Error initializing Firebase: $e");
+      }
+
+
       print("Initializing app...");
       // Check connectivity first
       final connectivityResult = await Connectivity().checkConnectivity();
@@ -71,16 +83,6 @@ class _SplashScreenState extends State<SplashScreen> {
           _isLoading = false;
         });
         return;
-      }
-
-      try {
-        print("Initializing Firebase...");
-        await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform,
-        );
-        print("Firebase initialized successfully");
-      } catch (e) {
-        print("Error initializing Firebase: $e");
       }
 
       // Load auth state

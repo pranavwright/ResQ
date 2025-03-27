@@ -2,6 +2,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:path/path.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:resq/screens/identity.dart';
 import 'package:resq/screens/login_screen.dart';
@@ -159,9 +160,16 @@ class MyApp extends StatelessWidget {
                 AuthRoute(requiresAuth: true, child: ProfileSetupScreen());
         break;
       case '/disaster':
+        final args = settings.arguments as dynamic?;
+        String disasterId='';
+        if(args!=null){
+          disasterId=args['disasterId'];
+        }
         builder =
-            (context) =>
-                const AuthRoute(requiresAuth: false, child: ItemsList());
+            (context) => AuthRoute(
+              requiresAuth: false,
+              child: ItemsList(disasterId: disasterId),
+            );
         break;
       case '/download':
         builder =
@@ -185,14 +193,14 @@ class MyApp extends StatelessWidget {
       case '/notice-board':
         builder =
             (context) => const AuthRoute(
-              requiredRoles: ['admin'],
+              requiresAuth: true,
               child: RoleCreationScreen(),
             );
         break;
       case '/create-notice':
         builder =
             (context) => const AuthRoute(
-              requiredRoles: ['admin'],
+              requiredRoles: ['admin',"stat"],
               child: CreateNoticeScreen(),
             );
         break;
@@ -205,28 +213,31 @@ class MyApp extends StatelessWidget {
 
         break;
       case '/public-donation':
+        final args = settings.arguments as dynamic?;
+        String disasterId = args['disasterId'] ?? '';
         builder =
-            (context) =>
-                AuthRoute(requiresAuth: false, child: DonationRequestPage());
+            (context) => AuthRoute(
+              requiresAuth: false,
+              child: DonationRequestPage(disasterId: disasterId),
+            );
         break;
       case '/loan-relief':
         builder =
             (context) => AuthRoute(
-              requiredRoles: ['admin', 'kas', 'superadmin', 'campadmin'],
+              requiredRoles: ['admin', 'stat', 'superadmin', 'campadmin'],
               child: loan_relief.LoanReliefUploadScreen(),
             );
         break;
       case '/family-data-download':
-  builder = (context) => AuthRoute(
-    requiredRoles: ['admin','stat'],
-    child: FamilyDataDownloadScreen(),
-  );
-     case '/identity':
-  builder = (context) => AuthRoute(
-    requiredRoles: ['all'], 
-    child: Identity(),
-  );
-  break;
+        builder =
+            (context) => AuthRoute(
+              requiredRoles: ['admin', 'stat'],
+              child: FamilyDataDownloadScreen(),
+            );
+      case '/identity':
+        builder =
+            (context) => AuthRoute(requiresAuth: true, child: Identity());
+        break;
       case '/admin-collectionpoint':
         builder =
             (context) => AuthRoute(
@@ -234,30 +245,35 @@ class MyApp extends StatelessWidget {
               child: CollectionPointScreen(),
             );
         break;
-    case '/stat-dashboard':
-  builder = (context) => AuthRoute(
-    requiredRoles: ['stat'], 
-    child: DashboardScreen(),
-  );
-  break;
-     case '/profile-update':
-  builder = (context) => AuthRoute(
-    requiredRoles: ['all'], 
-    child: ProfileUpdateScreen(),
-  );
-  break;
-     case '/donations':
-  builder = (context) => AuthRoute(
-    requiredRoles: ['noAuth'], 
-    child: const DonationsScreen(),
-  );
-  break;
+      case '/stat-dashboard':
+        builder =
+            (context) =>
+                AuthRoute(requiredRoles: ['stat'], child: DashboardScreen());
+        break;
+      case '/manage-camp':
+        builder =
+            (context) =>
+                AuthRoute(requiredRoles: ['campAdmin'], child: CampAdminRequestScreen());
+        break;
+      case '/profile-update':
+        builder =
+            (context) =>
+                AuthRoute(requiresAuth: true, child: ProfileUpdateScreen());
+        break;
+      case '/donations':
+        builder =
+            (context) => AuthRoute(
+              requiresAuth: false,
+              child: const DonationsScreen(),
+            );
+        break;
       case '/verification-volunteer':
-  builder = (context) => AuthRoute(
-    requiredRoles: ['verifyOfficial'], 
-    child: const VerificationVolunteerDashboard(),
-  );
-  break;
+        builder =
+            (context) => AuthRoute(
+              requiredRoles: ['verifyOfficial'],
+              child: const VerificationVolunteerDashboard(),
+            );
+        break;
       case '/family-survey':
         builder =
             (context) => AuthRoute(
@@ -271,16 +287,20 @@ class MyApp extends StatelessWidget {
             (context) =>
                 AuthRoute(requiresAuth: false, child: ScreenA(data: data));
         break;
-        case '/collectionpoint-volunteer':
-        builder = (context) => AuthRoute(
-          requiredRoles: ['collectionpointvolunteer'],
-          child: VolunteerDashboard(),
-        );
-        case '/change-disaster':
-        builder = (context) => AuthRoute(
-          requiredRoles: [ 'superAdmin'],
-          child: ChangeDisasterScreen(),
-        );
+      case '/collectionpoint-volunteer':
+        builder =
+            (context) => AuthRoute(
+              requiredRoles: ['collectionpointvolunteer'],
+              child: VolunteerDashboard(),
+            );
+        break;
+      case '/change-disaster':
+        builder =
+            (context) => AuthRoute(
+              requiredRoles: ['superAdmin'],
+              child: ChangeDisasterScreen(),
+            );
+        break;
       case '/logout':
         builder = (BuildContext context) {
           // Execute logout in the next frame after the route is built
@@ -312,12 +332,14 @@ class MyApp extends StatelessWidget {
     if (roles.contains('superAdmin')) return SuperAdminDashboard();
     if (roles.contains('admin')) return AdminDashboard();
     if (roles.contains('stat')) return DashboardScreen();
-    
-    if (roles.contains('collectionPointAdmin'))return CollectionPointDashboard();
+
+    if (roles.contains('collectionPointAdmin'))
+      return CollectionPointDashboard();
     if (roles.contains('campAdmin')) return CampAdminRequestScreen();
     if (roles.contains('collectionpointvolunteer')) return VolunteerDashboard();
     if (roles.contains('surveyOfficial')) return FamilySurveyHomeScreen();
-    if (roles.contains('verifyOfficial')) return VerificationVolunteerDashboard();
+    if (roles.contains('verifyOfficial'))
+      return VerificationVolunteerDashboard();
     return const Scaffold(body: Center(child: Text("No valid role assigned")));
   }
 }

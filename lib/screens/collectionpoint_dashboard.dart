@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:resq/utils/auth/auth_service.dart';
+import 'package:resq/utils/http/token_http.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:resq/utils/resq_menu.dart';
 
@@ -41,14 +43,34 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
     });
 
     try {
-      await Future.delayed(const Duration(seconds: 1));
+      var inventoryResponse = await TokenHttp().get(
+        '/donation/inventoryItems?disasterId=${AuthService().getDisasterId()}',
+      );
+
+      // Map the API response to the format expected by the UI
+      List<Map<String, dynamic>> mappedInventory = [];
+      if (inventoryResponse != null && inventoryResponse['list'] is List) {
+        mappedInventory =
+            (inventoryResponse['list'] as List)
+                .map((item) {
+                  return {
+                    'id': item['_id'] ?? '',
+                    'item': item['name'] ?? '',
+                    'quantity': item['quantity'] ?? 0,
+                    'room': item['room'] ?? '',
+                    'unit': item['unit'] ?? '',
+                    'category': item['category'] ?? '',
+                    'description': item['description'] ?? '',
+                    // Store original data for reference
+                    'original': item,
+                  };
+                })
+                .toList()
+                .cast<Map<String, dynamic>>();
+      }
+
       setState(() {
-        inventory = [
-          {'id': 'INV001', 'item': 'Blankets', 'quantity': 50, 'room': 'Room A1'},
-          {'id': 'INV002', 'item': 'Water Bottles (1L)', 'quantity': 200, 'room': 'Room B2'},
-          {'id': 'INV003', 'item': 'First Aid Kits', 'quantity': 30, 'room': 'Room C3'},
-          {'id': 'INV004', 'item': 'Food Packets', 'quantity': 150, 'room': 'Room D4'},
-        ];
+        inventory = mappedInventory;
         isLoadingInventory = false;
       });
     } catch (e) {
@@ -60,39 +82,76 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
   }
 
   Future<void> _loadDonationRequests() async {
-    setState(() {
-      isLoadingDonations = true;
-    });
+  setState(() {
+    isLoadingDonations = true;
+  });
 
-    try {
-      await Future.delayed(const Duration(seconds: 1));
-      setState(() {
-        donationRequests = [
-          {
-            'id': 'DON001', 'donor': 'John Doe', 'contact_info': '+1-555-123-4567',
-            'item': 'Blankets', 'quantity': 50, 'arriving_date': '16-03-2025',
-            'arriving_time': '10:00 AM', 'status': 'Scheduled', 'room': 'Room A1'
-          },
-          {
-            'id': 'DON002', 'donor': 'Community Aid Group', 'contact_info': 'contact@communityaid.org',
-            'item': 'Water Bottles (1L)', 'quantity': 200, 'arriving_date': '15-03-2025',
-            'arriving_time': '2:00 PM', 'status': 'Arrived', 'room': 'Room B2'
-          },
-          {
-            'id': 'DON003', 'donor': 'Local Hospital', 'contact_info': '+1-555-789-0123',
-            'item': 'First Aid Kits', 'quantity': 30, 'arriving_date': '17-03-2025',
-            'arriving_time': '11:30 AM', 'status': 'Scheduled', 'room': ''
-          },
-        ];
-        isLoadingDonations = false;
-      });
-    } catch (e) {
-      setState(() {
-        isLoadingDonations = false;
-      });
-      _showErrorSnackBar('Error loading donation requests: $e');
+  try {
+    var donationResponse = await TokenHttp().get(
+      '/donation/generalDonationRequest?disasterId=${AuthService().getDisasterId()}',
+    );
+    
+    // Transform the donation data to match what the UI expects
+    List<Map<String, dynamic>> mappedDonations = [];
+    
+    if (donationResponse != null && donationResponse['list'] is List) {
+      for (var donation in donationResponse['list']) {
+        // Format the date
+        String formattedDate = '';
+        String formattedTime = '';
+        
+        if (donation['donatedAt'] != null) {
+          try {
+            final DateTime donatedAt = DateTime.parse(
+              donation['donatedAt']['\$date'] ?? donation['donatedAt'].toString()
+            );
+            formattedDate = DateFormat('dd-MM-yyyy').format(donatedAt);
+            formattedTime = DateFormat('hh:mm a').format(donatedAt);
+          } catch (e) {
+            print('Error parsing date: $e');
+            formattedDate = 'Unknown';
+            formattedTime = 'Unknown';
+          }
+        }
+        
+        // Get item details for each donated item
+        List<Map<String, dynamic>> itemDetails = [];
+        if (donation['donatedItems'] is List) {
+          for (var donatedItem in donation['donatedItems']) {
+            // You might want to fetch item details here or in a separate method
+            itemDetails.add({
+              'id': donatedItem['itemId'],
+              'quantity': donatedItem['quantity'],
+              // Other fields will be populated later if needed
+            });
+          }
+        }
+        
+        // Map to the UI expected format
+        mappedDonations.add({
+          'id': donation['_id'] ?? '',
+          'donor': donation['donarName'] ?? 'Unknown',
+          'contact_info': donation['donarPhone'] ?? donation['donarEmail'] ?? 'No contact',
+          'arriving_date': formattedDate,
+          'arriving_time': formattedTime,
+          'status': donation['status'] ?? 'pending',
+          'items': itemDetails,
+          'originalData': donation, // Keep the original data for reference
+        });
+      }
     }
+
+    setState(() {
+      donationRequests = mappedDonations;
+      isLoadingDonations = false;
+    });
+  } catch (e) {
+    setState(() {
+      isLoadingDonations = false;
+    });
+    _showErrorSnackBar('Error loading donation requests: $e');
   }
+}
 
   Future<void> _loadCampRequests() async {
     setState(() {
@@ -104,27 +163,69 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
       setState(() {
         campRequests = [
           {
-            'id': 'CR001', 'camp': 'Relief Camp Alpha', 'camp_contact': '+1-555-987-6543',
-            'pickup_date': '18-03-2025', 'pickup_time': '9:00 AM', 'status': 'Pending',
+            'id': 'CR001',
+            'camp': 'Relief Camp Alpha',
+            'camp_contact': '+1-555-987-6543',
+            'pickup_date': '18-03-2025',
+            'pickup_time': '9:00 AM',
+            'status': 'Pending',
             'items': [
-              {'item': 'Blankets', 'quantity': 20, 'id': 'INV001', 'room': 'Room A1'},
-              {'item': 'Water Bottles (1L)', 'quantity': 50, 'id': 'INV002', 'room': 'Room B2'},
+              {
+                'item': 'Blankets',
+                'quantity': 20,
+                'id': 'INV001',
+                'room': 'Room A1',
+              },
+              {
+                'item': 'Water Bottles (1L)',
+                'quantity': 50,
+                'id': 'INV002',
+                'room': 'Room B2',
+              },
             ],
           },
           {
-            'id': 'CR002', 'camp': 'Medical Camp Beta', 'camp_contact': '+1-555-456-7890',
-            'pickup_date': '19-03-2025', 'pickup_time': '11:00 AM', 'status': 'Scheduled',
+            'id': 'CR002',
+            'camp': 'Medical Camp Beta',
+            'camp_contact': '+1-555-456-7890',
+            'pickup_date': '19-03-2025',
+            'pickup_time': '11:00 AM',
+            'status': 'Scheduled',
             'items': [
-              {'item': 'First Aid Kits', 'quantity': 10, 'id': 'INV003', 'room': 'Room C3'},
-              {'item': 'Food Packets', 'quantity': 30, 'id': 'INV004', 'room': 'Room D4'},
+              {
+                'item': 'First Aid Kits',
+                'quantity': 10,
+                'id': 'INV003',
+                'room': 'Room C3',
+              },
+              {
+                'item': 'Food Packets',
+                'quantity': 30,
+                'id': 'INV004',
+                'room': 'Room D4',
+              },
             ],
           },
           {
-            'id': 'CR003', 'camp': 'Shelter Gamma', 'camp_contact': '+1-555-234-5678',
-            'pickup_date': '20-03-2025', 'pickup_time': '2:30 PM', 'status': 'Pending',
+            'id': 'CR003',
+            'camp': 'Shelter Gamma',
+            'camp_contact': '+1-555-234-5678',
+            'pickup_date': '20-03-2025',
+            'pickup_time': '2:30 PM',
+            'status': 'Pending',
             'items': [
-              {'item': 'Blankets', 'quantity': 15, 'id': 'INV001', 'room': 'Room A1'},
-              {'item': 'Food Packets', 'quantity': 40, 'id': 'INV004', 'room': 'Room D4'},
+              {
+                'item': 'Blankets',
+                'quantity': 15,
+                'id': 'INV001',
+                'room': 'Room A1',
+              },
+              {
+                'item': 'Food Packets',
+                'quantity': 40,
+                'id': 'INV004',
+                'room': 'Room D4',
+              },
             ],
           },
         ];
@@ -139,129 +240,247 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
   }
 
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _showInventoryItemDialog(Map<String, dynamic> item) {
-    _roomController.text = item['room'] ?? '';
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Edit Inventory Item - ${item['id']}'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('ID: ${item['id']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Text('Item: ${item['item']}'),
-              const SizedBox(height: 8),
-              Text('Quantity: ${item['quantity']}'),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _roomController,
-                decoration: const InputDecoration(
-                  labelText: 'Storage Room',
-                  hintText: 'e.g., Room A1, Room 219',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                final index = inventory.indexWhere((i) => i['id'] == item['id']);
-                if (index != -1) inventory[index]['room'] = _roomController.text;
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Inventory item room updated')),
-              );
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showDonationRequestDialog(Map<String, dynamic> donation) {
-    _roomController.text = donation['room'] ?? '';
-    _statusController.text = donation['status'] ?? '';
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+void _showInventoryItemDialog(Map<String, dynamic> item) {
+  _roomController.text = item['room'] ?? '';
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('Edit Inventory Item - ${item['item']}'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Donation Details - ${donation['id']}'),
-            const SizedBox(height: 4),
-            Text('${donation['donor']} | ${donation['contact_info']}',
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal)),
+            Text(
+              'ID: ${item['id']}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text('Item: ${item['item']}'),
+            Text('Category: ${item['category'] ?? 'Not categorized'}'),
+            const SizedBox(height: 8),
+            Text('Quantity: ${item['quantity']} ${item['unit'] ?? ''}'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _roomController,
+              decoration: const InputDecoration(
+                labelText: 'Storage Location',
+                hintText: 'e.g., Room A1, Rack 3, Shelf B',
+                border: OutlineInputBorder(),
+              ),
+            ),
           ],
         ),
-        content: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            columns: const [
-              DataColumn(label: Text('ID', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Item', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Room', style: TextStyle(fontWeight: FontWeight.bold))),
-            ],
-            rows: [
-              DataRow(
-                cells: [
-                  DataCell(Text(donation['id'].toString())),
-                  DataCell(Text(donation['item'])),
-                  DataCell(Text(donation['quantity'].toString())),
-                  DataCell(
-                    TextField(
-                      controller: _roomController,
-                      decoration: const InputDecoration(
-                        hintText: 'Enter room',
-                        border: InputBorder.none,
-                      ),
-                      enabled: donation['room'] == null || donation['room'].isEmpty,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final updatedDonation = Map<String, dynamic>.from(donation);
-              updatedDonation['room'] = _roomController.text;
-              updatedDonation['status'] = _statusController.text;
-              setState(() {
-                final index = donationRequests.indexWhere((d) => d['id'] == donation['id']);
-                if (index != -1) donationRequests[index] = updatedDonation;
+        ElevatedButton(
+          onPressed: () async {
+            // Save room info to backend
+            try {
+              await TokenHttp().post('/donation/updateItemLocation', {
+                'itemId': item['id'],
+                'room': _roomController.text,
               });
+              
+              setState(() {
+                final index = inventory.indexWhere((i) => i['id'] == item['id']);
+                if (index != -1) {
+                  inventory[index]['room'] = _roomController.text;
+                }
+              });
+              
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Donation details updated')),
+                const SnackBar(
+                  content: Text('Item location updated successfully'),
+                ),
               );
-            },
-            child: const Text('Save'),
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Failed to update location: $e'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+          child: const Text('Save'),
+        ),
+      ],
+    ),
+  );
+}
+  void _showDonationRequestDialog(Map<String, dynamic> donation) {
+  _statusController.text = donation['status'] ?? '';
+  
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Donation Details - ${donation['id']}'),
+          const SizedBox(height: 4),
+          Text(
+            '${donation['donor']} | ${donation['contact_info']}',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.normal,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Donated on: ${donation['arriving_date']} at ${donation['arriving_time']}',
+            style: const TextStyle(
+              fontSize: 12,
+              fontStyle: FontStyle.italic,
+            ),
           ),
         ],
       ),
-    );
-  }
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Status',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: donation['status'],
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                'pending',
+                'confirmed',
+                'arrived',
+                'processed',
+                'cancelled'
+              ].map((status) {
+                return DropdownMenuItem<String>(
+                  value: status,
+                  child: Text(status.capitalize()),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _statusController.text = value!;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Donated Items',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            ...donation['items'].map<Widget>((item) {
+              final itemController = TextEditingController(
+                text: item['room'] ?? '',
+              );
+              
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ID: ${item['id']}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Quantity: ${item['quantity']}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: itemController,
+                        decoration: const InputDecoration(
+                          labelText: 'Storage Location',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        onChanged: (value) {
+                          item['room'] = value;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            try {
+              // Update donation status
+              await TokenHttp().post('/donation/updateGeneralDonationStatus', {
+                'donationId': donation['id'],
+                'status': _statusController.text,
+              });
+              
+              // Update storage locations for each item
+              for (var item in donation['items']) {
+                if (item['room'] != null && item['room'].isNotEmpty) {
+                  await TokenHttp().post('/donation/updateItemLocation', {
+                    'itemId': item['id'],
+                    'room': item['room'],
+                  });
+                }
+              }
+              
+              setState(() {
+                final index = donationRequests.indexWhere(
+                  (d) => d['id'] == donation['id']
+                );
+                if (index != -1) {
+                  donationRequests[index]['status'] = _statusController.text;
+                }
+              });
+              
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Donation status updated')),
+              );
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error updating donation: $e'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+          child: const Text('Save'),
+        ),
+      ],
+    ),
+  );
+}
 
   bool isEmail(String contact) {
     return contact.contains('@') && contact.contains('.');
@@ -280,151 +499,168 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
     _timeController.text = campRequest['pickup_time'] ?? '';
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(campRequest['camp']),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Contact: ${campRequest['camp_contact']}'),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _dateController,
-                decoration: const InputDecoration(
-                  labelText: 'Pickup Date',
-                  hintText: 'DD-MM-YYYY',
-                  border: OutlineInputBorder(),
-                  suffixIcon: Icon(Icons.calendar_today),
-                ),
-                readOnly: true,
-                onTap: () async {
-                  FocusScope.of(context).requestFocus(FocusNode());
-                  final DateTime? picked = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(const Duration(days: 365)),
-                  );
-                  if (picked != null) {
-                    final day = picked.day.toString().padLeft(2, '0');
-                    final month = picked.month.toString().padLeft(2, '0');
-                    final year = picked.year.toString();
-                    _dateController.text = '$day-$month-$year';
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _timeController,
-                decoration: const InputDecoration(
-                  labelText: 'Pickup Time',
-                  hintText: 'HH:MM AM/PM',
-                  border: OutlineInputBorder(),
-                  suffixIcon: Icon(Icons.access_time),
-                ),
-                readOnly: true,
-                onTap: () async {
-                  FocusScope.of(context).requestFocus(FocusNode());
-                  final TimeOfDay? picked = await showTimePicker(
-                    context: context,
-                    initialTime: TimeOfDay.now(),
-                  );
-                  if (picked != null) {
-                    final hour = picked.hourOfPeriod == 0 ? 12 : picked.hourOfPeriod;
-                    final minute = picked.minute.toString().padLeft(2, '0');
-                    final period = picked.period == DayPeriod.am ? 'AM' : 'PM';
-                    _timeController.text = '$hour:$minute $period';
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: campRequest['status'],
-                decoration: const InputDecoration(
-                  labelText: 'Status',
-                  border: OutlineInputBorder(),
-                ),
-                items: ['Pending', 'Scheduled', 'Completed', 'Canceled'].map((status) {
-                  return DropdownMenuItem<String>(
-                    value: status,
-                    child: Text(status),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      campRequest['status'] = value;
-                    });
-                  }
-                },
-              ),
-              const Divider(height: 24),
-              const Text('Requested Items:', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              ...List.generate(campRequest['items'].length, (index) {
-                final item = campRequest['items'][index];
-                final itemController = TextEditingController(text: item['quantity'].toString());
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Item: ${item['item']}'),
-                      const SizedBox(height: 4),
-                      Text('ID: ${item['id']}'),
-                      const SizedBox(height: 4),
-                      Text('Room: ${item['room']}', style: const TextStyle(fontWeight: FontWeight.w500)),
-                      const SizedBox(height: 8),
-                      Row(
+      builder:
+          (context) => AlertDialog(
+            title: Text(campRequest['camp']),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Contact: ${campRequest['camp_contact']}'),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _dateController,
+                    decoration: const InputDecoration(
+                      labelText: 'Pickup Date',
+                      hintText: 'DD-MM-YYYY',
+                      border: OutlineInputBorder(),
+                      suffixIcon: Icon(Icons.calendar_today),
+                    ),
+                    readOnly: true,
+                    onTap: () async {
+                      FocusScope.of(context).requestFocus(FocusNode());
+                      final DateTime? picked = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (picked != null) {
+                        final day = picked.day.toString().padLeft(2, '0');
+                        final month = picked.month.toString().padLeft(2, '0');
+                        final year = picked.year.toString();
+                        _dateController.text = '$day-$month-$year';
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _timeController,
+                    decoration: const InputDecoration(
+                      labelText: 'Pickup Time',
+                      hintText: 'HH:MM AM/PM',
+                      border: OutlineInputBorder(),
+                      suffixIcon: Icon(Icons.access_time),
+                    ),
+                    readOnly: true,
+                    onTap: () async {
+                      FocusScope.of(context).requestFocus(FocusNode());
+                      final TimeOfDay? picked = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay.now(),
+                      );
+                      if (picked != null) {
+                        final hour =
+                            picked.hourOfPeriod == 0 ? 12 : picked.hourOfPeriod;
+                        final minute = picked.minute.toString().padLeft(2, '0');
+                        final period =
+                            picked.period == DayPeriod.am ? 'AM' : 'PM';
+                        _timeController.text = '$hour:$minute $period';
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: campRequest['status'],
+                    decoration: const InputDecoration(
+                      labelText: 'Status',
+                      border: OutlineInputBorder(),
+                    ),
+                    items:
+                        ['Pending', 'Scheduled', 'Completed', 'Canceled'].map((
+                          status,
+                        ) {
+                          return DropdownMenuItem<String>(
+                            value: status,
+                            child: Text(status),
+                          );
+                        }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          campRequest['status'] = value;
+                        });
+                      }
+                    },
+                  ),
+                  const Divider(height: 24),
+                  const Text(
+                    'Requested Items:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  ...List.generate(campRequest['items'].length, (index) {
+                    final item = campRequest['items'][index];
+                    final itemController = TextEditingController(
+                      text: item['quantity'].toString(),
+                    );
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Quantity: '),
-                          Expanded(
-                            child: TextField(
-                              controller: itemController,
-                              decoration: const InputDecoration(
-                                isDense: true,
-                                border: OutlineInputBorder(),
+                          Text('Item: ${item['item']}'),
+                          const SizedBox(height: 4),
+                          Text('ID: ${item['id']}'),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Room: ${item['room']}',
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Text('Quantity: '),
+                              Expanded(
+                                child: TextField(
+                                  controller: itemController,
+                                  decoration: const InputDecoration(
+                                    isDense: true,
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      campRequest['items'][index]['quantity'] =
+                                          int.tryParse(value) ?? 0;
+                                    });
+                                  },
+                                ),
                               ),
-                              keyboardType: TextInputType.number,
-                              onChanged: (value) {
-                                setState(() {
-                                  campRequest['items'][index]['quantity'] = int.tryParse(value) ?? 0;
-                                });
-                              },
-                            ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                );
-              }),
+                    );
+                  }),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    final index = campRequests.indexWhere(
+                      (c) => c['id'] == campRequest['id'],
+                    );
+                    if (index != -1) {
+                      campRequests[index]['pickup_date'] = _dateController.text;
+                      campRequests[index]['pickup_time'] = _timeController.text;
+                    }
+                  });
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Camp request updated')),
+                  );
+                },
+                child: const Text('Save'),
+              ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                final index = campRequests.indexWhere((c) => c['id'] == campRequest['id']);
-                if (index != -1) {
-                  campRequests[index]['pickup_date'] = _dateController.text;
-                  campRequests[index]['pickup_time'] = _timeController.text;
-                }
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Camp request updated')),
-              );
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -443,7 +679,10 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
                   const Expanded(
                     child: Text(
                       'Current Inventory',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   ElevatedButton.icon(
@@ -456,9 +695,19 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
             ),
             const Divider(),
             if (isLoadingInventory)
-              const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator()))
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: CircularProgressIndicator(),
+                ),
+              )
             else if (inventory.isEmpty)
-              const Center(child: Padding(padding: EdgeInsets.all(16.0), child: Text('No inventory found')))
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('No inventory found'),
+                ),
+              )
             else
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -466,27 +715,34 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
                   columns: const [
                     DataColumn(label: Text('ID')),
                     DataColumn(label: Text('Item')),
+                    DataColumn(label: Text('Category')),
                     DataColumn(label: Text('Quantity')),
-                    DataColumn(label: Text('Room')),
+                    DataColumn(label: Text('Location')),
                     DataColumn(label: Text('Actions')),
                   ],
-                  rows: inventory.map((item) {
-                    return DataRow(
-                      cells: [
-                        DataCell(Text(item['id'])),
-                        DataCell(Text(item['item'])),
-                        DataCell(Text(item['quantity'].toString())),
-                        DataCell(Text(item['room'])),
-                        DataCell(
-                          IconButton(
-                            icon: const Icon(Icons.edit),
-                            onPressed: () => _showInventoryItemDialog(item),
-                            tooltip: 'Edit Room',
-                          ),
-                        ),
-                      ],
-                    );
-                  }).toList(),
+                  rows:
+                      inventory.map((item) {
+                        return DataRow(
+                          cells: [
+                            DataCell(
+                              Text(item['id'].toString().substring(0, 8)),
+                            ), // Show shorter ID
+                            DataCell(Text(item['item'])),
+                            DataCell(Text(item['category'] ?? '')),
+                            DataCell(
+                              Text('${item['quantity']} ${item['unit'] ?? ''}'),
+                            ), // Show with unit
+                            DataCell(Text(item['room'] ?? 'Not assigned')),
+                            DataCell(
+                              IconButton(
+                                icon: const Icon(Icons.edit),
+                                onPressed: () => _showInventoryItemDialog(item),
+                                tooltip: 'Edit Room',
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
                 ),
               ),
             const SizedBox(height: 16),
@@ -511,7 +767,10 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
                   const Expanded(
                     child: Text(
                       'Donation Requests',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   ElevatedButton.icon(
@@ -524,9 +783,19 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
             ),
             const Divider(),
             if (isLoadingDonations)
-              const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator()))
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: CircularProgressIndicator(),
+                ),
+              )
             else if (donationRequests.isEmpty)
-              const Center(child: Padding(padding: EdgeInsets.all(16.0), child: Text('No donation requests found')))
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('No donation requests found'),
+                ),
+              )
             else
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -538,41 +807,57 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
                     DataColumn(label: Text('Arriving Date/Time')),
                     DataColumn(label: Text('Status')),
                   ],
-                  rows: donationRequests.map((donation) {
-                    return DataRow(
-                      onSelectChanged: (_) => _showDonationRequestDialog(donation),
-                      cells: [
-                        DataCell(Text(donation['id'])),
-                        DataCell(Text(donation['donor'])),
-                        DataCell(
-                          InkWell(
-                            onTap: () => _handleContactPress(donation['contact_info']),
-                            child: Text(
-                              donation['contact_info'],
-                              style: TextStyle(
-                                color: Colors.blue,
-                                decoration: TextDecoration.underline,
+                  rows:
+                      donationRequests.map((donation) {
+                        return DataRow(
+                          onSelectChanged:
+                              (_) => _showDonationRequestDialog(donation),
+                          cells: [
+                            DataCell(Text(donation['id'])),
+                            DataCell(Text(donation['donor'])),
+                            DataCell(
+                              InkWell(
+                                onTap:
+                                    () => _handleContactPress(
+                                      donation['contact_info'],
+                                    ),
+                                child: Text(
+                                  donation['contact_info'],
+                                  style: TextStyle(
+                                    color: Colors.blue,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                        DataCell(Text('${donation['arriving_date']}\n${donation['arriving_time']}')),
-                        DataCell(
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: _getStatusColor(donation['status']),
-                              borderRadius: BorderRadius.circular(12),
+                            DataCell(
+                              Text(
+                                '${donation['arriving_date']}\n${donation['arriving_time']}',
+                              ),
                             ),
-                            child: Text(
-                              donation['status'],
-                              style: TextStyle(color: _getStatusTextColor(donation['status'])),
+                            DataCell(
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _getStatusColor(donation['status']),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  donation['status'],
+                                  style: TextStyle(
+                                    color: _getStatusTextColor(
+                                      donation['status'],
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      ],
-                    );
-                  }).toList(),
+                          ],
+                        );
+                      }).toList(),
                 ),
               ),
             const SizedBox(height: 16),
@@ -584,17 +869,23 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'Arrived': return Colors.green.shade100;
-      case 'Dispatched': return Colors.blue.shade100;
-      default: return Colors.orange.shade100;
+      case 'Arrived':
+        return Colors.green.shade100;
+      case 'Dispatched':
+        return Colors.blue.shade100;
+      default:
+        return Colors.orange.shade100;
     }
   }
 
   Color _getStatusTextColor(String status) {
     switch (status) {
-      case 'Arrived': return Colors.green.shade800;
-      case 'Dispatched': return Colors.blue.shade800;
-      default: return Colors.orange.shade800;
+      case 'Arrived':
+        return Colors.green.shade800;
+      case 'Dispatched':
+        return Colors.blue.shade800;
+      default:
+        return Colors.orange.shade800;
     }
   }
 
@@ -613,7 +904,10 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
                   const Expanded(
                     child: Text(
                       'Camp Requests',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   ElevatedButton.icon(
@@ -626,9 +920,19 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
             ),
             const Divider(),
             if (isLoadingCampRequests)
-              const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator()))
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: CircularProgressIndicator(),
+                ),
+              )
             else if (campRequests.isEmpty)
-              const Center(child: Padding(padding: EdgeInsets.all(16.0), child: Text('No camp requests found')))
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('No camp requests found'),
+                ),
+              )
             else
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -640,36 +944,47 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
                     DataColumn(label: Text('Status')),
                     DataColumn(label: Text('Items')),
                   ],
-                  rows: campRequests.map((request) {
-                    return DataRow(
-                      onSelectChanged: (_) => _showCampRequestDialog(request),
-                      cells: [
-                        DataCell(Text(request['id'])),
-                        DataCell(Text(request['camp'])),
-                        DataCell(Text('${request['pickup_date']}\n${request['pickup_time']}')),
-                        DataCell(
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: request['status'] == 'Scheduled' 
-                                ? Colors.green.shade100 
-                                : Colors.orange.shade100,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              request['status'],
-                              style: TextStyle(
-                                color: request['status'] == 'Scheduled'
-                                  ? Colors.green.shade800
-                                  : Colors.orange.shade800,
+                  rows:
+                      campRequests.map((request) {
+                        return DataRow(
+                          onSelectChanged:
+                              (_) => _showCampRequestDialog(request),
+                          cells: [
+                            DataCell(Text(request['id'])),
+                            DataCell(Text(request['camp'])),
+                            DataCell(
+                              Text(
+                                '${request['pickup_date']}\n${request['pickup_time']}',
                               ),
                             ),
-                          ),
-                        ),
-                        DataCell(Text('${request['items'].length} items')),
-                      ],
-                    );
-                  }).toList(),
+                            DataCell(
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      request['status'] == 'Scheduled'
+                                          ? Colors.green.shade100
+                                          : Colors.orange.shade100,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  request['status'],
+                                  style: TextStyle(
+                                    color:
+                                        request['status'] == 'Scheduled'
+                                            ? Colors.green.shade800
+                                            : Colors.orange.shade800,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            DataCell(Text('${request['items'].length} items')),
+                          ],
+                        );
+                      }).toList(),
                 ),
               ),
             const SizedBox(height: 16),
@@ -694,9 +1009,10 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
           ],
         ),
       ),
-      drawer: MediaQuery.of(context).size.width < 800
-          ? const ResQMenu(roles: ['admin'])
-          : null,
+      drawer:
+          MediaQuery.of(context).size.width < 800
+              ? const ResQMenu(roles: ['admin'])
+              : null,
       body: SafeArea(
         child: Container(
           color: Colors.white,
@@ -731,5 +1047,10 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
     _timeController.dispose();
     _statusController.dispose();
     super.dispose();
+  }
+}
+extension StringExtension on String {
+  String capitalize() {
+    return "${this[0].toUpperCase()}${this.substring(1)}";
   }
 }
