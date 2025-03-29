@@ -231,7 +231,7 @@ class MyApp extends StatelessWidget {
         builder =
             (context) => AuthRoute(
               requiredRoles: ['admin', 'stat'],
-              child: FamilyDataDownloadScreen(),
+              child: FamilyDataDownloadScreen(families: []),
             );
       case '/identity':
         builder =

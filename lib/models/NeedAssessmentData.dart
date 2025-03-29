@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class NeedAssessmentData {
   String villageWard = ''; 
   String houseNumber = ''; 
@@ -84,6 +86,7 @@ class NeedAssessmentData {
   String kudumbashreeInternalLoan = ''; 
   double kudumbashreeInternalLoanAmount = 0.0; 
   String kudumbashreeLinkageLoan = ''; 
+  String? businessDamage;
   double kudumbashreeLinkageLoanAmount = 0.0; 
   String kudumbashreeMicroenterpriseLoan = ''; 
   double kudumbashreeMicroenterpriseLoanAmount = 0.0; 
@@ -91,33 +94,211 @@ class NeedAssessmentData {
   String foodSecurityAdditionalInfo = '';
   String primaryOccupation = '';
   String secondaryOccupation = '';
-  int numMembers = 2; 
-  List<Member> members = [
-    Member(name: 'John Doe', age: '35', relationship: 'Head', gender: 'Male'),
-    Member(name: 'Jane Doe', age: '30', relationship: 'Wife', gender: 'Female'),
-  ];
-
-  // Example list of LoanDetail
-  List<LoanDetail> loanDetails = [
-    LoanDetail(
-      bankName: "Bank A",
-      branch: "Branch 1",
-      accountNumber: "12345",
-      loanCategory: "Home Loan",
-      loanAmount: "100000",
-      loanOutstanding: "50000",
-    ),
-    LoanDetail(
-      bankName: "Bank B",
-      branch: "Branch 2",
-      accountNumber: "67890",
-      loanCategory: "Personal Loan",
-      loanAmount: "50000",
-      loanOutstanding: "25000",
-    ),
-  ];
+  bool outsideDamagedArea = false;
+  bool receivedAllowance = false;
+  int get numMembers => members.length; 
+  List<Member> members = [];
+  List<LoanDetail> loanDetails = [];
 
   NeedAssessmentData();
+
+  // Filtering methods
+  static List<Family> filterFamilies(List<Family> families, {
+    String? villageWard,
+    String? houseNumber,
+    String? householdHead,
+    double? minIncome,
+    double? maxIncome,
+    String? shelterType,
+    String? rationCategory,
+    String? caste,
+    bool? outsideDamagedArea,
+    bool? receivedAllowance,
+    String? memberName,
+    String? memberAge,
+    int? minAge,
+    int? maxAge,
+    String? memberGender,
+    String? memberEducation,
+    String? memberEmploymentType,
+    bool? memberUnemployedDueToDisaster,
+    bool? memberHasMedicalNeeds,
+    bool? memberIsBedridden,
+    bool? memberNeedsCounselling,
+  }) {
+    return families.where((family) {
+      final data = family.data;
+      if (data == null) return false;
+
+      // Family-level filters
+      if (villageWard != null && !data.villageWard.toLowerCase().contains(villageWard.toLowerCase())) {
+        return false;
+      }
+
+      if (houseNumber != null && !data.houseNumber.toLowerCase().contains(houseNumber.toLowerCase())) {
+        return false;
+      }
+
+      if (householdHead != null && !data.householdHead.toLowerCase().contains(householdHead.toLowerCase())) {
+        return false;
+      }
+
+      if (minIncome != null && data.avgMonthlyFamilyIncome < minIncome) {
+        return false;
+      }
+
+      if (maxIncome != null && data.avgMonthlyFamilyIncome > maxIncome) {
+        return false;
+      }
+
+      if (shelterType != null && !data.shelterType.toLowerCase().contains(shelterType.toLowerCase())) {
+        return false;
+      }
+
+      if (rationCategory != null && data.rationCategory != rationCategory) {
+        return false;
+      }
+
+      if (caste != null && data.caste != caste) {
+        return false;
+      }
+
+      if (outsideDamagedArea != null && data.outsideDamagedArea != outsideDamagedArea) {
+        return false;
+      }
+
+      if (receivedAllowance != null && data.receivedAllowance != receivedAllowance) {
+        return false;
+      }
+
+      // Individual-level filters
+      final hasIndividualFilters = memberName != null || 
+          memberAge != null || 
+          minAge != null || 
+          maxAge != null ||
+          memberGender != null || 
+          memberEducation != null || 
+          memberEmploymentType != null || 
+          memberUnemployedDueToDisaster != null || 
+          memberHasMedicalNeeds != null ||
+          memberIsBedridden != null ||
+          memberNeedsCounselling != null;
+
+      if (!hasIndividualFilters) {
+        return true;
+      }
+
+      // Check if any member matches the individual filters
+      return data.members.any((member) {
+        if (memberName != null && !member.name.toLowerCase().contains(memberName.toLowerCase())) {
+          return false;
+        }
+
+        if (memberAge != null && member.age != memberAge) {
+          return false;
+        }
+
+        if (minAge != null) {
+          final memberAgeInt = int.tryParse(member.age);
+          if (memberAgeInt == null || memberAgeInt < minAge) {
+            return false;
+          }
+        }
+
+        if (maxAge != null) {
+          final memberAgeInt = int.tryParse(member.age);
+          if (memberAgeInt == null || memberAgeInt > maxAge) {
+            return false;
+          }
+        }
+
+        if (memberGender != null && member.gender != memberGender) {
+          return false;
+        }
+
+        if (memberEducation != null && member.education != memberEducation) {
+          return false;
+        }
+
+        if (memberEmploymentType != null && member.employmentType != memberEmploymentType) {
+          return false;
+        }
+
+        if (memberUnemployedDueToDisaster != null && 
+            member.unemployedDueToDisaster != (memberUnemployedDueToDisaster ? 'Yes' : 'No')) {
+          return false;
+        }
+
+        if (memberHasMedicalNeeds != null && 
+            ((memberHasMedicalNeeds && (member.specialMedicalRequirements?.isEmpty ?? true)) || 
+             (!memberHasMedicalNeeds && (member.specialMedicalRequirements?.isNotEmpty ?? false)))) {
+          return false;
+        }
+
+        if (memberIsBedridden != null && 
+            member.bedriddenPalliative != (memberIsBedridden ? 'Yes' : 'No')) {
+          return false;
+        }
+
+        if (memberNeedsCounselling != null && 
+            member.psychoSocialAssistance != (memberNeedsCounselling ? 'Yes' : 'No')) {
+          return false;
+        }
+
+        return true;
+      });
+    }).toList();
+  }
+
+  // Helper method to get distinct values for filters
+  static List<String> getDistinctValues(List<Family> families, String propertyName) {
+    final values = <String>{};
+    
+    for (final family in families) {
+      final data = family.data;
+      if (data == null) continue;
+
+      switch (propertyName) {
+        case 'villageWard':
+          if (data.villageWard.isNotEmpty) values.add(data.villageWard);
+          break;
+        case 'shelterType':
+          if (data.shelterType.isNotEmpty) values.add(data.shelterType);
+          break;
+        case 'rationCategory':
+          if (data.rationCategory.isNotEmpty) values.add(data.rationCategory);
+          break;
+        case 'caste':
+          if (data.caste.isNotEmpty) values.add(data.caste);
+          break;
+        case 'primaryIncomeSource':
+          if (data.primaryIncomeSource.isNotEmpty) values.add(data.primaryIncomeSource);
+          break;
+        case 'gender':
+          for (final member in data.members) {
+            if (member.gender.isNotEmpty) values.add(member.gender);
+          }
+          break;
+        case 'education':
+          for (final member in data.members) {
+            if (member.education.isNotEmpty) values.add(member.education);
+          }
+          break;
+        case 'employmentType':
+          for (final member in data.members) {
+            if (member.employmentType.isNotEmpty) values.add(member.employmentType);
+          }
+          break;
+        case 'relationship':
+          for (final member in data.members) {
+            if (member.relationship.isNotEmpty) values.add(member.relationship);
+          }
+          break;
+      }
+    }
+
+    return values.toList()..sort();
+  }
 }
 
 class Member {
@@ -288,4 +469,11 @@ class LoanDetail {
       loanOutstanding: loanOutstanding ?? this.loanOutstanding,
     );
   }
+}
+
+class Family {
+  final String id;
+  final NeedAssessmentData? data;
+
+  Family({required this.id, this.data});
 }

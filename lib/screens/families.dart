@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'family_data_download.dart'; // Import the new screen
+import 'package:resq/screens/family_data_download.dart'; 
+// Import the new screen
+import 'package:resq/screens/family_mock_data.dart';
 
 class FamiliesScreen extends StatefulWidget {
   const FamiliesScreen({super.key});
@@ -11,9 +13,27 @@ class FamiliesScreen extends StatefulWidget {
 class _FamiliesScreenState extends State<FamiliesScreen> {
   TextEditingController searchController = TextEditingController();
   List<Map<String, String>> families = [
-    {'Family ID': '1', 'House Name': 'Family House 1', 'Location': 'New York', 'Status': 'Active', 'Age Category': 'Adult'},
-    {'Family ID': '2', 'House Name': 'Family House 2', 'Location': 'Los Angeles', 'Status': 'Inactive', 'Age Category': 'Senior'},
-    {'Family ID': '3', 'House Name': 'Family House 3', 'Location': 'Chicago', 'Status': 'Active', 'Age Category': 'Adult'},
+    {
+      'Family ID': '1',
+      'House Name': 'Family House 1',
+      'Location': 'New York',
+      'Status': 'Active',
+      'Age Category': 'Adult',
+    },
+    {
+      'Family ID': '2',
+      'House Name': 'Family House 2',
+      'Location': 'Los Angeles',
+      'Status': 'Inactive',
+      'Age Category': 'Senior',
+    },
+    {
+      'Family ID': '3',
+      'House Name': 'Family House 3',
+      'Location': 'Chicago',
+      'Status': 'Active',
+      'Age Category': 'Adult',
+    },
   ];
 
   List<Map<String, String>> filteredFamilies = [];
@@ -29,14 +49,16 @@ class _FamiliesScreenState extends State<FamiliesScreen> {
   void _filterFamilies() {
     String query = searchController.text.toLowerCase();
     setState(() {
-      filteredFamilies = families
-          .where((family) {
-            bool matchesQuery = family['House Name']!.toLowerCase().contains(query) ||
+      filteredFamilies =
+          families.where((family) {
+            bool matchesQuery =
+                family['House Name']!.toLowerCase().contains(query) ||
                 family['Location']!.toLowerCase().contains(query);
-            bool matchesAgeCategory = selectedAgeCategory.isEmpty || family['Age Category'] == selectedAgeCategory;
+            bool matchesAgeCategory =
+                selectedAgeCategory.isEmpty ||
+                family['Age Category'] == selectedAgeCategory;
             return matchesQuery && matchesAgeCategory;
-          })
-          .toList();
+          }).toList();
     });
   }
 
@@ -49,7 +71,7 @@ class _FamiliesScreenState extends State<FamiliesScreen> {
   void _navigateToDownloadScreen() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => FamilyDataDownloadScreen()),
+      MaterialPageRoute(builder: (context) => FamilyDataDownloadScreen(families: families)),
     );
   }
 
@@ -86,7 +108,10 @@ class _FamiliesScreenState extends State<FamiliesScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
-                  borderSide: BorderSide(color: Colors.deepPurpleAccent, width: 2),
+                  borderSide: BorderSide(
+                    color: Colors.deepPurpleAccent,
+                    width: 2,
+                  ),
                 ),
               ),
             ),
@@ -99,7 +124,10 @@ class _FamiliesScreenState extends State<FamiliesScreen> {
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: Table(
-                  border: TableBorder.all(color: Colors.grey.shade300, width: 1),
+                  border: TableBorder.all(
+                    color: Colors.grey.shade300,
+                    width: 1,
+                  ),
                   columnWidths: {
                     0: FixedColumnWidth(100),
                     1: FixedColumnWidth(150),
@@ -153,7 +181,11 @@ class _FamiliesScreenState extends State<FamiliesScreen> {
       padding: const EdgeInsets.all(8.0),
       child: Text(
         text,
-        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16),
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+          fontSize: 16,
+        ),
       ),
     );
   }
@@ -165,7 +197,10 @@ class _FamiliesScreenState extends State<FamiliesScreen> {
         text,
         style: TextStyle(
           fontSize: 14,
-          color: isStatus ? (text == 'Active' ? Colors.green : Colors.red) : Colors.black,
+          color:
+              isStatus
+                  ? (text == 'Active' ? Colors.green : Colors.red)
+                  : Colors.black,
         ),
       ),
     );
@@ -191,13 +226,17 @@ class _FamiliesScreenState extends State<FamiliesScreen> {
                   });
                   Navigator.pop(context);
                 },
-                items: <String>['', 'Adult', 'Senior']
-                    .map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
+                items:
+                    <String>[
+                      '',
+                      'Adult',
+                      'Senior',
+                    ].map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
               ),
             ],
           ),
