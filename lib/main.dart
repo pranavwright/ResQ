@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:path/path.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:resq/screens/collectionpoint_volunteer.dart';
 import 'package:resq/screens/identity.dart';
 import 'package:resq/screens/login_screen.dart';
 import 'package:resq/screens/splash_screen.dart';
@@ -335,7 +336,7 @@ class MyApp extends StatelessWidget {
     if (roles.contains('collectionPointAdmin'))
       return CollectionPointDashboard();
     if (roles.contains('campAdmin')) return CampAdminDashboard();
-    if (roles.contains('collectionpointvolunteer')) return VolunteerDashboard();
+    if (roles.contains('collectionpointvolunteer')) return VolunteerScreen();
     if (roles.contains('surveyOfficial')) return FamilySurveyHomeScreen();
     if (roles.contains('verifyOfficial'))
       return VerificationVolunteerDashboard();

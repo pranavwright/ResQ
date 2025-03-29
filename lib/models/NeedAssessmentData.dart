@@ -1,67 +1,67 @@
 import 'package:flutter/material.dart';
 
 class NeedAssessmentData {
-  String villageWard = ''; 
-  String houseNumber = ''; 
-  String householdHead = ''; 
-  String uniqueHouseholdId = ''; 
-  String address = ''; 
-  String contactNo = ''; 
-  String rationCardNo = ''; 
-  String rationCategory = ''; 
-  String caste = ''; 
-  String otherCaste = ''; 
-  int numChildrenAnganwadi = 0; 
-  String anganwadiStatus = ''; 
-  String childrenMalnutritionStatus = ''; 
-  int numPregnantWomen = 0; 
-  int numLactatingMothers = 0; 
-  String foodAssistanceSufficient = ''; 
-  String foodAssistanceNeedDuration = ''; 
-  String govtNutritionDisruption = ''; 
-  String healthInsuranceStatus = ''; 
-  String healthInsuranceDetails = ''; 
-  String shelterType = ''; 
-  String otherShelterType = ''; 
-  String residentialLandArea = ''; 
-  String accommodationStatus = ''; 
-  String otherAccommodation = ''; 
-  String vehiclePossession = ''; 
-  String vehicleType = ''; 
-  String otherVehicleType = ''; 
-  String vehicleLoss = ''; 
-  String vehicleLossType = ''; 
+  String villageWard = '';
+  String houseNumber = '';
+  String householdHead = '';
+  String uniqueHouseholdId = '';
+  String address = '';
+  String contactNo = '';
+  String rationCardNo = '';
+  String rationCategory = '';
+  String caste = '';
+  String otherCaste = '';
+  int numChildrenAnganwadi = 0;
+  String anganwadiStatus = '';
+  String childrenMalnutritionStatus = '';
+  int numPregnantWomen = 0;
+  int numLactatingMothers = 0;
+  String foodAssistanceSufficient = '';
+  String foodAssistanceNeedDuration = '';
+  String govtNutritionDisruption = '';
+  String healthInsuranceStatus = '';
+  String healthInsuranceDetails = '';
+  String shelterType = '';
+  String otherShelterType = '';
+  String residentialLandArea = '';
+  String accommodationStatus = '';
+  String otherAccommodation = '';
+  String vehiclePossession = '';
+  String vehicleType = '';
+  String otherVehicleType = '';
+  String vehicleLoss = '';
+  String vehicleLossType = '';
   String otherVehicleLossType = '';
-  double avgMonthlyFamilyIncome = 0.0; 
-  String primaryIncomeSource = ''; 
-  String livelihoodAffected = ''; 
+  double avgMonthlyFamilyIncome = 0.0;
+  String primaryIncomeSource = '';
+  String livelihoodAffected = '';
   String employmentLoss = '';
   String businessLoss = '';
   String dailyWageLoss = '';
   String breadwinnerLoss = '';
   String animalLoss = '';
   String agriculturalLandLoss = '';
-  String otherLivelihoodLoss = ''; 
-  String otherLivelihoodLossDetails = ''; 
-  String agriculturalLandLossArea = ''; 
-  String storedCropsLoss = ''; 
-  String cropType = ''; 
-  String equipmentLoss = ''; 
-  String equipmentLossDetails = ''; 
-  String animalHusbandryLoss = ''; 
-  String animalHusbandryLossDetails = ''; 
-  String shedLoss = ''; 
-  String shedLossDetails = ''; 
-  String equipmentToolsLoss = ''; 
-  String equipmentToolsLossDetails = ''; 
-  String livelihoodInsurance = ''; 
-  String livelihoodInsuranceDetails = ''; 
-  String pensionBeneficiary = ''; 
-  String pensionType = ''; 
-  String otherPensionType = ''; 
-  String mgnregaBeneficiary = ''; 
-  String mgnregaDetails = ''; 
-  String legalDocumentsLost = ''; 
+  String otherLivelihoodLoss = '';
+  String otherLivelihoodLossDetails = '';
+  String agriculturalLandLossArea = '';
+  String storedCropsLoss = '';
+  String cropType = '';
+  String equipmentLoss = '';
+  String equipmentLossDetails = '';
+  String animalHusbandryLoss = '';
+  String animalHusbandryLossDetails = '';
+  String shedLoss = '';
+  String shedLossDetails = '';
+  String equipmentToolsLoss = '';
+  String equipmentToolsLossDetails = '';
+  String livelihoodInsurance = '';
+  String livelihoodInsuranceDetails = '';
+  String pensionBeneficiary = '';
+  String pensionType = '';
+  String otherPensionType = '';
+  String mgnregaBeneficiary = '';
+  String mgnregaDetails = '';
+  String legalDocumentsLost = '';
   String aadharCardLoss = '';
   String governmentIDLoss = '';
   String passportLoss = '';
@@ -76,113 +76,155 @@ class NeedAssessmentData {
   String birthCertificateLoss = '';
   String marriageCertificateLoss = '';
   String educationalDocumentLoss = '';
-  String otherDocumentLoss = ''; 
-  String otherDocumentLossDetails = ''; 
-  String loanRepaymentPending = ''; 
-  String specialCategory = ''; 
-  String otherSpecialCategory = ''; 
-  String kudumbashreeMember = ''; 
-  String kudumbashreeNHGName = ''; 
-  String kudumbashreeInternalLoan = ''; 
-  double kudumbashreeInternalLoanAmount = 0.0; 
-  String kudumbashreeLinkageLoan = ''; 
+  String otherDocumentLoss = '';
+  String otherDocumentLossDetails = '';
+  String loanRepaymentPending = '';
+  String specialCategory = '';
+  String otherSpecialCategory = '';
+  String kudumbashreeMember = '';
+  String kudumbashreeNHGName = '';
+  String kudumbashreeInternalLoan = '';
+  double kudumbashreeInternalLoanAmount = 0.0;
+  String kudumbashreeLinkageLoan = '';
   String? businessDamage;
-  double kudumbashreeLinkageLoanAmount = 0.0; 
-  String kudumbashreeMicroenterpriseLoan = ''; 
-  double kudumbashreeMicroenterpriseLoanAmount = 0.0; 
-  String additionalSupportRequired = ''; 
+  double kudumbashreeLinkageLoanAmount = 0.0;
+  String kudumbashreeMicroenterpriseLoan = '';
+  double kudumbashreeMicroenterpriseLoanAmount = 0.0;
+  String additionalSupportRequired = '';
   String foodSecurityAdditionalInfo = '';
   String primaryOccupation = '';
   String secondaryOccupation = '';
   bool outsideDamagedArea = false;
   bool receivedAllowance = false;
-  int get numMembers => members.length; 
+  int get numMembers => members.length;
   List<Member> members = [];
   List<LoanDetail> loanDetails = [];
 
   NeedAssessmentData();
 
   // Filtering methods
-  static List<Family> filterFamilies(List<Family> families, {
-    String? villageWard,
-    String? houseNumber,
-    String? householdHead,
-    double? minIncome,
-    double? maxIncome,
-    String? shelterType,
-    String? rationCategory,
-    String? caste,
-    bool? outsideDamagedArea,
-    bool? receivedAllowance,
-    String? memberName,
-    String? memberAge,
-    int? minAge,
-    int? maxAge,
-    String? memberGender,
-    String? memberEducation,
-    String? memberEmploymentType,
-    bool? memberUnemployedDueToDisaster,
-    bool? memberHasMedicalNeeds,
-    bool? memberIsBedridden,
-    bool? memberNeedsCounselling,
-  }) {
+  static List<Family> filterFamilies(
+    List<Family> families,
+    Map<String, dynamic> filters,
+  ) {
     return families.where((family) {
       final data = family.data;
       if (data == null) return false;
 
       // Family-level filters
-      if (villageWard != null && !data.villageWard.toLowerCase().contains(villageWard.toLowerCase())) {
+      if (filters['villageWard'] != null) {
+        if (filters['villageWard'] is String) {
+          if (!data.villageWard
+              .toLowerCase()
+              .contains(filters['villageWard'].toLowerCase())) {
+            return false;
+          }
+        } else if (filters['villageWard'] is List) {
+          if (!filters['villageWard'].contains(data.villageWard)) {
+            return false;
+          }
+        }
+      }
+
+      if (filters['houseNumber'] != null) {
+        if (filters['houseNumber'] is String) {
+          if (!data.houseNumber
+              .toLowerCase()
+              .contains(filters['houseNumber'].toLowerCase())) {
+            return false;
+          }
+        } else if (filters['houseNumber'] is List) {
+          if (!filters['houseNumber'].contains(data.houseNumber)) {
+            return false;
+          }
+        }
+      }
+
+      if (filters['householdHead'] != null) {
+        if (filters['householdHead'] is String) {
+          if (!data.householdHead
+              .toLowerCase()
+              .contains(filters['householdHead'].toLowerCase())) {
+            return false;
+          }
+        } else if (filters['householdHead'] is List) {
+          if (!filters['householdHead'].contains(data.householdHead)) {
+            return false;
+          }
+        }
+      }
+
+      if (filters['avgMonthlyFamilyIncome'] != null) {
+        if (filters['avgMonthlyFamilyIncome'] is Map) {
+          final minIncome =
+              filters['avgMonthlyFamilyIncome']['min'] as double?;
+          final maxIncome =
+              filters['avgMonthlyFamilyIncome']['max'] as double?;
+          if (minIncome != null && data.avgMonthlyFamilyIncome < minIncome) {
+            return false;
+          }
+          if (maxIncome != null && data.avgMonthlyFamilyIncome > maxIncome) {
+            return false;
+          }
+        } else if (filters['avgMonthlyFamilyIncome'] is double) {
+          if (data.avgMonthlyFamilyIncome !=
+              filters['avgMonthlyFamilyIncome']) {
+            return false;
+          }
+        }
+      }
+
+      if (filters['shelterType'] != null) {
+        if (filters['shelterType'] is String) {
+          if (!data.shelterType
+              .toLowerCase()
+              .contains(filters['shelterType'].toLowerCase())) {
+            return false;
+          }
+        } else if (filters['shelterType'] is List) {
+          if (!filters['shelterType'].contains(data.shelterType)) {
+            return false;
+          }
+        }
+      }
+
+      if (filters['rationCategory'] != null) {
+        if (filters['rationCategory'] is String) {
+          if (data.rationCategory != filters['rationCategory']) {
+            return false;
+          }
+        } else if (filters['rationCategory'] is List) {
+          if (!filters['rationCategory'].contains(data.rationCategory)) {
+            return false;
+          }
+        }
+      }
+
+      if (filters['caste'] != null) {
+        if (filters['caste'] is String) {
+          if (data.caste != filters['caste']) {
+            return false;
+          }
+        } else if (filters['caste'] is List) {
+          if (!filters['caste'].contains(data.caste)) {
+            return false;
+          }
+        }
+      }
+
+      if (filters['outsideDamagedArea'] != null &&
+          data.outsideDamagedArea != filters['outsideDamagedArea']) {
         return false;
       }
 
-      if (houseNumber != null && !data.houseNumber.toLowerCase().contains(houseNumber.toLowerCase())) {
-        return false;
-      }
-
-      if (householdHead != null && !data.householdHead.toLowerCase().contains(householdHead.toLowerCase())) {
-        return false;
-      }
-
-      if (minIncome != null && data.avgMonthlyFamilyIncome < minIncome) {
-        return false;
-      }
-
-      if (maxIncome != null && data.avgMonthlyFamilyIncome > maxIncome) {
-        return false;
-      }
-
-      if (shelterType != null && !data.shelterType.toLowerCase().contains(shelterType.toLowerCase())) {
-        return false;
-      }
-
-      if (rationCategory != null && data.rationCategory != rationCategory) {
-        return false;
-      }
-
-      if (caste != null && data.caste != caste) {
-        return false;
-      }
-
-      if (outsideDamagedArea != null && data.outsideDamagedArea != outsideDamagedArea) {
-        return false;
-      }
-
-      if (receivedAllowance != null && data.receivedAllowance != receivedAllowance) {
+      if (filters['receivedAllowance'] != null &&
+          data.receivedAllowance != filters['receivedAllowance']) {
         return false;
       }
 
       // Individual-level filters
-      final hasIndividualFilters = memberName != null || 
-          memberAge != null || 
-          minAge != null || 
-          maxAge != null ||
-          memberGender != null || 
-          memberEducation != null || 
-          memberEmploymentType != null || 
-          memberUnemployedDueToDisaster != null || 
-          memberHasMedicalNeeds != null ||
-          memberIsBedridden != null ||
-          memberNeedsCounselling != null;
+      final hasIndividualFilters = filters.keys
+          .any((key) => key.startsWith('member')); //check if any key starts with member
 
       if (!hasIndividualFilters) {
         return true;
@@ -190,59 +232,104 @@ class NeedAssessmentData {
 
       // Check if any member matches the individual filters
       return data.members.any((member) {
-        if (memberName != null && !member.name.toLowerCase().contains(memberName.toLowerCase())) {
-          return false;
+        if (filters['memberName'] != null) {
+          if (filters['memberName'] is String) {
+            if (!member.name
+                .toLowerCase()
+                .contains(filters['memberName'].toLowerCase())) {
+              return false;
+            }
+          } else if (filters['memberName'] is List) {
+            if (!filters['memberName'].contains(member.name)) {
+              return false;
+            }
+          }
         }
 
-        if (memberAge != null && member.age != memberAge) {
-          return false;
+        if (filters['memberAge'] != null) {
+          if (filters['memberAge'] is String) {
+            if (member.age != filters['memberAge']) {
+              return false;
+            }
+          } else if (filters['memberAge'] is Map) {
+            final minAge = filters['memberAge']['min'] as int?;
+            final maxAge = filters['memberAge']['max'] as int?;
+            final memberAgeInt = int.tryParse(member.age);
+            if (memberAgeInt == null) return false;
+            if (minAge != null && memberAgeInt < minAge) {
+              return false;
+            }
+            if (maxAge != null && memberAgeInt > maxAge) {
+              return false;
+            }
+          }
         }
 
-        if (minAge != null) {
-          final memberAgeInt = int.tryParse(member.age);
-          if (memberAgeInt == null || memberAgeInt < minAge) {
+        if (filters['memberGender'] != null) {
+          if (filters['memberGender'] is String) {
+            if (member.gender != filters['memberGender']) {
+              return false;
+            }
+          } else if (filters['memberGender'] is List) {
+            if (!filters['memberGender'].contains(member.gender)) {
+              return false;
+            }
+          }
+        }
+
+        if (filters['memberEducation'] != null) {
+          if (filters['memberEducation'] is String) {
+            if (member.education != filters['memberEducation']) {
+              return false;
+            }
+          } else if (filters['memberEducation'] is List) {
+            if (!filters['memberEducation'].contains(member.education)) {
+              return false;
+            }
+          }
+        }
+
+        if (filters['memberEmploymentType'] != null) {
+          if (filters['memberEmploymentType'] is String) {
+            if (member.employmentType != filters['memberEmploymentType']) {
+              return false;
+            }
+          } else if (filters['memberEmploymentType'] is List) {
+            if (!filters['memberEmploymentType']
+                .contains(member.employmentType)) {
+              return false;
+            }
+          }
+        }
+
+        if (filters['memberUnemployedDueToDisaster'] != null) {
+          final expectedValue =
+              filters['memberUnemployedDueToDisaster'] ? 'Yes' : 'No';
+          if (member.unemployedDueToDisaster != expectedValue) {
             return false;
           }
         }
 
-        if (maxAge != null) {
-          final memberAgeInt = int.tryParse(member.age);
-          if (memberAgeInt == null || memberAgeInt > maxAge) {
+        if (filters['memberHasMedicalNeeds'] != null) {
+          final hasMedicalNeeds =
+              member.specialMedicalRequirements?.isNotEmpty ?? false;
+          if (hasMedicalNeeds != filters['memberHasMedicalNeeds']) {
             return false;
           }
         }
 
-        if (memberGender != null && member.gender != memberGender) {
-          return false;
+        if (filters['memberIsBedridden'] != null) {
+          final isBedridden = member.bedriddenPalliative == 'Yes';
+          if (isBedridden != filters['memberIsBedridden']) {
+            return false;
+          }
         }
 
-        if (memberEducation != null && member.education != memberEducation) {
-          return false;
-        }
-
-        if (memberEmploymentType != null && member.employmentType != memberEmploymentType) {
-          return false;
-        }
-
-        if (memberUnemployedDueToDisaster != null && 
-            member.unemployedDueToDisaster != (memberUnemployedDueToDisaster ? 'Yes' : 'No')) {
-          return false;
-        }
-
-        if (memberHasMedicalNeeds != null && 
-            ((memberHasMedicalNeeds && (member.specialMedicalRequirements?.isEmpty ?? true)) || 
-             (!memberHasMedicalNeeds && (member.specialMedicalRequirements?.isNotEmpty ?? false)))) {
-          return false;
-        }
-
-        if (memberIsBedridden != null && 
-            member.bedriddenPalliative != (memberIsBedridden ? 'Yes' : 'No')) {
-          return false;
-        }
-
-        if (memberNeedsCounselling != null && 
-            member.psychoSocialAssistance != (memberNeedsCounselling ? 'Yes' : 'No')) {
-          return false;
+        if (filters['memberNeedsCounselling'] != null) {
+          final needsCounselling = member.psychoSocialAssistance == 'Yes';
+          if (needsCounselling != filters['memberNeedsCounselling']) {
+            return false;
+          }
         }
 
         return true;
@@ -251,9 +338,10 @@ class NeedAssessmentData {
   }
 
   // Helper method to get distinct values for filters
-  static List<String> getDistinctValues(List<Family> families, String propertyName) {
+  static List<String> getDistinctValues(
+      List<Family> families, String propertyName) {
     final values = <String>{};
-    
+
     for (final family in families) {
       final data = family.data;
       if (data == null) continue;
@@ -272,7 +360,8 @@ class NeedAssessmentData {
           if (data.caste.isNotEmpty) values.add(data.caste);
           break;
         case 'primaryIncomeSource':
-          if (data.primaryIncomeSource.isNotEmpty) values.add(data.primaryIncomeSource);
+          if (data.primaryIncomeSource.isNotEmpty)
+            values.add(data.primaryIncomeSource);
           break;
         case 'gender':
           for (final member in data.members) {
@@ -286,12 +375,14 @@ class NeedAssessmentData {
           break;
         case 'employmentType':
           for (final member in data.members) {
-            if (member.employmentType.isNotEmpty) values.add(member.employmentType);
+            if (member.employmentType.isNotEmpty)
+              values.add(member.employmentType);
           }
           break;
         case 'relationship':
           for (final member in data.members) {
-            if (member.relationship.isNotEmpty) values.add(member.relationship);
+            if (member.relationship.isNotEmpty)
+              values.add(member.relationship);
           }
           break;
       }
@@ -302,35 +393,35 @@ class NeedAssessmentData {
 }
 
 class Member {
-  String name;         
-  String age;          
-  String gender;       
-  String relationship; 
-  String maritalStatus = ''; 
+  String name;
+  String age;
+  String gender;
+  String relationship;
+  String maritalStatus = '';
   String ldm = ''; // L/D/M
-  String aadharNo = ''; 
-  String grievouslyInjured = ''; 
-  String bedriddenPalliative = ''; 
-  String pwDs = ''; 
-  String psychoSocialAssistance = ''; 
-  String nursingHomeAssistance = ''; 
-  String assistiveDevices = ''; 
-  String specialMedicalRequirements = ''; 
-  String education = ''; 
-  String previousStatus = ''; 
-  String employmentType = ''; 
-  String salary = ''; 
-  String unemployedDueToDisaster = ''; 
-  String className = ''; 
-  String schoolInstituteName = ''; 
-  String areDropout = ''; 
-  String preferredModeOfEducation = ''; 
-  String typesOfAssistanceTransport = ''; 
-  String typesOfAssistanceDigitalDevice = ''; 
-  String typesOfAssistanceStudyMaterials = ''; 
-  String typesOfAssistanceAnyOtherSpecificRequirement = ''; 
-  String presentSkillSet = ''; 
-  String typeOfLivelihoodAssistanceRequired = ''; 
+  String aadharNo = '';
+  String grievouslyInjured = '';
+  String bedriddenPalliative = '';
+  String pwDs = '';
+  String psychoSocialAssistance = '';
+  String nursingHomeAssistance = '';
+  String assistiveDevices = '';
+  String specialMedicalRequirements = '';
+  String education = '';
+  String previousStatus = '';
+  String employmentType = '';
+  String salary = '';
+  String unemployedDueToDisaster = '';
+  String className = '';
+  String schoolInstituteName = '';
+  String areDropout = '';
+  String preferredModeOfEducation = '';
+  String typesOfAssistanceTransport = '';
+  String typesOfAssistanceDigitalDevice = '';
+  String typesOfAssistanceStudyMaterials = '';
+  String typesOfAssistanceAnyOtherSpecificRequirement = '';
+  String presentSkillSet = '';
+  String typeOfLivelihoodAssistanceRequired = '';
   String typeOfSkillingAssistanceRequired = '';
   String otherRelationship = '';
   String otherGender = '';
@@ -366,6 +457,8 @@ class Member {
     this.presentSkillSet = '',
     this.typeOfLivelihoodAssistanceRequired = '',
     this.typeOfSkillingAssistanceRequired = '',
+    this.otherRelationship = '',
+    this.otherGender = '',
   });
 
   Member copyWith({
@@ -399,6 +492,8 @@ class Member {
     String? presentSkillSet,
     String? typeOfLivelihoodAssistanceRequired,
     String? typeOfSkillingAssistanceRequired,
+    String? otherRelationship,
+    String? otherGender,
   }) {
     return Member(
       name: name ?? this.name,
@@ -411,26 +506,40 @@ class Member {
       grievouslyInjured: grievouslyInjured ?? this.grievouslyInjured,
       bedriddenPalliative: bedriddenPalliative ?? this.bedriddenPalliative,
       pwDs: pwDs ?? this.pwDs,
-      psychoSocialAssistance: psychoSocialAssistance ?? this.psychoSocialAssistance,
-      nursingHomeAssistance: nursingHomeAssistance ?? this.nursingHomeAssistance,
+      psychoSocialAssistance:
+          psychoSocialAssistance ?? this.psychoSocialAssistance,
+      nursingHomeAssistance:
+          nursingHomeAssistance ?? this.nursingHomeAssistance,
       assistiveDevices: assistiveDevices ?? this.assistiveDevices,
-      specialMedicalRequirements: specialMedicalRequirements ?? this.specialMedicalRequirements,
+      specialMedicalRequirements:
+          specialMedicalRequirements ?? this.specialMedicalRequirements,
       education: education ?? this.education,
       previousStatus: previousStatus ?? this.previousStatus,
       employmentType: employmentType ?? this.employmentType,
       salary: salary ?? this.salary,
-      unemployedDueToDisaster: unemployedDueToDisaster ?? this.unemployedDueToDisaster,
+      unemployedDueToDisaster:
+          unemployedDueToDisaster ?? this.unemployedDueToDisaster,
       className: className ?? this.className,
       schoolInstituteName: schoolInstituteName ?? this.schoolInstituteName,
       areDropout: areDropout ?? this.areDropout,
-      preferredModeOfEducation: preferredModeOfEducation ?? this.preferredModeOfEducation,
-      typesOfAssistanceTransport: typesOfAssistanceTransport ?? this.typesOfAssistanceTransport,
-      typesOfAssistanceDigitalDevice: typesOfAssistanceDigitalDevice ?? this.typesOfAssistanceDigitalDevice,
-      typesOfAssistanceStudyMaterials: typesOfAssistanceStudyMaterials ?? this.typesOfAssistanceStudyMaterials,
-      typesOfAssistanceAnyOtherSpecificRequirement: typesOfAssistanceAnyOtherSpecificRequirement ?? this.typesOfAssistanceAnyOtherSpecificRequirement,
+      preferredModeOfEducation:
+          preferredModeOfEducation ?? this.preferredModeOfEducation,
+      typesOfAssistanceTransport:
+          typesOfAssistanceTransport ?? this.typesOfAssistanceTransport,
+      typesOfAssistanceDigitalDevice: typesOfAssistanceDigitalDevice ??
+          this.typesOfAssistanceDigitalDevice,
+      typesOfAssistanceStudyMaterials: typesOfAssistanceStudyMaterials ??
+          this.typesOfAssistanceStudyMaterials,
+      typesOfAssistanceAnyOtherSpecificRequirement:
+          typesOfAssistanceAnyOtherSpecificRequirement ??
+              this.typesOfAssistanceAnyOtherSpecificRequirement,
       presentSkillSet: presentSkillSet ?? this.presentSkillSet,
-      typeOfLivelihoodAssistanceRequired: typeOfLivelihoodAssistanceRequired ?? this.typeOfLivelihoodAssistanceRequired,
-      typeOfSkillingAssistanceRequired: typeOfSkillingAssistanceRequired ?? this.typeOfSkillingAssistanceRequired,
+      typeOfLivelihoodAssistanceRequired: typeOfLivelihoodAssistanceRequired ??
+          this.typeOfLivelihoodAssistanceRequired,
+      typeOfSkillingAssistanceRequired: typeOfSkillingAssistanceRequired ??
+          this.typeOfSkillingAssistanceRequired,
+      otherRelationship: otherRelationship ?? this.otherRelationship,
+      otherGender: otherGender ?? this.otherGender,
     );
   }
 }
@@ -451,7 +560,7 @@ class LoanDetail {
     this.loanAmount = '',
     this.loanOutstanding = '',
   });
-  
+
   LoanDetail copyWith({
     String? bankName,
     String? branch,
