@@ -1,7 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:resq/firebase_options.dart';
-import 'package:resq/screens/mian_home.dart';
+import 'package:resq/screens/main_home.dart';
 import 'package:resq/widgets/text_animation.dart';
 import 'package:resq/utils/auth/auth_service.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
