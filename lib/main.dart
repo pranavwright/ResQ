@@ -159,6 +159,9 @@ class MyApp extends StatelessWidget {
             (context) =>
                 AuthRoute(requiresAuth: true, child: ProfileSetupScreen());
         break;
+        case '/debug-camp':
+  builder = (context) => CampAdminDashboard();
+  break;
       case '/disaster':
         final args = settings.arguments as dynamic?;
         String disasterId='';
@@ -326,13 +329,14 @@ class MyApp extends StatelessWidget {
   }
 
   Widget getDashboardForRole(List<String> roles) {
+    if (roles.isEmpty) return CampAdminDashboard();
     if (roles.contains('superAdmin')) return SuperAdminDashboard();
     if (roles.contains('admin')) return AdminDashboard();
     if (roles.contains('stat')) return DashboardScreen();
 
     if (roles.contains('collectionPointAdmin'))
       return CollectionPointDashboard();
-    if (roles.contains('campAdmin')) return CampAdminDashboard();
+    // if (roles.contains('campAdmin')) return CampAdminDashboard();
     if (roles.contains('collectionpointvolunteer')) return VolunteerScreen();
     if (roles.contains('surveyOfficial')) return FamilySurveyHomeScreen();
     if (roles.contains('verifyOfficial'))
