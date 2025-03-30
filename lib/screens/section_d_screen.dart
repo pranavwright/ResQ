@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
 import 'package:resq/screens/section_e_screen.dart';
+import 'package:resq/utils/auth/auth_service.dart';
+import 'package:resq/utils/http/token_http.dart';
 
 class ScreenD extends StatefulWidget {
   final NeedAssessmentData data;
@@ -16,10 +18,11 @@ class _ScreenDState extends State<ScreenD> {
   String? selectedVehicleLoss;
   String? selectedAccommodationStatus;
   String? vehicleLossTypeDetails;
-  String? selectedShelterType; // To hold the selected Shelter Type
+  String? selectedShelterType;
+  String? selectedCampId;
 
-  // bool isShelterTypeDropdownOpen = false;  //No longer needed
-  // bool isAccommodationStatusDropdownOpen = false; //No longer needed
+  List<Map<String, dynamic>> _camps = [];
+  bool _isLoading = false;
 
   final List<String> _shelterTypeOptions = [
     'Permanent House',
@@ -40,19 +43,61 @@ class _ScreenDState extends State<ScreenD> {
   @override
   void initState() {
     super.initState();
+    _fetchCamps();
     selectedVehiclePossession = widget.data.vehiclePossession;
     selectedVehicleLoss = widget.data.vehicleLoss;
     selectedAccommodationStatus = widget.data.accommodationStatus;
     selectedShelterType = widget.data.shelterType;
+    selectedCampId = widget.data.campId;
 
-    if(selectedAccommodationStatus==''){
+    if (selectedAccommodationStatus == '') {
       selectedAccommodationStatus = 'Relief Camps';
     }
-    if(selectedShelterType==''){
+    if (selectedShelterType == '') {
       selectedShelterType = 'Permanent House';
     }
+  }
 
-    // Set the initial value for shelter type
+  Future<void> _fetchCamps() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      final campResponse = await TokenHttp().get(
+        '/disaster/getCampNames?disasterId=${AuthService().getDisasterId()}',
+      );
+
+      if (campResponse != null && campResponse['list'] is List) {
+        setState(() {
+          _camps = List<Map<String, dynamic>>.from(
+            campResponse['list'].map(
+              (camp) => {
+                '_id': camp['_id']?.toString() ?? '',
+                'name': camp['name']?.toString() ?? '',
+              },
+            ),
+          );
+          if(selectedCampId==''){
+            selectedCampId = _camps.isNotEmpty ? _camps[0]['_id'] : null;
+            widget.data.campId = selectedCampId ?? '';
+          }
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      print('Error fetching camps: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to load camps: $e')));
+    }
   }
 
   @override
@@ -72,7 +117,7 @@ class _ScreenDState extends State<ScreenD> {
                 onChanged: (String? newValue) {
                   setState(() {
                     selectedShelterType = newValue;
-                    widget.data.shelterType = newValue!;
+                    widget.data.shelterType = newValue ?? '';
                   });
                 },
                 items:
@@ -125,6 +170,10 @@ class _ScreenDState extends State<ScreenD> {
                   setState(() {
                     selectedAccommodationStatus = newValue;
                     widget.data.accommodationStatus = newValue!;
+                    if (newValue != 'Relief Camps') {
+                      selectedCampId = null;
+                      widget.data.campId = '';
+                    }
                   });
                 },
                 items:
@@ -142,6 +191,42 @@ class _ScreenDState extends State<ScreenD> {
                 ),
               ),
               SizedBox(height: 20),
+
+              if (selectedAccommodationStatus == 'Relief Camps')
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Select Camp Name', style: TextStyle(fontSize: 16)),
+                    _isLoading
+                        ? CircularProgressIndicator()
+                        : _camps.isEmpty
+                        ? Text(
+                          "No camps available. Please check with administrator.",
+                        )
+                        : DropdownButtonFormField<String>(
+                          value:
+                              selectedCampId ??
+                              (_camps.isNotEmpty ? _camps[0]['_id'] : null),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              selectedCampId = newValue;
+                              widget.data.campId = newValue ?? '';
+                            });
+                          },
+                          items:
+                              _camps.map<DropdownMenuItem<String>>((camp) {
+                                return DropdownMenuItem<String>(
+                                  value: camp['_id'],
+                                  child: Text(camp['name'] ?? ''),
+                                );
+                              }).toList(),
+                          decoration: InputDecoration(
+                            labelText: 'Select Camp',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                  ],
+                ),
 
               if (selectedAccommodationStatus == 'Others')
                 TextFormField(

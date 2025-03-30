@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
 import 'package:resq/screens/section_a_screen.dart';
+import 'package:resq/utils/auth/auth_service.dart';
+import 'package:resq/utils/http/token_http.dart';
 
 class FamilySurveyHomeScreen extends StatefulWidget {
   @override
@@ -9,80 +11,138 @@ class FamilySurveyHomeScreen extends StatefulWidget {
 
 class _FamilySurveyHomeScreenState extends State<FamilySurveyHomeScreen> {
   // This list will hold our saved survey data.
-  List<NeedAssessmentData> surveys = [
-    // Sample Data 1
-    NeedAssessmentData()
-      ..householdHead = "Sample Head 1"
-      ..villageWard = "Sample Ward 1"
-      ..members = [
-        Member(
-          name: "Member 1.1",
-          age: "30",
-          gender: "Male",
-          relationship: "Father",
-        ),
-        Member(
-          name: "Member 1.2",
-          age: "25",
-          gender: "Female",
-          relationship: "Mother",
-        ),
-      ],
-    // Sample Data 2
-    NeedAssessmentData()
-      ..householdHead = "Sample Head 2"
-      ..villageWard = "Sample Ward 2"
-      ..members = [
-        Member(
-          name: "Member 2.1",
-          age: "50",
-          gender: "Male",
-          relationship: "Head",
-        ),
-      ],
-  ];
+  List<NeedAssessmentData> surveys = [];
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData(); // Fetch data when screen loads
+  }
+
+  Future<void> _fetchData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      final response = await TokenHttp().get(
+        '/families/meAddedFamilies?disasterId=${AuthService().getDisasterId()}',
+      );
+      
+      if (response != null && response['list'] is List) {
+        List<NeedAssessmentData> loadedFamilies = [];
+        
+        for (var familyJson in response['list']) {
+          try {
+            final family = NeedAssessmentData.fromJson(familyJson);
+            loadedFamilies.add(family);
+          } catch (parseError) {
+            print("Error parsing family data: $parseError");
+          }
+        }
+        
+        setState(() {
+          surveys = loadedFamilies;
+        });
+      }
+    } catch (e) {
+      print("Error fetching data: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load data: $e'))
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Need Assessment Surveys')),
-      body:
-          surveys.isEmpty
-              ? Center(child: Text('No surveys saved yet.'))
-              : ListView.builder(
-                itemCount: surveys.length,
-                itemBuilder: (context, index) {
-                  return Card(
-                    margin: EdgeInsets.all(8.0),
-                    child: ListTile(
-                      title: Text(
-                        surveys[index].householdHead.isNotEmpty
-                            ? surveys[index].householdHead
-                            : 'Survey ${index + 1}',
-                      ), // Display household head or a default name
-                      subtitle: Text(
-                        'Village/Ward: ${surveys[index].villageWard}',
+      appBar: AppBar(
+        title: const Text('Need Assessment Surveys'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _fetchData,
+            tooltip: 'Refresh data',
+          ),
+        ],
+      ),
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : RefreshIndicator(
+            onRefresh: _fetchData,
+            child: surveys.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'No surveys found.',
+                        style: TextStyle(fontSize: 16),
                       ),
-                      onTap: () {
-                        _editSurvey(surveys[index]);
-                      },
-                    ),
-                  );
-                },
-              ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _createNewSurvey,
+                        child: const Text('Create New Survey'),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  itemCount: surveys.length,
+                  itemBuilder: (context, index) {
+                    final survey = surveys[index];
+                    return Card(
+                      margin: const EdgeInsets.all(8.0),
+                      child: ListTile(
+                        title: Text(
+                          survey.householdHead.isNotEmpty
+                            ? survey.householdHead
+                            : 'Survey ${index + 1}',
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Village/Ward: ${survey.villageWard}'),
+                            Text('Members: ${survey.numMembers}'),
+                          ],
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.edit),
+                          tooltip: 'Edit Survey',
+                          onPressed: () => _editSurvey(survey),
+                        ),
+                        onTap: () => _editSurvey(survey),
+                      ),
+                    );
+                  },
+                ),
+          ),
       floatingActionButton: FloatingActionButton(
         onPressed: _createNewSurvey,
         tooltip: 'Create New Survey',
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ),
     );
   }
 
   void _createNewSurvey() {
-    setState(() {
-      final newSurvey = NeedAssessmentData(); // Create a new, empty survey
-      surveys.add(newSurvey); // Add it to the list
-      _editSurvey(newSurvey); // Navigate to edit it immediately
+    final newSurvey = NeedAssessmentData(); // Create a new, empty survey
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ScreenA(data: newSurvey)),
+    ).then((value) {
+      // Refresh data when returning from the survey form
+      _fetchData();
     });
   }
 
@@ -91,12 +151,8 @@ class _FamilySurveyHomeScreenState extends State<FamilySurveyHomeScreen> {
       context,
       MaterialPageRoute(builder: (context) => ScreenA(data: surveyData)),
     ).then((value) {
-      // This 'then' block is important!
-      // It's executed when we come back from ScreenA (or any edit screen).
-      setState(() {
-        // We call setState to rebuild the FamilySurveyHomeScreen and reflect any changes
-        // that might have been made in the edit screen.
-      });
+      // Refresh data when returning from the survey form
+      _fetchData();
     });
   }
 }

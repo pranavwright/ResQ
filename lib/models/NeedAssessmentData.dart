@@ -94,6 +94,7 @@ class NeedAssessmentData {
   String foodSecurityAdditionalInfo = '';
   String primaryOccupation = '';
   String secondaryOccupation = '';
+  String campId = '';
   bool outsideDamagedArea = false;
   bool receivedAllowance = false;
   int get numMembers => members.length;
@@ -101,6 +102,278 @@ class NeedAssessmentData {
   List<LoanDetail> loanDetails = [];
 
   NeedAssessmentData();
+
+  factory NeedAssessmentData.fromJson(Map<String, dynamic> json) {
+    NeedAssessmentData data = NeedAssessmentData();
+
+    // Basic family information
+    data.householdHead = json['householdHead'] ?? '';
+    data.villageWard = json['villageWard'] ?? '';
+    data.houseNumber = json['houseNumber'] ?? '';
+    data.uniqueHouseholdId = json['_id'] ?? '';
+    data.address = json['address'] ?? '';
+    data.contactNo = json['contactNo'] ?? '';
+    data.rationCardNo = json['rationCardNo'] ?? '';
+    data.rationCategory = json['rationCategory'] ?? '';
+    data.caste = json['caste'] ?? '';
+    data.otherCaste = json['otherCaste'] ?? '';
+
+    // Anganwadi and nutrition data
+    data.numChildrenAnganwadi = json['numChildrenAnganwadi'] ?? 0;
+    data.anganwadiStatus = json['anganwadiStatus'] ?? '';
+    data.childrenMalnutritionStatus = json['childrenMalnutritionStatus'] ?? '';
+    data.numPregnantWomen = json['numPregnantWomen'] ?? 0;
+    data.numLactatingMothers = json['numLactatingMothers'] ?? 0;
+
+    // Food assistance
+    data.foodAssistanceSufficient = json['foodAssistanceSufficient'] ?? '';
+    data.foodAssistanceNeedDuration = json['foodAssistanceNeedDuration'] ?? '';
+    data.govtNutritionDisruption = json['govtNutritionDisruption'] ?? '';
+    data.foodSecurityAdditionalInfo = json['foodSecurityAdditionalInfo'] ?? '';
+
+    // Health insurance
+    data.healthInsuranceStatus = json['healthInsuranceStatus'] ?? '';
+    data.healthInsuranceDetails = json['healthInsuranceDetails'] ?? '';
+
+    // Shelter information
+    data.shelterType = json['shelterType'] ?? '';
+    data.otherShelterType = json['otherShelterType'] ?? '';
+    data.campId = json['campId'] ?? '';
+    data.residentialLandArea = json['residentialLandArea'] ?? '';
+    data.accommodationStatus = json['accommodationStatus'] ?? '';
+    data.otherAccommodation = json['otherAccommodation'] ?? '';
+
+    // Vehicle information
+    data.vehiclePossession = json['vehiclePossession'] ?? '';
+    data.vehicleType = json['vehicleType'] ?? '';
+    data.otherVehicleType = json['otherVehicleType'] ?? '';
+    data.vehicleLoss = json['vehicleLoss'] ?? '';
+    data.vehicleLossType = json['vehicleLossType'] ?? '';
+    data.otherVehicleLossType = json['otherVehicleLossType'] ?? '';
+
+    // Income and livelihood
+    data.avgMonthlyFamilyIncome =
+        (json['avgMonthlyFamilyIncome'] is num)
+            ? (json['avgMonthlyFamilyIncome'] as num).toDouble()
+            : 0.0;
+    data.primaryIncomeSource = json['primaryIncomeSource'] ?? '';
+    data.livelihoodAffected = json['livelihoodAffected'] ?? '';
+    data.employmentLoss = json['employmentLoss'] ?? '';
+    data.businessLoss = json['businessLoss'] ?? '';
+    data.dailyWageLoss = json['dailyWageLoss'] ?? '';
+    data.breadwinnerLoss = json['breadwinnerLoss'] ?? '';
+    data.animalLoss = json['animalLoss'] ?? '';
+    data.agriculturalLandLoss = json['agriculturalLandLoss'] ?? '';
+    data.otherLivelihoodLoss = json['otherLivelihoodLoss'] ?? '';
+    data.otherLivelihoodLossDetails = json['otherLivelihoodLossDetails'] ?? '';
+
+    // Agricultural losses
+    data.agriculturalLandLossArea = json['agriculturalLandLossArea'] ?? '';
+    data.storedCropsLoss = json['storedCropsLoss'] ?? '';
+    data.cropType = json['cropType'] ?? '';
+    data.equipmentLoss = json['equipmentLoss'] ?? '';
+    data.equipmentLossDetails = json['equipmentLossDetails'] ?? '';
+
+    // Animal husbandry
+    data.animalHusbandryLoss = json['animalHusbandryLoss'] ?? '';
+    data.animalHusbandryLossDetails = json['animalHusbandryLossDetails'] ?? '';
+    data.shedLoss = json['shedLoss'] ?? '';
+    data.shedLossDetails = json['shedLossDetails'] ?? '';
+
+    // Equipment
+    data.equipmentToolsLoss = json['equipmentToolsLoss'] ?? '';
+    data.equipmentToolsLossDetails = json['equipmentToolsLossDetails'] ?? '';
+
+    // Insurance and livelihood
+    data.livelihoodInsurance = json['livelihoodInsurance'] ?? '';
+    data.livelihoodInsuranceDetails = json['livelihoodInsuranceDetails'] ?? '';
+    data.pensionBeneficiary = json['pensionBeneficiary'] ?? '';
+    data.pensionType = json['pensionType'] ?? '';
+    data.otherPensionType = json['otherPensionType'] ?? '';
+
+    // MGNREGA
+    data.mgnregaBeneficiary = json['mgnregaBeneficiary'] ?? '';
+    data.mgnregaDetails = json['mgnregaDetails'] ?? '';
+
+    // Lost documents
+    data.legalDocumentsLost = json['legalDocumentsLost'] ?? '';
+    data.aadharCardLoss = json['aadharCardLoss'] ?? '';
+    data.governmentIDLoss = json['governmentIDLoss'] ?? '';
+    data.passportLoss = json['passportLoss'] ?? '';
+    data.employmentCardLoss = json['employmentCardLoss'] ?? '';
+    data.panCardLoss = json['panCardLoss'] ?? '';
+    data.insuranceCardLoss = json['insuranceCardLoss'] ?? '';
+    data.drivingLicenseLoss = json['drivingLicenseLoss'] ?? '';
+    data.atmCardLoss = json['atmCardLoss'] ?? '';
+    data.rationCardLossDoc = json['rationCardLossDoc'] ?? '';
+    data.landDocumentLoss = json['landDocumentLoss'] ?? '';
+    data.propertyDocumentLoss = json['propertyDocumentLoss'] ?? '';
+    data.birthCertificateLoss = json['birthCertificateLoss'] ?? '';
+    data.marriageCertificateLoss = json['marriageCertificateLoss'] ?? '';
+    data.educationalDocumentLoss = json['educationalDocumentLoss'] ?? '';
+    data.otherDocumentLoss = json['otherDocumentLoss'] ?? '';
+    data.otherDocumentLossDetails = json['otherDocumentLossDetails'] ?? '';
+
+    // Loans
+    data.loanRepaymentPending = json['loanRepaymentPending'] ?? '';
+
+    // Special categories
+    data.specialCategory = json['specialCategory'] ?? '';
+    data.otherSpecialCategory = json['otherSpecialCategory'] ?? '';
+
+    // Kudumbashree information
+    data.kudumbashreeMember = json['kudumbashreeMember'] ?? '';
+    data.kudumbashreeNHGName = json['kudumbashreeNHGName'] ?? '';
+    data.kudumbashreeInternalLoan = json['kudumbashreeInternalLoan'] ?? '';
+    data.kudumbashreeInternalLoanAmount =
+        (json['kudumbashreeInternalLoanAmount'] is num)
+            ? (json['kudumbashreeInternalLoanAmount'] as num).toDouble()
+            : 0.0;
+    data.kudumbashreeLinkageLoan = json['kudumbashreeLinkageLoan'] ?? '';
+    data.kudumbashreeLinkageLoanAmount =
+        (json['kudumbashreeLinkageLoanAmount'] is num)
+            ? (json['kudumbashreeLinkageLoanAmount'] as num).toDouble()
+            : 0.0;
+    data.kudumbashreeMicroenterpriseLoan =
+        json['kudumbashreeMicroenterpriseLoan'] ?? '';
+    data.kudumbashreeMicroenterpriseLoanAmount =
+        (json['kudumbashreeMicroenterpriseLoanAmount'] is num)
+            ? (json['kudumbashreeMicroenterpriseLoanAmount'] as num).toDouble()
+            : 0.0;
+
+    // Additional fields
+    data.additionalSupportRequired = json['additionalSupportRequired'] ?? '';
+    data.primaryOccupation = json['primaryOccupation'] ?? '';
+    data.secondaryOccupation = json['secondaryOccupation'] ?? '';
+    data.businessDamage = json['businessDamage'];
+
+    // Boolean fields
+    data.outsideDamagedArea = json['outsideDamagedArea'] == true;
+    data.receivedAllowance = json['receivedAllowance'] == true;
+
+    // Parse members
+    if (json['members'] != null && json['members'] is List) {
+      data.members =
+          (json['members'] as List)
+              .map((memberJson) => Member.fromJson(memberJson))
+              .toList();
+    }
+
+    // Parse loan details
+    if (json['loanDetails'] != null && json['loanDetails'] is List) {
+      data.loanDetails =
+          (json['loanDetails'] as List)
+              .map((loanJson) => LoanDetail.fromJson(loanJson))
+              .toList();
+    }
+
+    return data;
+  }
+
+  // Add toJson method to serialize the data for API calls
+  Map<String, dynamic> toJson() {
+    return {
+      'householdHead': householdHead,
+      'villageWard': villageWard,
+      'houseNumber': houseNumber,
+      '_id': uniqueHouseholdId,
+      'address': address,
+      'contactNo': contactNo,
+      'rationCardNo': rationCardNo,
+      'rationCategory': rationCategory,
+      'caste': caste,
+      'otherCaste': otherCaste,
+      'numChildrenAnganwadi': numChildrenAnganwadi,
+      'anganwadiStatus': anganwadiStatus,
+      'childrenMalnutritionStatus': childrenMalnutritionStatus,
+      'numPregnantWomen': numPregnantWomen,
+      'numLactatingMothers': numLactatingMothers,
+      'foodAssistanceSufficient': foodAssistanceSufficient,
+      'foodAssistanceNeedDuration': foodAssistanceNeedDuration,
+      'govtNutritionDisruption': govtNutritionDisruption,
+      'healthInsuranceStatus': healthInsuranceStatus,
+      'healthInsuranceDetails': healthInsuranceDetails,
+      'shelterType': shelterType,
+      'otherShelterType': otherShelterType,
+      'campId': campId,
+      'residentialLandArea': residentialLandArea,
+      'accommodationStatus': accommodationStatus,
+      'otherAccommodation': otherAccommodation,
+      'vehiclePossession': vehiclePossession,
+      'vehicleType': vehicleType,
+      'otherVehicleType': otherVehicleType,
+      'vehicleLoss': vehicleLoss,
+      'vehicleLossType': vehicleLossType,
+      'otherVehicleLossType': otherVehicleLossType,
+      'avgMonthlyFamilyIncome': avgMonthlyFamilyIncome,
+      'primaryIncomeSource': primaryIncomeSource,
+      'livelihoodAffected': livelihoodAffected,
+      'employmentLoss': employmentLoss,
+      'businessLoss': businessLoss,
+      'dailyWageLoss': dailyWageLoss,
+      'breadwinnerLoss': breadwinnerLoss,
+      'animalLoss': animalLoss,
+      'agriculturalLandLoss': agriculturalLandLoss,
+      'otherLivelihoodLoss': otherLivelihoodLoss,
+      'otherLivelihoodLossDetails': otherLivelihoodLossDetails,
+      'agriculturalLandLossArea': agriculturalLandLossArea,
+      'storedCropsLoss': storedCropsLoss,
+      'cropType': cropType,
+      'equipmentLoss': equipmentLoss,
+      'equipmentLossDetails': equipmentLossDetails,
+      'animalHusbandryLoss': animalHusbandryLoss,
+      'animalHusbandryLossDetails': animalHusbandryLossDetails,
+      'shedLoss': shedLoss,
+      'shedLossDetails': shedLossDetails,
+      'equipmentToolsLoss': equipmentToolsLoss,
+      'equipmentToolsLossDetails': equipmentToolsLossDetails,
+      'livelihoodInsurance': livelihoodInsurance,
+      'livelihoodInsuranceDetails': livelihoodInsuranceDetails,
+      'pensionBeneficiary': pensionBeneficiary,
+      'pensionType': pensionType,
+      'otherPensionType': otherPensionType,
+      'mgnregaBeneficiary': mgnregaBeneficiary,
+      'mgnregaDetails': mgnregaDetails,
+      'legalDocumentsLost': legalDocumentsLost,
+      'aadharCardLoss': aadharCardLoss,
+      'governmentIDLoss': governmentIDLoss,
+      'passportLoss': passportLoss,
+      'employmentCardLoss': employmentCardLoss,
+      'panCardLoss': panCardLoss,
+      'insuranceCardLoss': insuranceCardLoss,
+      'drivingLicenseLoss': drivingLicenseLoss,
+      'atmCardLoss': atmCardLoss,
+      'rationCardLossDoc': rationCardLossDoc,
+      'landDocumentLoss': landDocumentLoss,
+      'propertyDocumentLoss': propertyDocumentLoss,
+      'birthCertificateLoss': birthCertificateLoss,
+      'marriageCertificateLoss': marriageCertificateLoss,
+      'educationalDocumentLoss': educationalDocumentLoss,
+      'otherDocumentLoss': otherDocumentLoss,
+      'otherDocumentLossDetails': otherDocumentLossDetails,
+      'loanRepaymentPending': loanRepaymentPending,
+      'specialCategory': specialCategory,
+      'otherSpecialCategory': otherSpecialCategory,
+      'kudumbashreeMember': kudumbashreeMember,
+      'kudumbashreeNHGName': kudumbashreeNHGName,
+      'kudumbashreeInternalLoan': kudumbashreeInternalLoan,
+      'kudumbashreeInternalLoanAmount': kudumbashreeInternalLoanAmount,
+      'kudumbashreeLinkageLoan': kudumbashreeLinkageLoan,
+      'kudumbashreeLinkageLoanAmount': kudumbashreeLinkageLoanAmount,
+      'kudumbashreeMicroenterpriseLoan': kudumbashreeMicroenterpriseLoan,
+      'kudumbashreeMicroenterpriseLoanAmount':
+          kudumbashreeMicroenterpriseLoanAmount,
+      'additionalSupportRequired': additionalSupportRequired,
+      'foodSecurityAdditionalInfo': foodSecurityAdditionalInfo,
+      'primaryOccupation': primaryOccupation,
+      'secondaryOccupation': secondaryOccupation,
+      'businessDamage': businessDamage,
+      'outsideDamagedArea': outsideDamagedArea,
+      'receivedAllowance': receivedAllowance,
+      'members': members.map((member) => member.toJson()).toList(),
+      'loanDetails': loanDetails.map((loan) => loan.toJson()).toList(),
+    };
+  }
 
   // Filtering methods
   static List<Family> filterFamilies(
@@ -114,9 +387,9 @@ class NeedAssessmentData {
       // Family-level filters
       if (filters['villageWard'] != null) {
         if (filters['villageWard'] is String) {
-          if (!data.villageWard
-              .toLowerCase()
-              .contains(filters['villageWard'].toLowerCase())) {
+          if (!data.villageWard.toLowerCase().contains(
+            filters['villageWard'].toLowerCase(),
+          )) {
             return false;
           }
         } else if (filters['villageWard'] is List) {
@@ -128,9 +401,9 @@ class NeedAssessmentData {
 
       if (filters['houseNumber'] != null) {
         if (filters['houseNumber'] is String) {
-          if (!data.houseNumber
-              .toLowerCase()
-              .contains(filters['houseNumber'].toLowerCase())) {
+          if (!data.houseNumber.toLowerCase().contains(
+            filters['houseNumber'].toLowerCase(),
+          )) {
             return false;
           }
         } else if (filters['houseNumber'] is List) {
@@ -142,9 +415,9 @@ class NeedAssessmentData {
 
       if (filters['householdHead'] != null) {
         if (filters['householdHead'] is String) {
-          if (!data.householdHead
-              .toLowerCase()
-              .contains(filters['householdHead'].toLowerCase())) {
+          if (!data.householdHead.toLowerCase().contains(
+            filters['householdHead'].toLowerCase(),
+          )) {
             return false;
           }
         } else if (filters['householdHead'] is List) {
@@ -156,10 +429,8 @@ class NeedAssessmentData {
 
       if (filters['avgMonthlyFamilyIncome'] != null) {
         if (filters['avgMonthlyFamilyIncome'] is Map) {
-          final minIncome =
-              filters['avgMonthlyFamilyIncome']['min'] as double?;
-          final maxIncome =
-              filters['avgMonthlyFamilyIncome']['max'] as double?;
+          final minIncome = filters['avgMonthlyFamilyIncome']['min'] as double?;
+          final maxIncome = filters['avgMonthlyFamilyIncome']['max'] as double?;
           if (minIncome != null && data.avgMonthlyFamilyIncome < minIncome) {
             return false;
           }
@@ -176,9 +447,9 @@ class NeedAssessmentData {
 
       if (filters['shelterType'] != null) {
         if (filters['shelterType'] is String) {
-          if (!data.shelterType
-              .toLowerCase()
-              .contains(filters['shelterType'].toLowerCase())) {
+          if (!data.shelterType.toLowerCase().contains(
+            filters['shelterType'].toLowerCase(),
+          )) {
             return false;
           }
         } else if (filters['shelterType'] is List) {
@@ -223,8 +494,9 @@ class NeedAssessmentData {
       }
 
       // Individual-level filters
-      final hasIndividualFilters = filters.keys
-          .any((key) => key.startsWith('member')); //check if any key starts with member
+      final hasIndividualFilters = filters.keys.any(
+        (key) => key.startsWith('member'),
+      ); //check if any key starts with member
 
       if (!hasIndividualFilters) {
         return true;
@@ -234,9 +506,9 @@ class NeedAssessmentData {
       return data.members.any((member) {
         if (filters['memberName'] != null) {
           if (filters['memberName'] is String) {
-            if (!member.name
-                .toLowerCase()
-                .contains(filters['memberName'].toLowerCase())) {
+            if (!member.name.toLowerCase().contains(
+              filters['memberName'].toLowerCase(),
+            )) {
               return false;
             }
           } else if (filters['memberName'] is List) {
@@ -295,8 +567,9 @@ class NeedAssessmentData {
               return false;
             }
           } else if (filters['memberEmploymentType'] is List) {
-            if (!filters['memberEmploymentType']
-                .contains(member.employmentType)) {
+            if (!filters['memberEmploymentType'].contains(
+              member.employmentType,
+            )) {
               return false;
             }
           }
@@ -339,7 +612,9 @@ class NeedAssessmentData {
 
   // Helper method to get distinct values for filters
   static List<String> getDistinctValues(
-      List<Family> families, String propertyName) {
+    List<Family> families,
+    String propertyName,
+  ) {
     final values = <String>{};
 
     for (final family in families) {
@@ -381,8 +656,7 @@ class NeedAssessmentData {
           break;
         case 'relationship':
           for (final member in data.members) {
-            if (member.relationship.isNotEmpty)
-              values.add(member.relationship);
+            if (member.relationship.isNotEmpty) values.add(member.relationship);
           }
           break;
       }
@@ -526,21 +800,105 @@ class Member {
           preferredModeOfEducation ?? this.preferredModeOfEducation,
       typesOfAssistanceTransport:
           typesOfAssistanceTransport ?? this.typesOfAssistanceTransport,
-      typesOfAssistanceDigitalDevice: typesOfAssistanceDigitalDevice ??
-          this.typesOfAssistanceDigitalDevice,
-      typesOfAssistanceStudyMaterials: typesOfAssistanceStudyMaterials ??
+      typesOfAssistanceDigitalDevice:
+          typesOfAssistanceDigitalDevice ?? this.typesOfAssistanceDigitalDevice,
+      typesOfAssistanceStudyMaterials:
+          typesOfAssistanceStudyMaterials ??
           this.typesOfAssistanceStudyMaterials,
       typesOfAssistanceAnyOtherSpecificRequirement:
           typesOfAssistanceAnyOtherSpecificRequirement ??
-              this.typesOfAssistanceAnyOtherSpecificRequirement,
+          this.typesOfAssistanceAnyOtherSpecificRequirement,
       presentSkillSet: presentSkillSet ?? this.presentSkillSet,
-      typeOfLivelihoodAssistanceRequired: typeOfLivelihoodAssistanceRequired ??
+      typeOfLivelihoodAssistanceRequired:
+          typeOfLivelihoodAssistanceRequired ??
           this.typeOfLivelihoodAssistanceRequired,
-      typeOfSkillingAssistanceRequired: typeOfSkillingAssistanceRequired ??
+      typeOfSkillingAssistanceRequired:
+          typeOfSkillingAssistanceRequired ??
           this.typeOfSkillingAssistanceRequired,
       otherRelationship: otherRelationship ?? this.otherRelationship,
       otherGender: otherGender ?? this.otherGender,
     );
+  }
+
+  // Add this to the Member class
+  factory Member.fromJson(Map<String, dynamic> json) {
+    return Member(
+      name: json['name'] ?? '',
+      age: json['age']?.toString() ?? '',
+      gender: json['gender'] ?? '',
+      relationship: json['relationship'] ?? '',
+      maritalStatus: json['maritalStatus'] ?? '',
+      ldm: json['ldm'] ?? '',
+      aadharNo: json['aadharNo'] ?? '',
+      grievouslyInjured: json['grievouslyInjured'] ?? '',
+      bedriddenPalliative: json['bedriddenPalliative'] ?? '',
+      pwDs: json['pwDs'] ?? '',
+      psychoSocialAssistance: json['psychoSocialAssistance'] ?? '',
+      nursingHomeAssistance: json['nursingHomeAssistance'] ?? '',
+      assistiveDevices: json['assistiveDevices'] ?? '',
+      specialMedicalRequirements: json['specialMedicalRequirements'] ?? '',
+      education: json['education'] ?? '',
+      previousStatus: json['previousStatus'] ?? '',
+      employmentType: json['employmentType'] ?? '',
+      salary: json['salary'] ?? '',
+      unemployedDueToDisaster: json['unemployedDueToDisaster'] ?? '',
+      className: json['className'] ?? '',
+      schoolInstituteName: json['schoolInstituteName'] ?? '',
+      areDropout: json['areDropout'] ?? '',
+      preferredModeOfEducation: json['preferredModeOfEducation'] ?? '',
+      typesOfAssistanceTransport: json['typesOfAssistanceTransport'] ?? '',
+      typesOfAssistanceDigitalDevice:
+          json['typesOfAssistanceDigitalDevice'] ?? '',
+      typesOfAssistanceStudyMaterials:
+          json['typesOfAssistanceStudyMaterials'] ?? '',
+      typesOfAssistanceAnyOtherSpecificRequirement:
+          json['typesOfAssistanceAnyOtherSpecificRequirement'] ?? '',
+      presentSkillSet: json['presentSkillSet'] ?? '',
+      typeOfLivelihoodAssistanceRequired:
+          json['typeOfLivelihoodAssistanceRequired'] ?? '',
+      typeOfSkillingAssistanceRequired:
+          json['typeOfSkillingAssistanceRequired'] ?? '',
+      otherRelationship: json['otherRelationship'] ?? '',
+      otherGender: json['otherGender'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'age': age,
+      'gender': gender,
+      'relationship': relationship,
+      'maritalStatus': maritalStatus,
+      'ldm': ldm,
+      'aadharNo': aadharNo,
+      'grievouslyInjured': grievouslyInjured,
+      'bedriddenPalliative': bedriddenPalliative,
+      'pwDs': pwDs,
+      'psychoSocialAssistance': psychoSocialAssistance,
+      'nursingHomeAssistance': nursingHomeAssistance,
+      'assistiveDevices': assistiveDevices,
+      'specialMedicalRequirements': specialMedicalRequirements,
+      'education': education,
+      'previousStatus': previousStatus,
+      'employmentType': employmentType,
+      'salary': salary,
+      'unemployedDueToDisaster': unemployedDueToDisaster,
+      'className': className,
+      'schoolInstituteName': schoolInstituteName,
+      'areDropout': areDropout,
+      'preferredModeOfEducation': preferredModeOfEducation,
+      'typesOfAssistanceTransport': typesOfAssistanceTransport,
+      'typesOfAssistanceDigitalDevice': typesOfAssistanceDigitalDevice,
+      'typesOfAssistanceStudyMaterials': typesOfAssistanceStudyMaterials,
+      'typesOfAssistanceAnyOtherSpecificRequirement':
+          typesOfAssistanceAnyOtherSpecificRequirement,
+      'presentSkillSet': presentSkillSet,
+      'typeOfLivelihoodAssistanceRequired': typeOfLivelihoodAssistanceRequired,
+      'typeOfSkillingAssistanceRequired': typeOfSkillingAssistanceRequired,
+      'otherRelationship': otherRelationship,
+      'otherGender': otherGender,
+    };
   }
 }
 
@@ -577,6 +935,29 @@ class LoanDetail {
       loanAmount: loanAmount ?? this.loanAmount,
       loanOutstanding: loanOutstanding ?? this.loanOutstanding,
     );
+  }
+
+  // Add this to the LoanDetail class
+  factory LoanDetail.fromJson(Map<String, dynamic> json) {
+    return LoanDetail(
+      bankName: json['bankName'] ?? '',
+      branch: json['branch'] ?? '',
+      accountNumber: json['accountNumber'] ?? '',
+      loanCategory: json['loanCategory'] ?? '',
+      loanAmount: json['loanAmount'] ?? '',
+      loanOutstanding: json['loanOutstanding'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'bankName': bankName,
+      'branch': branch,
+      'accountNumber': accountNumber,
+      'loanCategory': loanCategory,
+      'loanAmount': loanAmount,
+      'loanOutstanding': loanOutstanding,
+    };
   }
 }
 

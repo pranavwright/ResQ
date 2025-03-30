@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
-import 'dart:convert'; // Import for JSON encoding
+import 'package:resq/utils/auth/auth_service.dart';
+import 'dart:convert';
+
+import 'package:resq/utils/http/token_http.dart'; // Import for JSON encoding
 
 class ScreenK extends StatelessWidget {
   final NeedAssessmentData data;
@@ -56,9 +59,16 @@ class ScreenK extends StatelessWidget {
                   // Print the data to the console as JSON
                   print(
                     jsonEncode(data.toJson()),
-                  ); // Assuming you add toJson() to NeedAssessmentData
-
-                  // Implement your submission logic here (e.g., send data to a server)
+                  ); 
+                  TokenHttp().post('/families/addFamily', {...data.toJson(), 'disasterId': AuthService().getDisasterId()});
+                  // Show a success message
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Data submitted successfully!'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                  Navigator.pop(context); // Navigate back after submission
                 },
                 child: Text('Submit'),
               ),
@@ -67,161 +77,5 @@ class ScreenK extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-// Add toJson() method to NeedAssessmentData class
-extension NeedAssessmentDataToJson on NeedAssessmentData {
-  Map<String, dynamic> toJson() {
-    return {
-      'villageWard': villageWard,
-      'houseNumber': houseNumber,
-      'householdHead': householdHead,
-      'uniqueHouseholdId': uniqueHouseholdId,
-      'address': address,
-      'contactNo': contactNo,
-      'rationCardNo': rationCardNo,
-      'rationCategory': rationCategory,
-      'caste': caste,
-      'otherCaste': otherCaste,
-      'numChildrenAnganwadi': numChildrenAnganwadi,
-      'anganwadiStatus': anganwadiStatus,
-      'childrenMalnutritionStatus': childrenMalnutritionStatus,
-      'numPregnantWomen': numPregnantWomen,
-      'numLactatingMothers': numLactatingMothers,
-      'foodAssistanceSufficient': foodAssistanceSufficient,
-      'foodAssistanceNeedDuration': foodAssistanceNeedDuration,
-      'govtNutritionDisruption': govtNutritionDisruption,
-      'healthInsuranceStatus': healthInsuranceStatus,
-      'healthInsuranceDetails': healthInsuranceDetails,
-      'shelterType': shelterType,
-      'otherShelterType': otherShelterType,
-      'residentialLandArea': residentialLandArea,
-      'accommodationStatus': accommodationStatus,
-      'otherAccommodation': otherAccommodation,
-      'vehiclePossession': vehiclePossession,
-      'vehicleType': vehicleType,
-      'otherVehicleType': otherVehicleType,
-      'vehicleLoss': vehicleLoss,
-      'vehicleLossType': vehicleLossType,
-      'otherVehicleLossType': otherVehicleLossType,
-      'avgMonthlyFamilyIncome': avgMonthlyFamilyIncome,
-      'primaryIncomeSource': primaryIncomeSource,
-      'livelihoodAffected': livelihoodAffected,
-      'employmentLoss': employmentLoss,
-      'businessLoss': businessLoss,
-      'dailyWageLoss': dailyWageLoss,
-      'breadwinnerLoss': breadwinnerLoss,
-      'animalLoss': animalLoss,
-      'agriculturalLandLoss': agriculturalLandLoss,
-      'otherLivelihoodLoss': otherLivelihoodLoss,
-      'otherLivelihoodLossDetails': otherLivelihoodLossDetails,
-      'agriculturalLandLossArea': agriculturalLandLossArea,
-      'storedCropsLoss': storedCropsLoss,
-      'cropType': cropType,
-      'equipmentLoss': equipmentLoss,
-      'equipmentLossDetails': equipmentLossDetails,
-      'animalHusbandryLoss': animalHusbandryLoss,
-      'animalHusbandryLossDetails': animalHusbandryLossDetails,
-      'shedLoss': shedLoss,
-      'shedLossDetails': shedLossDetails,
-      'equipmentToolsLoss': equipmentToolsLoss,
-      'equipmentToolsLossDetails': equipmentToolsLossDetails,
-      'livelihoodInsurance': livelihoodInsurance,
-      'livelihoodInsuranceDetails': livelihoodInsuranceDetails,
-      'pensionBeneficiary': pensionBeneficiary,
-      'pensionType': pensionType,
-      'otherPensionType': otherPensionType,
-      'mgnregaBeneficiary': mgnregaBeneficiary,
-      'mgnregaDetails': mgnregaDetails,
-      'legalDocumentsLost': legalDocumentsLost,
-      'aadharCardLoss': aadharCardLoss,
-      'governmentIDLoss': governmentIDLoss,
-      'passportLoss': passportLoss,
-      'employmentCardLoss': employmentCardLoss,
-      'panCardLoss': panCardLoss,
-      'insuranceCardLoss': insuranceCardLoss,
-      'drivingLicenseLoss': drivingLicenseLoss,
-      'atmCardLoss': atmCardLoss,
-      'rationCardLossDoc': rationCardLossDoc,
-      'landDocumentLoss': landDocumentLoss,
-      'propertyDocumentLoss': propertyDocumentLoss,
-      'birthCertificateLoss': birthCertificateLoss,
-      'marriageCertificateLoss': marriageCertificateLoss,
-      'educationalDocumentLoss': educationalDocumentLoss,
-      'otherDocumentLoss': otherDocumentLoss,
-      'otherDocumentLossDetails': otherDocumentLossDetails,
-      'loanRepaymentPending': loanRepaymentPending,
-      'specialCategory': specialCategory,
-      'otherSpecialCategory': otherSpecialCategory,
-      'kudumbashreeMember': kudumbashreeMember,
-      'kudumbashreeNHGName': kudumbashreeNHGName,
-      'kudumbashreeInternalLoan': kudumbashreeInternalLoan,
-      'kudumbashreeInternalLoanAmount': kudumbashreeInternalLoanAmount,
-      'kudumbashreeLinkageLoan': kudumbashreeLinkageLoan,
-      'kudumbashreeLinkageLoanAmount': kudumbashreeLinkageLoanAmount,
-      'kudumbashreeMicroenterpriseLoan': kudumbashreeMicroenterpriseLoan,
-      'kudumbashreeMicroenterpriseLoanAmount':
-          kudumbashreeMicroenterpriseLoanAmount,
-      'additionalSupportRequired': additionalSupportRequired,
-      'foodSecurityAdditionalInfo': foodSecurityAdditionalInfo,
-      'primaryOccupation': primaryOccupation,
-      'secondaryOccupation': secondaryOccupation,
-      'numMembers': numMembers,
-      'members': members.map((member) => member.toJson()).toList(),
-      'loanDetails': loanDetails.map((loan) => loan.toJson()).toList(),
-    };
-  }
-}
-
-// Add toJson() method to Member class
-extension MemberToJson on Member {
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'age': age,
-      'gender': gender,
-      'relationship': relationship,
-      'maritalStatus': maritalStatus,
-      'ldm': ldm,
-      'aadharNo': aadharNo,
-      'grievouslyInjured': grievouslyInjured,
-      'bedriddenPalliative': bedriddenPalliative,
-      'pwDs': pwDs,
-      'psychoSocialAssistance': psychoSocialAssistance,
-      'nursingHomeAssistance': nursingHomeAssistance,
-      'assistiveDevices': assistiveDevices,
-      'specialMedicalRequirements': specialMedicalRequirements,
-      'education': education,
-      'previousStatus': previousStatus,
-      'employmentType': employmentType,
-      'salary': salary,
-      'unemployedDueToDisaster': unemployedDueToDisaster,
-      'className': className,
-      'schoolInstituteName': schoolInstituteName,
-      'areDropout': areDropout,
-      'preferredModeOfEducation': preferredModeOfEducation,
-      'typesOfAssistanceTransport': typesOfAssistanceTransport,
-      'typesOfAssistanceDigitalDevice': typesOfAssistanceDigitalDevice,
-      'typesOfAssistanceStudyMaterials': typesOfAssistanceStudyMaterials,
-      'typesOfAssistanceAnyOtherSpecificRequirement':typesOfAssistanceAnyOtherSpecificRequirement,
-      'presentSkillSet': presentSkillSet,
-      'typeOfLivelihoodAssistanceRequired': typeOfLivelihoodAssistanceRequired,
-      'typeOfSkillingAssistanceRequired': typeOfSkillingAssistanceRequired,
-    };
-  }
-}
-
-// Add toJson() method to LoanDetail class
-extension LoanDetailToJson on LoanDetail {
-  Map<String, dynamic> toJson() {
-    return {
-      'bankName': bankName,
-      'branch': branch,
-      'accountNumber': accountNumber,
-      'loanCategory': loanCategory,
-      'loanAmount': loanAmount,
-      'loanOutstanding': loanOutstanding,
-    };
   }
 }

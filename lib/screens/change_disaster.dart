@@ -10,7 +10,7 @@ class ChangeDisasterScreen extends StatefulWidget {
 }
 
 class _ChangeDisasterScreenState extends State<ChangeDisasterScreen> {
-  String? _selectedDisasterId;
+  String? _selectedDisasterId = AuthService().getDisasterId();
   List<Map<String, dynamic>> _disasterRoles = [];
   bool _isLoading = true;
 
@@ -26,8 +26,8 @@ class _ChangeDisasterScreenState extends State<ChangeDisasterScreen> {
     });
     try {
       final user = await TokenHttp().get('/auth/getUser');
-      if (user != null && user['role'] is List) {
-        _disasterRoles = List<Map<String, dynamic>>.from(user['role']);
+      if (user != null && user['roles'] is List) {
+        _disasterRoles = List<Map<String, dynamic>>.from(user['roles']);
       }
     } catch (e) {
       print('Error loading disaster roles: $e');
@@ -42,6 +42,9 @@ class _ChangeDisasterScreenState extends State<ChangeDisasterScreen> {
   }
 
   Future<void> _handleChangeDisaster() async {
+    setState(() {
+        _isLoading=true;
+      });
     if (_selectedDisasterId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a disaster')),
@@ -70,6 +73,10 @@ class _ChangeDisasterScreenState extends State<ChangeDisasterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to change disaster: $e')),
       );
+    } finally {
+      setState(() {
+        _isLoading=false;
+      });
     }
   }
 

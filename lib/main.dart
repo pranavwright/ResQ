@@ -179,7 +179,7 @@ class MyApp extends StatelessWidget {
       case '/families':
         builder =
             (context) => const AuthRoute(
-              requiredRoles: ['admin', 'familySurvey'],
+              requiredRoles: ['admin', 'surveyOfficial'],
               child: FamiliesScreen(),
             );
         break;
@@ -297,7 +297,7 @@ class MyApp extends StatelessWidget {
       case '/change-disaster':
         builder =
             (context) => AuthRoute(
-              requiredRoles: ['superAdmin'],
+              requiresAuth: true,
               child: ChangeDisasterScreen(),
             );
         break;
@@ -306,10 +306,7 @@ class MyApp extends StatelessWidget {
           // Execute logout in the next frame after the route is built
           WidgetsBinding.instance.addPostFrameCallback((_) {
             AuthService().logout().then((_) {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => OtpScreen()),
-                (Route<dynamic> route) => false,
-              );
+              Navigator.of(context).pushReplacementNamed('/otp');
             });
           });
           // Return a loading screen while logout is processing

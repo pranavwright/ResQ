@@ -122,56 +122,80 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
   }
 
   Future<void> exportToExcel() async {
-    final excel = Excel.createExcel();
-    final sheet = excel['Individual Data']; // Changed sheet name
+  final excel = Excel.createExcel();
+  final familySheet = excel['Family Data'];
+  final individualSheet = excel['Individual Data'];
 
-    // Get all possible headers dynamically.
-    Set<String> allHeaders = {};
-    for (var family in filteredFamilies) {
-      final data = family.data;
-      if (data != null) {
-        allHeaders.addAll(_getFamilyDataHeaders()); // Get family headers without member data
-        allHeaders.addAll(_getMemberDataHeaders());
+  // Get all headers and filter by visibility
+  List<String> familyHeaders = _getFamilyDataHeaders()
+      .where((header) => columnVisibility[header] ?? true)
+      .toList();
+  
+  List<String> memberHeaders = _getMemberDataHeaders()
+      .where((header) => columnVisibility[header] ?? true)
+      .toList();
+
+  // Add headers to the Family Data sheet
+  familySheet.appendRow(familyHeaders.map((header) => TextCellValue(header)).toList());
+  
+  // Add family data rows
+  for (var family in filteredFamilies) {
+    final data = family.data;
+    if (data != null) {
+      List<TextCellValue> rowData = [];
+      for (var header in familyHeaders) {
+        String? value = _getFamilyDataValue(data, header);
+        rowData.add(TextCellValue(value ?? 'N/A'));
       }
-    }
-    List<String> headers = allHeaders.toList();
-    headers.sort();
-
-    // Add headers to the Excel sheet
-    sheet.appendRow(headers.map((header) => TextCellValue(header)).toList());
-
-    // Add data rows for each individual
-    for (var family in filteredFamilies) {
-      final data = family.data;
-      if (data != null) {
-        for (var member in data.members ?? []) {
-          List<TextCellValue> rowData = [];
-          for (var header in headers) {
-            //Populate the row, prioritizing member data, then family data.
-            String? value = _getMemberDataValue(member, header) ??
-                _getFamilyDataValue(data, header);
-
-            rowData.add(TextCellValue(value ?? 'N/A'));
-          }
-          sheet.appendRow(rowData);
-        }
-      }
-    }
-
-    // Save the file
-    final bytes = excel.save();
-    if (bytes != null) {
-      await FileSaver.instance.saveFile(
-        name: 'individual_data', // Changed file name
-        bytes: Uint8List.fromList(bytes),
-        ext: 'xlsx',
-        mimeType: MimeType.microsoftExcel,
-      );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Data exported successfully!')),
-      );
+      familySheet.appendRow(rowData);
     }
   }
+  
+  // For Individual Data sheet, add combined headers
+  List<String> combinedHeaders = [
+    ...familyHeaders.map((h) => "Family $h"),
+    ...memberHeaders,
+  ];
+  individualSheet.appendRow(combinedHeaders.map((header) => TextCellValue(header)).toList());
+  
+  // Add individual data rows
+  for (var family in filteredFamilies) {
+    final data = family.data;
+    if (data != null) {
+      for (var member in data.members ?? []) {
+        List<TextCellValue> rowData = [];
+        
+        // Add family data first
+        for (var header in familyHeaders) {
+          String? value = _getFamilyDataValue(data, header);
+          rowData.add(TextCellValue(value ?? 'N/A'));
+        }
+        
+        // Then add member data
+        for (var header in memberHeaders) {
+          String? value = _getMemberDataValue(member, header);
+          rowData.add(TextCellValue(value ?? 'N/A'));
+        }
+        
+        individualSheet.appendRow(rowData);
+      }
+    }
+  }
+
+  // Save the file
+  final bytes = excel.save();
+  if (bytes != null) {
+    await FileSaver.instance.saveFile(
+      name: 'need_assessment_data',
+      bytes: Uint8List.fromList(bytes),
+      ext: 'xlsx',
+      mimeType: MimeType.microsoftExcel,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Data exported successfully!')),
+    );
+  }
+}
 
   // Helper Methods for Excel Export
   List<String> _getFamilyDataHeaders() {

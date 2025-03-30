@@ -58,6 +58,7 @@ class _ScreenAState extends State<ScreenA> {
               _buildModernTextFormField(
                 labelText: 'Unique Household ID',
                 initialValue: widget.data.uniqueHouseholdId,
+                enabled:false,
                 onChanged: (value) => widget.data.uniqueHouseholdId = value,
               ),
               _buildModernTextFormField(
@@ -246,42 +247,44 @@ class _ScreenAState extends State<ScreenA> {
     );
   }
 
-  // Custom method for consistent TextFormField styling
   Widget _buildModernTextFormField({
-    required String labelText,
-    String? initialValue,
-    void Function(String)? onChanged,
-    TextInputType? keyboardType,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: TextFormField(
-        keyboardType: keyboardType,
-        initialValue: initialValue,
-        onChanged: onChanged,
-        style: GoogleFonts.urbanist(),
-        decoration: InputDecoration(
-          labelText: labelText,
-          labelStyle: GoogleFonts.urbanist(
-            fontWeight: FontWeight.w500,
-            color: Colors.grey[700],
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: Colors.grey),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: Color(0xFF08708E), width: 2),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: Colors.grey),
-          ),
+  required String labelText,
+  String? initialValue,
+  void Function(String)? onChanged,
+  TextInputType? keyboardType,
+  bool? enabled,
+}) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8.0),
+    child: TextFormField(
+      keyboardType: keyboardType,
+      initialValue: initialValue,
+      onChanged: onChanged,
+      enabled: enabled ?? true,  
+      style: GoogleFonts.urbanist(),
+      decoration: InputDecoration(
+        labelText: labelText,
+        labelStyle: GoogleFonts.urbanist(
+          fontWeight: FontWeight.w500,
+          color: Colors.grey[700],
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFF08708E), width: 2),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   Widget _buildRadioListTile<T>({
     required String title,
