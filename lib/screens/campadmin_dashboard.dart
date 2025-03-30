@@ -3,7 +3,8 @@ import 'package:resq/widgets/stats_card.dart';
 import 'package:resq/utils/resq_menu.dart';
 import 'package:resq/utils/colors.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:resq/screens/camp_supply_request.dart'; // Make sure to import your screen
+import 'package:resq/screens/camp_supply_request.dart';
+import 'package:resq/screens/camp_settings.dart'; // Import your CampSettingsScreen
 
 class CampAdminDashboard extends StatelessWidget {
   @override
@@ -13,9 +14,44 @@ class CampAdminDashboard extends StatelessWidget {
       appBar: AppBar(
         title: Text('Greenfield Camp (Zone 3)'),
         actions: [
-          IconButton(icon: Icon(Icons.notifications), onPressed: () {}),
-          IconButton(icon: Icon(Icons.sync), onPressed: () {}),
-          IconButton(icon: Icon(Icons.person), onPressed: () {}),
+          IconButton(
+            icon: Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => CampSettingsScreen()),
+              );
+            },
+          ),
+          Padding(
+            padding: EdgeInsets.only(right: 8),
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CampSupplyRequestScreen(campId: 'greenfield_zone3'),
+                  ),
+                );
+                
+                if (result == true) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Supply request submitted successfully!')),
+                  );
+                }
+              },
+              icon: Icon(Icons.add, size: 20),
+              label: Text('Request Supplies'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
       body: Column(
@@ -36,38 +72,6 @@ class CampAdminDashboard extends StatelessWidget {
                       Expanded(child: StatsCard(title: 'Shelter Capacity', value: '82%')),
                       Expanded(child: StatsCard(title: 'Supplies Delivered', value: '87%')),
                     ],
-                  ),
-                  SizedBox(height: 24),
-                  
-                  // Button to navigate to CampSupplyRequestScreen
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8),
-                    child:// In CampAdminDashboard, modify the button:
-ElevatedButton.icon(
-  onPressed: () async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CampSupplyRequestScreen(campId: 'greenfield_zone3'),
-      ),
-    );
-    
-    if (result == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Supply request submitted successfully!')),
-      );
-    }
-  },
-  icon: Icon(Icons.add),
-  label: Text('Request Supplies'),
-  style: ElevatedButton.styleFrom(
-    backgroundColor: AppColors.primary,
-    padding: EdgeInsets.symmetric(vertical: 16),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8),
-    ),
-  ),
-),
                   ),
                   SizedBox(height: 24),
                   
@@ -131,8 +135,6 @@ ElevatedButton.icon(
                                       reservedSize: 28,
                                     ),
                                   ),
-                                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                                 ),
                                 barTouchData: BarTouchData(
                                   touchTooltipData: BarTouchTooltipData(
@@ -206,58 +208,23 @@ ElevatedButton.icon(
     return [
       BarChartGroupData(
         x: 0,
-        barRods: [
-          BarChartRodData(
-            toY: 180,
-            color: Colors.blue.shade400,
-            width: 22,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ],
+        barRods: [BarChartRodData(toY: 180, color: Colors.blue.shade400, width: 22)],
       ),
       BarChartGroupData(
         x: 1,
-        barRods: [
-          BarChartRodData(
-            toY: 140,
-            color: Colors.green.shade400,
-            width: 22,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ],
+        barRods: [BarChartRodData(toY: 140, color: Colors.green.shade400, width: 22)],
       ),
       BarChartGroupData(
         x: 2,
-        barRods: [
-          BarChartRodData(
-            toY: 90,
-            color: Colors.red.shade400,
-            width: 22,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ],
+        barRods: [BarChartRodData(toY: 90, color: Colors.red.shade400, width: 22)],
       ),
       BarChartGroupData(
         x: 3,
-        barRods: [
-          BarChartRodData(
-            toY: 120,
-            color: Colors.orange.shade400,
-            width: 22,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ],
+        barRods: [BarChartRodData(toY: 120, color: Colors.orange.shade400, width: 22)],
       ),
       BarChartGroupData(
         x: 4,
-        barRods: [
-          BarChartRodData(
-            toY: 75,
-            color: Colors.purple.shade400,
-            width: 22,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ],
+        barRods: [BarChartRodData(toY: 75, color: Colors.purple.shade400, width: 22)],
       ),
     ];
   }
@@ -269,18 +236,9 @@ ElevatedButton.icon(
         children: [
           Icon(icon, color: AppColors.primary),
           SizedBox(width: 12),
-          Text(
-            title,
-            style: TextStyle(fontSize: 16),
-          ),
+          Text(title, style: TextStyle(fontSize: 16)),
           Spacer(),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         ],
       ),
     );
