@@ -73,4 +73,30 @@ class SupplyRequest {
       default: return Colors.orange;
     }
   }
+  // Copy with method
+  SupplyRequest copyWith({
+    String? id,
+    String? campId,
+    String? itemName,
+    int? quantity,
+    String? unit,
+    int? priority,
+    String? notes,
+    String? status,
+    String? type,
+    DateTime? requestedAt,
+  }) {
+    return SupplyRequest(
+      id: id ?? this.id,
+      campId: campId ?? this.campId,
+      itemName: itemName ?? this.itemName,
+      quantity: quantity ?? this.quantity,
+      unit: unit ?? this.unit,
+      priority: priority ?? this.priority,
+      notes: notes ?? this.notes,
+      status: status ?? this.status,
+      type: type ?? this.type,
+      requestedAt: requestedAt ?? this.requestedAt,
+    );
+  }
 }
