@@ -1,9 +1,12 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:path/path.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:resq/firebase_options.dart';
 import 'package:resq/screens/collectionpoint_volunteer.dart';
 import 'package:resq/screens/identity.dart';
 import 'package:resq/screens/login_screen.dart';
@@ -27,7 +30,6 @@ import 'package:resq/screens/items_list.dart';
 import 'package:resq/screens/downloading.dart';
 import 'package:resq/screens/families.dart';
 import 'package:resq/screens/camp_status.dart' as camp_status;
-import 'package:resq/screens/role_creation.dart';
 import 'package:resq/screens/create_notice.dart';
 import 'package:resq/screens/camprole_creation.dart';
 import 'package:resq/screens/donation_request_form.dart';
@@ -45,47 +47,30 @@ import 'package:resq/screens/notice_display_screen.dart';
 import 'package:resq/screens/collectionpoint_volunteer_management.dart';
 import 'package:resq/screens/view_notice.dart';
 
-void main() async {
-  // This is required before calling any platform channels
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+   await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+  await _requestNotificationPermissions(); // Request early
   if (kIsWeb) {
     setUrlStrategy(PathUrlStrategy());
-  } else {
-    // Only request permissions on mobile platforms
-    await requestPermission();
   }
   runApp(const MyApp());
 }
 
-Future<void> requestPermission() async {
-  print("Requesting storage permissions...");
-
-  if (Platform.isAndroid) {
-    // For Android 13+ (SDK 33+), we need more specific permissions
-    if (await Permission.storage.isDenied) {
-      await Permission.storage.request();
-    }
-
-    // For files in external storage on newer Android versions
-    if (await Permission.manageExternalStorage.isDenied) {
-      await Permission.manageExternalStorage.request();
-    }
-
-    // For photos and media
-    if (await Permission.photos.isDenied) {
-      await Permission.photos.request();
-    }
-  } else if (Platform.isIOS) {
-    // iOS requires specific permissions
-    if (await Permission.photos.isDenied) {
-      await Permission.photos.request();
-    }
-  }
-
-  // Check final status and log it
-  final storageStatus = await Permission.storage.status;
-  print("Storage permission status: $storageStatus");
+Future<void> _requestNotificationPermissions() async {
+  final messaging = FirebaseMessaging.instance;
+  final settings = await messaging.requestPermission(
+    alert: true,
+    announcement: false,
+    badge: true,
+    carPlay: false,
+    criticalAlert: false,
+    provisional: false,
+    sound: true,
+  );
+  print('Authorization status: ${settings.authorizationStatus}');
 }
 
 class MyApp extends StatelessWidget {
@@ -259,6 +244,11 @@ class MyApp extends StatelessWidget {
               child: CampAdminDashboard(),
             );
         break;
+      case '/manage-collectionpoint':
+        builder =
+            (context) =>
+                AuthRoute(requiredRoles: ['collectionPointAdmin'], child: CollectionPointDashboard());
+        break;
       case '/profile-update':
         builder =
             (context) =>
@@ -313,7 +303,7 @@ class MyApp extends StatelessWidget {
         final noticeId = args?['noticeId'] as String? ?? '';
         builder =
             (context) => AuthRoute(
-              requiredRoles: [],
+              requiresAuth: true,
               child: ViewNotice(noticeId: noticeId),
             );
         break;
@@ -355,14 +345,12 @@ class MyApp extends StatelessWidget {
   }
 
   Widget getDashboardForRole(List<String> roles) {
-    if (roles.isEmpty) return CampAdminDashboard();
     if (roles.contains('superAdmin')) return SuperAdminDashboard();
     if (roles.contains('admin')) return AdminDashboard();
     if (roles.contains('stat')) return DashboardScreen();
-
     if (roles.contains('collectionPointAdmin'))
       return CollectionPointDashboard();
-    // if (roles.contains('campAdmin')) return CampAdminDashboard();
+    if (roles.contains('campAdmin')) return CampAdminDashboard();
     if (roles.contains('collectionpointvolunteer')) return VolunteerScreen();
     if (roles.contains('surveyOfficial')) return FamilySurveyHomeScreen();
     if (roles.contains('verifyOfficial'))

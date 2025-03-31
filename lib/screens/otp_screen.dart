@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:resq/utils/http/auth_http.dart';
 import 'package:resq/utils/http/token_less_http.dart';
 import '../utils/auth/auth_service.dart';
@@ -126,14 +127,20 @@ class _OtpScreenState extends State<OtpScreen> {
       final userCredential = await _auth.signInWithCredential(credential);
 
       final firebaseToken = await userCredential.user?.getIdToken();
+       final fcmToken = await FirebaseMessaging.instance.getToken(); 
 
       if (firebaseToken == null) {
-        throw Exception('Failed to get Firebase token');
-      }
+      throw Exception('Failed to get Firebase token');
+    }
+
+    if (fcmToken == null) {
+      throw Exception('Failed to get FCM token');
+    }
 
       final tokenLessHttp = TokenLessHttp();
       final response = await tokenLessHttp.post('/auth/verifyFirebaseToken', {
         'firebaseToken': firebaseToken,
+        'fcmToken': fcmToken,
       });
 
       if (response['jwtToken'] == null) {

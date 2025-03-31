@@ -53,20 +53,23 @@ final List<Map<String, dynamic>> menuData = [
     "route": "/notice-board",
     "roles": ["admin", "stat"],
   },
-    {
+  {
     "title": "View Notice",
-    "icons":Icons.view_list,
-    "route": "/notice-board",
-    "roles": ["campAdmin","superAdmin","collectionPointAdmin","collectionpointvolunteer","verifyOfficial","surveyOfficial"],
+    "icon": Icons.view_list,
+    "route": "/view-notice",
+    "roles": [
+      "campAdmin",
+      "collectionPointAdmin",
+      "collectionpointvolunteer",
+      "verifyOfficial",
+      "surveyOfficial",
+    ],
   },
-  
-
-
   {
     "title": "Officals",
     "icon": Icons.assignment_ind,
     "route": "/role-creation",
-    "roles": ["admin","stat"],
+    "roles": ["admin", "stat"],
   },
   {
     "title": "Collection Points",
@@ -105,11 +108,12 @@ final List<Map<String, dynamic>> menuData = [
     'roles': ['collectionPointAdmin'],
   },
   {
-    'title': 'Need Assessment Surveys',
-    'icon': Icons.assignment,
-    'route': '/need-assessment-surveys',
-    'roles': ['surveyOfficial'],
+    'title': 'Statistics',
+    'icon': Icons.cabin,
+    'route': '/stat-dashboard',
+    'roles': ['stat'],
   },
+
   {
     'title': 'Collection Point Requests',
     'icon': Icons.request_page,
@@ -125,11 +129,11 @@ final List<Map<String, dynamic>> menuData = [
   {
     'title': 'Disaster Data',
     'icon': Icons.data_usage,
-    'route':'/disaster',
+    'route': '/disaster',
     'roles': ['noAuth'],
   },
   {
-    'title':'loan',
+    'title': 'loan',
     'icon': Icons.money,
     'route': '/loan-relief',
     'roles': ['stat'],
@@ -141,11 +145,11 @@ final List<Map<String, dynamic>> menuData = [
     "roles": ["all"],
   },
   {
-    'title':'Collection Point Volunteer Management',
+    'title': 'Collection Point Volunteer Management',
     'icon': Icons.group,
     'route': '/collectionpoint-volunteer-management',
     'roles': ['collectionPointAdmin'],
-  }
+  },
 ];
 
 List<MenuItem> menuItems =
@@ -174,4 +178,3 @@ List<MenuItem> getFilteredMenuItems(List<dynamic> userRoles) {
       .where((item) => item.roles.any((role) => roles.contains(role)))
       .toList();
 }
-

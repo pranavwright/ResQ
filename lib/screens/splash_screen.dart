@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:resq/firebase_options.dart';
 import 'package:resq/screens/main_home.dart';
 import 'package:resq/widgets/text_animation.dart';
@@ -54,19 +58,66 @@ class _SplashScreenState extends State<SplashScreen> {
     }
   }
 
+  Future<void> _firebaseMessagingBackgroundHandler(
+    RemoteMessage message,
+  ) async {
+    await Firebase.initializeApp();
+    print("Handling a background message: ${message.messageId}");
+  }
+
+
+Future<void> requestPermission() async {
+  print("Requesting storage permissions...");
+
+  if (Platform.isAndroid) {
+    // For Android 13+ (SDK 33+), we need more specific permissions
+    if (await Permission.storage.isDenied) {
+      await Permission.storage.request();
+    }
+
+    // For files in external storage on newer Android versions
+    if (await Permission.manageExternalStorage.isDenied) {
+      await Permission.manageExternalStorage.request();
+    }
+
+    // For photos and media
+    if (await Permission.photos.isDenied) {
+      await Permission.photos.request();
+    }
+  } else if (Platform.isIOS) {
+    // iOS requires specific permissions
+    if (await Permission.photos.isDenied) {
+      await Permission.photos.request();
+    }
+  }
+
+  // Check final status and log it
+  final storageStatus = await Permission.storage.status;
+  print("Storage permission status: $storageStatus");
+}
+
+
   Future<void> _initialize(String initialRoute) async {
     try {
+    
+      FirebaseMessaging.onBackgroundMessage(
+        _firebaseMessagingBackgroundHandler,
+      );
 
-      try {
-        print("Initializing Firebase...");
-        await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform,
-        );
-        print("Firebase initialized successfully");
-      } catch (e) {
-        print("Error initializing Firebase: $e");
+      if(!kIsWeb){
+        print("Requesting permissions...");
+        await requestPermission();
       }
 
+      // Listen for foreground messages
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        print('Got a message whilst in the foreground!');
+        print('Message data: ${message.data}');
+
+        if (message.notification != null) {
+          print('Message contained a notification: ${message.notification}');
+        }
+      });
 
       print("Initializing app...");
       // Check connectivity first

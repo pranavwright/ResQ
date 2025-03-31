@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:resq/utils/auth/auth_service.dart';
+import 'package:resq/utils/http/token_http.dart';
 
 class Notice {
   final String id;
@@ -38,55 +40,80 @@ class _ViewNoticeState extends State<ViewNotice> {
   @override
   void initState() {
     super.initState();
-    // Simulate loading data
-    Future.delayed(const Duration(seconds: 1), () {
-      setState(() {
-        notices = _getSampleNotices();
-        filteredNotices = notices;
-        isLoading = false;
-      });
-    });
+    _fetchNotices();
   }
 
-  List<Notice> _getSampleNotices() {
-    return [
-      Notice(
-        id: '1',
-        title: 'Water supply interruption',
-        description: 'Water supply will be interrupted in sector 5 for maintenance work',
-        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-        priority: 'high',
-        status: 'pending',
-        createdBy: 'Admin',
-      ),
-      Notice(
-        id: '2',
-        title: 'Medical camp setup',
-        description: 'Setting up temporary medical camp near central park for affected residents',
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        priority: 'medium',
-        status: 'in_progress',
-        createdBy: 'Health Dept',
-      ),
-      Notice(
-        id: '3',
-        title: 'Road clearance',
-        description: 'Main road to hospital has been cleared of debris',
-        createdAt: DateTime.now().subtract(const Duration(days: 3)),
-        priority: 'low',
-        status: 'completed',
-        createdBy: 'Public Works',
-      ),
-      Notice(
-        id: '4',
-        title: 'Emergency shelter',
-        description: 'Additional emergency shelter opened at community center',
-        createdAt: DateTime.now().subtract(const Duration(hours: 5)),
-        priority: 'high',
-        status: 'in_progress',
-        createdBy: 'Red Cross',
-      ),
-    ];
+  Future<void> _fetchNotices() async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      // First, check if we're viewing a specific notice or all notices
+      final String disasterId = AuthService().getDisasterId();
+      final Map<String, dynamic> responseData;
+
+      if (widget.noticeId.isNotEmpty) {
+        // Fetch specific notice by ID
+        responseData = await TokenHttp().get(
+          '/notice/getNotice?noticeId=${widget.noticeId}&disasterId=$disasterId',
+        );
+        if (responseData != null) {
+          // Handle single notice
+          final notice = _parseNotice(responseData);
+          if (notice != null) {
+            notices = [notice];
+            filteredNotices = notices;
+          }
+        }
+      } else {
+        // Fetch all notices
+        final myNotice = await TokenHttp().get(
+          '/notice/myNotice?disasterId=$disasterId',
+        );
+        if (myNotice is List) {
+          notices =
+              myNotice
+                  .map((element) => _parseNotice(element))
+                  .where((n) => n != null)
+                  .cast<Notice>()
+                  .toList();
+          filteredNotices = notices;
+        }
+      }
+
+      setState(() {
+        isLoading = false;
+      });
+    } catch (e) {
+      print(e);
+      setState(() {
+        isLoading = false;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to load notices: $e')));
+    }
+  }
+
+  Notice? _parseNotice(Map<String, dynamic> element) {
+    try {
+      return Notice(
+        id: element['_id'] ?? '', // MongoDB uses _id, not id
+        title: element['title'] ?? 'Untitled',
+        description: element['description'] ?? '',
+        createdAt:
+            element['createdAt'] != null
+                ? DateTime.parse(element['createdAt'])
+                : DateTime.now(),
+        priority: element['priority'] ?? 'medium',
+        status: element['status'] ?? 'pending',
+        createdBy: element['createdBy'] ?? 'Unknown',
+      );
+    } catch (e) {
+      print('Error parsing notice: $e');
+      return null;
+    }
   }
 
   void _filterNotices(String filter) {
@@ -95,7 +122,10 @@ class _ViewNoticeState extends State<ViewNotice> {
       if (filter == 'All') {
         filteredNotices = notices;
       } else {
-        filteredNotices = notices.where((notice) => notice.status == filter.toLowerCase()).toList();
+        filteredNotices =
+            notices
+                .where((notice) => notice.status == filter.toLowerCase())
+                .toList();
       }
       _sortNotices(currentSort);
     });
@@ -114,12 +144,35 @@ class _ViewNoticeState extends State<ViewNotice> {
     });
   }
 
-  void _updateNoticeStatus(Notice notice, String newStatus) {
-    setState(() {
-      notice.status = newStatus;
-      _filterNotices(currentFilter); // Reapply filters
-    });
-    // In a real app, you would also call your API here to update the backend
+  void _updateNoticeStatus(Notice notice, String newStatus) async {
+    try {
+      // Call API to update notice status
+      final String disasterId = AuthService().getDisasterId();
+      final response = await TokenHttp().post('/notice/updateNotice', {
+        'noticeId': notice.id,
+        'disasterId': disasterId,
+        'status': newStatus,
+      });
+
+      if (response != null ) {
+        setState(() {
+          notice.status = newStatus;
+          _filterNotices(currentFilter); 
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Notice status updated')));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update notice status')),
+        );
+      }
+    } catch (e) {
+      print(e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error updating notice status: $e')),
+      );
+    }
   }
 
   void _showStatusUpdateDialog(Notice notice) {
@@ -201,11 +254,13 @@ class _ViewNoticeState extends State<ViewNotice> {
   Color _getStatusColor(String status) {
     switch (status) {
       case 'pending':
-        return Colors.grey;
+        return Colors.amber;
       case 'in_progress':
         return Colors.blue;
       case 'completed':
         return Colors.green;
+      case 'cancelled':
+        return Colors.grey;
       default:
         return Colors.grey;
     }
@@ -235,10 +290,22 @@ class _ViewNoticeState extends State<ViewNotice> {
                   child: DropdownButtonFormField<String>(
                     value: currentFilter,
                     items: const [
-                      DropdownMenuItem(value: 'All', child: Text('All Notices')),
-                      DropdownMenuItem(value: 'Pending', child: Text('Pending')),
-                      DropdownMenuItem(value: 'In Progress', child: Text('In Progress')),
-                      DropdownMenuItem(value: 'Completed', child: Text('Completed')),
+                      DropdownMenuItem(
+                        value: 'All',
+                        child: Text('All Notices'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Pending',
+                        child: Text('Pending'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'In Progress',
+                        child: Text('In Progress'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Completed',
+                        child: Text('Completed'),
+                      ),
                     ],
                     onChanged: (value) {
                       if (value != null) {
@@ -256,8 +323,14 @@ class _ViewNoticeState extends State<ViewNotice> {
                   child: DropdownButtonFormField<String>(
                     value: currentSort,
                     items: const [
-                      DropdownMenuItem(value: 'Newest', child: Text('Newest First')),
-                      DropdownMenuItem(value: 'Oldest', child: Text('Oldest First')),
+                      DropdownMenuItem(
+                        value: 'Newest',
+                        child: Text('Newest First'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Oldest',
+                        child: Text('Oldest First'),
+                      ),
                     ],
                     onChanged: (value) {
                       if (value != null) {
@@ -274,107 +347,187 @@ class _ViewNoticeState extends State<ViewNotice> {
             ),
           ),
           Expanded(
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : filteredNotices.isEmpty
+            child:
+                isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : filteredNotices.isEmpty
                     ? const Center(child: Text('No notices found'))
                     : ListView.builder(
-                        itemCount: filteredNotices.length,
-                        itemBuilder: (context, index) {
-                          final notice = filteredNotices[index];
-                          return Card(
-                            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          notice.title,
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: _getPriorityColor(notice.priority),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          notice.priority.toUpperCase(),
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    notice.description,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: _getStatusColor(notice.status),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          notice.status.replaceAll('_', ' ').toUpperCase(),
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ),
-                                      const Spacer(),
-                                      Text(
-                                        DateFormat('MMM dd, yyyy - hh:mm a')
-                                            .format(notice.createdAt),
+                      itemCount: filteredNotices.length,
+                      itemBuilder: (context, index) {
+                        final notice = filteredNotices[index];
+                        return Card(
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        notice.title,
                                         style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: Text(
-                                      'Posted by: ${notice.createdBy}',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontStyle: FontStyle.italic,
                                       ),
                                     ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _getPriorityColor(
+                                          notice.priority,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        notice.priority.toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  notice.description,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _getStatusColor(notice.status),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        notice.status
+                                            .replaceAll('_', ' ')
+                                            .toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      DateFormat(
+                                        'MMM dd, yyyy - hh:mm a',
+                                      ).format(notice.createdAt),
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    'Posted by: ${notice.createdBy}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontStyle: FontStyle.italic,
+                                    ),
                                   ),
-                                  const SizedBox(height: 8),
-                                  ElevatedButton(
-                                    onPressed: () => _showStatusUpdateDialog(notice),
-                                    child: const Text('Update Status'),
-                                  ),
-                                ],
-                              ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    if (notice.status == 'pending') ...[
+                                      ElevatedButton(
+                                        onPressed:
+                                            () => _updateNoticeStatus(
+                                              notice,
+                                              'in_progress',
+                                            ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.blue,
+                                          foregroundColor: Colors.white,
+                                        ),
+                                        child: const Text('Start Progress'),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      ElevatedButton(
+                                        onPressed:
+                                            () => _updateNoticeStatus(
+                                              notice,
+                                              'cancelled',
+                                            ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.grey,
+                                          foregroundColor: Colors.white,
+                                        ),
+                                        child: const Text('Cancel'),
+                                      ),
+                                    ] else if (notice.status ==
+                                        'in_progress') ...[
+                                      ElevatedButton(
+                                        onPressed:
+                                            () => _updateNoticeStatus(
+                                              notice,
+                                              'completed',
+                                            ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.green,
+                                          foregroundColor: Colors.white,
+                                        ),
+                                        child: const Text('Mark Complete'),
+                                      ),
+                                    ] else if (notice.status ==
+                                        'completed') ...[
+                                      // Optionally show a "Reopen" button or other actions for completed notices
+                                      Text(
+                                        'Completed',
+                                        style: TextStyle(
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ] else if (notice.status ==
+                                        'cancelled') ...[
+                                      // Optionally show a "Reopen" button for cancelled notices
+                                      ElevatedButton(
+                                        onPressed:
+                                            () => _updateNoticeStatus(
+                                              notice,
+                                              'pending',
+                                            ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.amber,
+                                        ),
+                                        child: const Text('Reopen'),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ],
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      },
+                    ),
           ),
         ],
       ),

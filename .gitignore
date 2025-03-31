@@ -51,3 +51,4 @@ lib/firebase_options.dart
 google-services.json
 ios_backup/
 ios/GoogleService-Info.plist
+web/firebase-messaging-sw.js

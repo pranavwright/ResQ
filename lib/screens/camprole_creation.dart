@@ -350,6 +350,7 @@ class _CamproleCreationState extends State<CamproleCreation> {
                             itemCount: admins.length,
                             itemBuilder: (context, index) {
                               final admin = admins[index];
+                              print(admin);
                               return Card(
                                 margin: const EdgeInsets.symmetric(vertical: 8),
                                 shape: RoundedRectangleBorder(
@@ -364,8 +365,8 @@ class _CamproleCreationState extends State<CamproleCreation> {
                                       Text('Phone: ${admin['phoneNumber'] ?? 'N/A'}'),
                                       if (admin['label'] != null)
                                         Text('Label: ${admin['label']}'),
-                                      if (admin['assignedPlace'] != null)
-                                        Text('Assigned Place: ${admin['assignedPlace']['name'] ?? 'N/A'}'),
+                                      if (admin['assignPlace'] != null)
+                                        Text('Assigned Place: ${admin['assignPlace']['name'] ?? 'N/A'}'),
                                     ],
                                   ),
                                   trailing: Row(
