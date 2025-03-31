@@ -166,6 +166,3 @@ List<MenuItem> getFilteredMenuItems(List<dynamic> userRoles) {
       .toList();
 }
 
-// Example usage inside a widget build method.
-//List<String> userRoles = ['admin', 'stat']; // Example user roles
-//List<MenuItem> filteredMenuItems = getFilteredMenuItems(userRoles);

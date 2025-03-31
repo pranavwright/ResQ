@@ -42,6 +42,7 @@ import 'package:resq/screens/section_a_screen.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
 import 'package:resq/screens/change_disaster.dart';
 import 'package:resq/screens/notice_display_screen.dart';
+import 'package:resq/screens/collectionpoint_volunteer_management.dart';
 
 void main() async {
   // This is required before calling any platform channels
@@ -144,7 +145,7 @@ class MyApp extends StatelessWidget {
       case '/':
         builder = (context) => SplashScreen(initialRoute: '/');
         break;
-      
+
       case '/otp':
         builder =
             (context) => AuthRoute(requiresAuth: false, child: OtpScreen());
@@ -161,14 +162,14 @@ class MyApp extends StatelessWidget {
             (context) =>
                 AuthRoute(requiresAuth: true, child: ProfileSetupScreen());
         break;
-        case '/debug-camp':
-  builder = (context) => CampAdminDashboard();
-  break;
+      case '/debug-camp':
+        builder = (context) => CampAdminDashboard();
+        break;
       case '/disaster':
         final args = settings.arguments as dynamic?;
-        String disasterId='';
-        if(args!=null){
-          disasterId=args['disasterId'];
+        String disasterId = '';
+        if (args != null) {
+          disasterId = args['disasterId'];
         }
         builder =
             (context) => AuthRoute(
@@ -196,16 +197,12 @@ class MyApp extends StatelessWidget {
             );
         break;
       case '/notice-board':
-        builder =
-            (context) => const AuthRoute(
-              
-              child: NoticeScreen (),
-            );
+        builder = (context) => const AuthRoute(child: NoticeScreen());
         break;
       case '/create-notice':
         builder =
             (context) => const AuthRoute(
-              requiredRoles: ['admin',"stat"],
+              requiredRoles: ['admin', "stat"],
               child: CreateNoticeScreen(),
             );
         break;
@@ -240,8 +237,7 @@ class MyApp extends StatelessWidget {
               child: FamilyDataDownloadScreen(families: []),
             );
       case '/identity':
-        builder =
-            (context) => AuthRoute(requiresAuth: true, child: Identity());
+        builder = (context) => AuthRoute(requiresAuth: true, child: Identity());
         break;
       case '/admin-collectionpoint':
         builder =
@@ -257,8 +253,10 @@ class MyApp extends StatelessWidget {
         break;
       case '/manage-camp':
         builder =
-            (context) =>
-                AuthRoute(requiredRoles: ['campAdmin'], child: CampAdminDashboard());
+            (context) => AuthRoute(
+              requiredRoles: ['campAdmin'],
+              child: CampAdminDashboard(),
+            );
         break;
       case '/profile-update':
         builder =
@@ -267,10 +265,8 @@ class MyApp extends StatelessWidget {
         break;
       case '/donations':
         builder =
-            (context) => AuthRoute(
-              requiresAuth: false,
-              child: const DonationsScreen(),
-            );
+            (context) =>
+                AuthRoute(requiresAuth: false, child: const DonationsScreen());
         break;
       case '/verification-volunteer':
         builder =
@@ -301,16 +297,23 @@ class MyApp extends StatelessWidget {
         break;
       case '/change-disaster':
         builder =
-            (context) => AuthRoute(
-              requiresAuth: true,
-              child: ChangeDisasterScreen(),
-            );
+            (context) =>
+                AuthRoute(requiresAuth: true, child: ChangeDisasterScreen());
         break;
-        case '/manage-collectionpoint':
+      case '/manage-collectionpoint':
         builder =
             (context) => AuthRoute(
               requiredRoles: ['collectionPointAdmin'],
               child: CollectionPointDashboard(),
+            );
+        break;
+      case '/collectionpoint-volunteer-management':
+        final args = settings.arguments as Map<String, dynamic>?;
+        final collectionPointId = args?['collectionPointId'] as String? ?? '';
+        builder =
+            (context) => AuthRoute(
+              requiredRoles: ['collectionPointAdmin'],
+              child: CollectionPointManagementScreen(collectionPointId: collectionPointId),
             );
         break;
       case '/logout':
