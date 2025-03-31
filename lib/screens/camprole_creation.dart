@@ -19,6 +19,7 @@ class _CamproleCreationState extends State<CamproleCreation> {
   bool _showForm = false;
 
   String role = '';
+  String label = '';
   String assignedTo = '';
   String location = '';
   String validationMessage = '';
@@ -30,13 +31,24 @@ class _CamproleCreationState extends State<CamproleCreation> {
     'Survey Officials',
     'Verify Officials',
   ];
-  List<Map<String, dynamic>> campLocationOptions =
-      []; // Dynamic location options
-  List<Map<String, dynamic>> colpLocationOptions =
-      []; // Dynamic location options
+  
+  List<String> labelOptions = [
+    'Volunteer',
+    'Police',
+    'Teacher',
+    'Government Official',
+    'Medical Staff',
+    'NGO Worker',
+    'Military',
+    'Other'
+  ];
+  
+  List<Map<String, dynamic>> campLocationOptions = []; // Dynamic location options
+  List<Map<String, dynamic>> colpLocationOptions = []; // Dynamic location options
   List<Map<String, dynamic>> admins = [];
 
   bool _isLoading = true;
+  bool _isEditingExistingUser = false;
 
   @override
   void initState() {
@@ -147,6 +159,7 @@ class _CamproleCreationState extends State<CamproleCreation> {
     String name,
     String phoneNumber,
     String role,
+    String label,
     String assignedTo,
   ) async {
     setState(() => _isLoading = true);
@@ -164,6 +177,7 @@ class _CamproleCreationState extends State<CamproleCreation> {
                 : role == 'Survey Officials'
                 ? 'surveyOfficial'
                 : 'verifyOfficial',
+        'label': label,
         'assignPlace':
             role == 'Camp Admin' || role == 'Collection Point Admin'
                 ? assignedTo
@@ -233,16 +247,30 @@ class _CamproleCreationState extends State<CamproleCreation> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       if (_showForm) ...[
-                        _buildTextField(
-                          controller: nameController,
-                          label: 'Name',
-                          icon: Icons.person,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildTextField(
-                          controller: phoneController,
-                          label: 'Phone Number',
-                          icon: Icons.phone,
+                        if (!_isEditingExistingUser) ...[
+                          _buildTextField(
+                            controller: nameController,
+                            label: 'Name',
+                            icon: Icons.person,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildTextField(
+                            controller: phoneController,
+                            label: 'Phone Number',
+                            icon: Icons.phone,
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        _buildDropdownField(
+                          label: 'Label',
+                          value: label,
+                          items: labelOptions,
+                          onChanged: (value) {
+                            setState(() {
+                              label = value!;
+                            });
+                          },
+                          icon: Icons.label,
                         ),
                         const SizedBox(height: 16),
                         _buildDropdownField(
@@ -301,56 +329,61 @@ class _CamproleCreationState extends State<CamproleCreation> {
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: () {
-                            if (nameController.text.isEmpty ||
-                                phoneController.text.isEmpty ||
-                                role.isEmpty) {
+                            if ((!nameController.text.isEmpty || _isEditingExistingUser) &&
+                                (!phoneController.text.isEmpty || _isEditingExistingUser) &&
+                                role.isNotEmpty && label.isNotEmpty) {
+                              if ((role == 'Camp Admin' ||
+                                      role == 'Collection Point Admin') &&
+                                  location.isEmpty) {
+                                setState(() {
+                                  validationMessage = 'Please select a Location.';
+                                });
+                                return;
+                              }
+                              // Find the location object based on name
+                              Map<String, dynamic> locationObject;
+                              final campLocation = campLocationOptions.firstWhere(
+                                (loc) => loc['name'] == location,
+                                orElse: () => <String, dynamic>{},
+                              );
+                              final colpLocation = colpLocationOptions.firstWhere(
+                                (loc) => loc['name'] == location,
+                                orElse: () => <String, dynamic>{},
+                              );
+                              locationObject =
+                                  campLocation.isNotEmpty
+                                      ? campLocation
+                                      : colpLocation.isNotEmpty
+                                      ? colpLocation
+                                      : {'_id': ''};
+
+                              _addAdminToDisaster(
+                                nameController.text,
+                                phoneController.text,
+                                role,
+                                label,
+                                locationObject['_id'] ?? '',
+                              );
+                              if (!_isEditingExistingUser) {
+                                nameController.clear();
+                                phoneController.clear();
+                              }
+                              role = '';
+                              location = '';
+                              label = '';
+                              setState(() {
+                                _showForm = false;
+                                _isEditingExistingUser = false;
+                              });
+                            } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text('Please fill out all fields!'),
                                 ),
                               );
-                              return;
                             }
-                            if ((role == 'Camp Admin' ||
-                                    role == 'Collection Point Admin') &&
-                                location.isEmpty) {
-                              setState(() {
-                                validationMessage = 'Please select a Location.';
-                              });
-                              return;
-                            }
-                            // Find the location object based on name
-                            Map<String, dynamic> locationObject;
-                            final campLocation = campLocationOptions.firstWhere(
-                              (loc) => loc['name'] == location,
-                              orElse: () => <String, dynamic>{},
-                            );
-                            final colpLocation = colpLocationOptions.firstWhere(
-                              (loc) => loc['name'] == location,
-                              orElse: () => <String, dynamic>{},
-                            );
-                            locationObject =
-                                campLocation.isNotEmpty
-                                    ? campLocation
-                                    : colpLocation.isNotEmpty
-                                    ? colpLocation
-                                    : {'_id': ''};
-
-                            _addAdminToDisaster(
-                              nameController.text,
-                              phoneController.text,
-                              role,
-                              locationObject['_id'] ?? '',
-                            );
-                            nameController.clear();
-                            phoneController.clear();
-                            role = '';
-                            location = '';
-                            setState(() {
-                              _showForm = false;
-                            });
                           },
-                          child: const Text('Submit'),
+                          child: Text(_isEditingExistingUser ? 'Add Another Role' : 'Submit'),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
@@ -387,7 +420,11 @@ class _CamproleCreationState extends State<CamproleCreation> {
                                   Text(
                                     'Phone: ${admin['phoneNumber'] ?? 'N/A'}',
                                   ),
-                                  if (admin['assignPlace'] != null)
+                                  if (admin['label'] != null)
+                                    Text(
+                                      'Label: ${admin['label']}',
+                                    ),
+                                  if (admin['assignedPlace'] != null)
                                     Text(
                                       'Assigned Place: ${admin['assignPlace']['name'] ?? 'N/A'}',
                                     ),
@@ -405,16 +442,12 @@ class _CamproleCreationState extends State<CamproleCreation> {
                                       nameController.text = admin['name'] ?? '';
                                       phoneController.text =
                                           admin['phoneNumber'] ?? '';
-                                      role =
-                                          admin['role'] ?? ''; // Set the role
-                                      location =
-                                          admin['location'] ??
-                                          ''; // set location.
-                                      editingIndex =
-                                          index; // Store the index being edited
                                       setState(() {
-                                        _showForm =
-                                            true; // Show the form with pre-filled data
+                                        _isEditingExistingUser = true;
+                                        _showForm = true;
+                                        role = '';
+                                        label = '';
+                                        location = '';
                                       });
                                     },
                                   ),
@@ -451,7 +484,6 @@ class _CamproleCreationState extends State<CamproleCreation> {
                                   ),
                                 ],
                               ),
-                              // Display assigned roles as chips
                             ),
                           );
                         },
@@ -464,11 +496,13 @@ class _CamproleCreationState extends State<CamproleCreation> {
         onPressed: () {
           setState(() {
             _showForm = !_showForm;
+            _isEditingExistingUser = false;
             if (!_showForm) {
               nameController.clear();
               phoneController.clear();
               role = '';
               location = '';
+              label = '';
               validationMessage = '';
             }
           });

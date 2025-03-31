@@ -21,6 +21,10 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
   List<Family> allFamilies = [];
   List<Family> filteredFamilies = [];
 
+ String _aiPrompt = '';
+  bool _showPromptDialog = false;
+
+
   // Family-level filters
   String? selectedVillageWard;
   String? selectedHouseNumber;
@@ -108,6 +112,56 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
       }
     }
   }
+
+
+
+  void _showConfirmationDialog(String prompt) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Confirm AI Filter'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('You entered the following prompt:'),
+              const SizedBox(height: 10),
+              Text(prompt, style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              const Text('The AI will now filter the data according to your request.'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                // Here you would typically send the prompt to your AI service
+                // and apply the filters it returns
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Processing AI request...'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: const Text('Confirm'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                setState(() {
+                  _showPromptDialog = true; // Reopen the prompt dialog
+                });
+              },
+              child: const Text('Edit'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
   void applyFilters() {
     setState(() {
@@ -873,6 +927,62 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+            
+            if (_showPromptDialog) ...[
+              AlertDialog(
+                title: const Text('AI Data Filter'),
+                content: TextField(
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    hintText: 'Enter your prompt for filtering data (e.g., "Show families with children under 5 who need food assistance")',
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _aiPrompt = value;
+                    });
+                  },
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _showPromptDialog = false;
+                      });
+                    },
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _showPromptDialog = false;
+                      });
+                      if (_aiPrompt.isNotEmpty) {
+                        _showConfirmationDialog(_aiPrompt);
+                      }
+                    },
+                    child: const Text('Submit'),
+                  ),
+                ],
+              ),
+            ],
+            
+            // AI Filter Button at the very top (before other filters)
+            ElevatedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _showPromptDialog = true;
+                });
+              },
+              icon: const Icon(Icons.auto_awesome),
+              label: const Text('AI Filter'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                foregroundColor: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 20),
+            
               // Column visibility toggles
               ExpansionTile(
                 title: const Text(
@@ -1061,6 +1171,7 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
+                  
                   ElevatedButton(
                     onPressed: applyFilters,
                     child: const Text('Apply Filters'),

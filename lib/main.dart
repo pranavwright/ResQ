@@ -143,6 +143,7 @@ class MyApp extends StatelessWidget {
       case '/':
         builder = (context) => SplashScreen(initialRoute: '/');
         break;
+      
       case '/otp':
         builder =
             (context) => AuthRoute(requiresAuth: false, child: OtpScreen());
