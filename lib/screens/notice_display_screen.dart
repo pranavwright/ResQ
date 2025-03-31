@@ -55,10 +55,10 @@ enum NoticeUrgency {
 class NoticeScreen extends StatefulWidget {
   final String userId;
   
-  const NoticeScreen({Key? key, required this.userId}) : super(key: key);
+  const NoticeScreen({Key? key, this.userId = 'admin'}) : super(key: key);
 
   @override
-  _NoticeScreenState createState() => _NoticeScreenState();
+  State<NoticeScreen> createState() => _NoticeScreenState();
 }
 
 class _NoticeScreenState extends State<NoticeScreen> with SingleTickerProviderStateMixin {

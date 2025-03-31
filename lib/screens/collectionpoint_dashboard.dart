@@ -4,6 +4,7 @@ import 'package:resq/utils/auth/auth_service.dart';
 import 'package:resq/utils/http/token_http.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:resq/utils/resq_menu.dart';
+import 'package:resq/screens/collectionpoint_volunteer_management.dart';
 
 // Enum for donation status flow
 enum DonationStatus { pending, confirmed, arrived, processed, cancelled }
@@ -1284,6 +1285,23 @@ String _formatDate(dynamic date) {
       appBar: AppBar(
         title: const Text('Collection Point Dashboard'),
         backgroundColor: Colors.blueGrey[800],
+         actions: [
+        
+        
+          IconButton(
+  icon: const Icon(Icons.settings, color: Colors.white),
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CollectionPointManagementScreen(
+          collectionPointId: '1', // You may want to pass the actual collection point ID
+        ),
+      ),
+    );
+  },
+),
+      ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: Colors.white,
