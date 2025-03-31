@@ -3,11 +3,13 @@ import 'package:file_saver/file_saver.dart';
 import 'package:excel/excel.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
 import 'package:resq/screens/family_mock_data.dart';
+import 'package:resq/utils/auth/auth_service.dart';
 import 'dart:typed_data';
+
+import 'package:resq/utils/http/token_http.dart';
 
 class FamilyDataDownloadScreen extends StatefulWidget {
   const FamilyDataDownloadScreen({super.key, required this.families});
-
   final List<Map<String, String>> families;
 
   @override
@@ -16,7 +18,7 @@ class FamilyDataDownloadScreen extends StatefulWidget {
 }
 
 class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
-  final List<Family> allFamilies = generateMockFamilies();
+  List<Family> allFamilies = [];
   List<Family> filteredFamilies = [];
 
   // Family-level filters
@@ -41,6 +43,7 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
   bool? memberHasMedicalNeedsFilter;
   bool? memberIsBedriddenFilter;
   bool? memberNeedsCounsellingFilter;
+  bool _isLoading = false;
 
   // Track visibility of columns
   Map<String, bool> columnVisibility = {};
@@ -48,49 +51,92 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
   @override
   void initState() {
     super.initState();
+    _fetchFamilies();
     filteredFamilies = allFamilies;
 
     // Initialize column visibility
-    final allHeaders = [
-      ..._getFamilyDataHeaders(),
-      ..._getMemberDataHeaders(),
-    ];
+    final allHeaders = [..._getFamilyDataHeaders(), ..._getMemberDataHeaders()];
     for (var header in allHeaders) {
       columnVisibility[header] = true; // Default all columns to visible
     }
   }
 
+  Future<void> _fetchFamilies() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      final response = await TokenHttp().get(
+        '/families/getAllFamilies?disasterId=${AuthService().getDisasterId()}',
+      );
+
+      if (response != null && response['list'] is List) {
+        List<Family> loadedFamilies = [];
+
+        for (var familyJson in response['list']) {
+          try {
+            final family = NeedAssessmentData.fromJson(familyJson);
+            loadedFamilies.add(
+              Family(
+                data: family,
+                id: familyJson['id'] ?? familyJson['_id'] ?? '',
+              ),
+            );
+          } catch (parseError) {
+            print("Error parsing family data: $parseError");
+          }
+        }
+
+        setState(() {
+          allFamilies = loadedFamilies;
+          filteredFamilies = loadedFamilies;
+        });
+      }
+    } catch (e) {
+      print("Error fetching data: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load data: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   void applyFilters() {
     setState(() {
-      filteredFamilies = NeedAssessmentData.filterFamilies(
-        allFamilies,
-        {
-          'villageWard': selectedVillageWard,
-          'houseNumber': selectedHouseNumber,
-          'householdHead': selectedHouseholdHead,
-          'avgMonthlyFamilyIncome': {
-            'min': incomeRange.start,
-            'max': incomeRange.end
-          },
-          'shelterType': selectedShelterType,
-          'rationCategory': selectedRationCategory,
-          'caste': selectedCaste,
-          'outsideDamagedArea': outsideDamagedAreaFilter,
-          'receivedAllowance': receivedAllowanceFilter,
-          'memberName': memberNameFilter,
-          'memberAge': {
-            'min': memberAgeRange.start.toInt(),
-            'max': memberAgeRange.end.toInt()
-          },
-          'memberGender': memberGenderFilter,
-          'memberEducation': memberEducationFilter,
-          'memberEmploymentType': memberEmploymentTypeFilter,
-          'memberUnemployedDueToDisaster': memberUnemployedDueToDisasterFilter,
-          'memberHasMedicalNeeds': memberHasMedicalNeedsFilter,
-          'memberIsBedridden': memberIsBedriddenFilter,
-          'memberNeedsCounselling': memberNeedsCounsellingFilter,
+      filteredFamilies = NeedAssessmentData.filterFamilies(allFamilies, {
+        'villageWard': selectedVillageWard,
+        'houseNumber': selectedHouseNumber,
+        'householdHead': selectedHouseholdHead,
+        'avgMonthlyFamilyIncome': {
+          'min': incomeRange.start,
+          'max': incomeRange.end,
         },
-      );
+        'shelterType': selectedShelterType,
+        'rationCategory': selectedRationCategory,
+        'caste': selectedCaste,
+        'outsideDamagedArea': outsideDamagedAreaFilter,
+        'receivedAllowance': receivedAllowanceFilter,
+        'memberName': memberNameFilter,
+        'memberAge': {
+          'min': memberAgeRange.start.toInt(),
+          'max': memberAgeRange.end.toInt(),
+        },
+        'memberGender': memberGenderFilter,
+        'memberEducation': memberEducationFilter,
+        'memberEmploymentType': memberEmploymentTypeFilter,
+        'memberUnemployedDueToDisaster': memberUnemployedDueToDisasterFilter,
+        'memberHasMedicalNeeds': memberHasMedicalNeedsFilter,
+        'memberIsBedridden': memberIsBedriddenFilter,
+        'memberNeedsCounselling': memberNeedsCounsellingFilter,
+      });
     });
   }
 
@@ -122,80 +168,86 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
   }
 
   Future<void> exportToExcel() async {
-  final excel = Excel.createExcel();
-  final familySheet = excel['Family Data'];
-  final individualSheet = excel['Individual Data'];
+    final excel = Excel.createExcel();
+    final familySheet = excel['Family Data'];
+    final individualSheet = excel['Individual Data'];
 
-  // Get all headers and filter by visibility
-  List<String> familyHeaders = _getFamilyDataHeaders()
-      .where((header) => columnVisibility[header] ?? true)
-      .toList();
-  
-  List<String> memberHeaders = _getMemberDataHeaders()
-      .where((header) => columnVisibility[header] ?? true)
-      .toList();
+    // Get all headers and filter by visibility
+    List<String> familyHeaders =
+        _getFamilyDataHeaders()
+            .where((header) => columnVisibility[header] ?? true)
+            .toList();
 
-  // Add headers to the Family Data sheet
-  familySheet.appendRow(familyHeaders.map((header) => TextCellValue(header)).toList());
-  
-  // Add family data rows
-  for (var family in filteredFamilies) {
-    final data = family.data;
-    if (data != null) {
-      List<TextCellValue> rowData = [];
-      for (var header in familyHeaders) {
-        String? value = _getFamilyDataValue(data, header);
-        rowData.add(TextCellValue(value ?? 'N/A'));
-      }
-      familySheet.appendRow(rowData);
-    }
-  }
-  
-  // For Individual Data sheet, add combined headers
-  List<String> combinedHeaders = [
-    ...familyHeaders.map((h) => "Family $h"),
-    ...memberHeaders,
-  ];
-  individualSheet.appendRow(combinedHeaders.map((header) => TextCellValue(header)).toList());
-  
-  // Add individual data rows
-  for (var family in filteredFamilies) {
-    final data = family.data;
-    if (data != null) {
-      for (var member in data.members ?? []) {
+    List<String> memberHeaders =
+        _getMemberDataHeaders()
+            .where((header) => columnVisibility[header] ?? true)
+            .toList();
+
+    // Add headers to the Family Data sheet
+    familySheet.appendRow(
+      familyHeaders.map((header) => TextCellValue(header)).toList(),
+    );
+
+    // Add family data rows
+    for (var family in filteredFamilies) {
+      final data = family.data;
+      if (data != null) {
         List<TextCellValue> rowData = [];
-        
-        // Add family data first
         for (var header in familyHeaders) {
           String? value = _getFamilyDataValue(data, header);
           rowData.add(TextCellValue(value ?? 'N/A'));
         }
-        
-        // Then add member data
-        for (var header in memberHeaders) {
-          String? value = _getMemberDataValue(member, header);
-          rowData.add(TextCellValue(value ?? 'N/A'));
-        }
-        
-        individualSheet.appendRow(rowData);
+        familySheet.appendRow(rowData);
       }
     }
-  }
 
-  // Save the file
-  final bytes = excel.save();
-  if (bytes != null) {
-    await FileSaver.instance.saveFile(
-      name: 'need_assessment_data',
-      bytes: Uint8List.fromList(bytes),
-      ext: 'xlsx',
-      mimeType: MimeType.microsoftExcel,
+    // For Individual Data sheet, add combined headers
+    List<String> combinedHeaders = [
+      ...familyHeaders.map((h) => "Family $h"),
+      ...memberHeaders,
+    ];
+    individualSheet.appendRow(
+      combinedHeaders.map((header) => TextCellValue(header)).toList(),
     );
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Data exported successfully!')),
-    );
+
+    // Add individual data rows
+    for (var family in filteredFamilies) {
+      final data = family.data;
+      if (data != null) {
+        for (var member in data.members ?? []) {
+          List<TextCellValue> rowData = [];
+
+          // Add family data first
+          for (var header in familyHeaders) {
+            String? value = _getFamilyDataValue(data, header);
+            rowData.add(TextCellValue(value ?? 'N/A'));
+          }
+
+          // Then add member data
+          for (var header in memberHeaders) {
+            String? value = _getMemberDataValue(member, header);
+            rowData.add(TextCellValue(value ?? 'N/A'));
+          }
+
+          individualSheet.appendRow(rowData);
+        }
+      }
+    }
+
+    // Save the file
+    final bytes = excel.save();
+    if (bytes != null) {
+      await FileSaver.instance.saveFile(
+        name: 'need_assessment_data',
+        bytes: Uint8List.fromList(bytes),
+        ext: 'xlsx',
+        mimeType: MimeType.microsoftExcel,
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Data exported successfully!')),
+      );
+    }
   }
-}
 
   // Helper Methods for Excel Export
   List<String> _getFamilyDataHeaders() {
@@ -204,7 +256,7 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
       'Village/Ward',
       'House Number',
       'Head of Household',
-      'Unique Household ID',
+      // 'Unique Household ID',
       'Address',
       'Contact No',
       'Ration Card No',
@@ -338,7 +390,7 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
   String? _getFamilyDataValue(NeedAssessmentData data, String header) {
     switch (header) {
       case 'Family ID':
-        return null; // Handled in the loop.
+        return data.householdHead; // Handled in the loop.
       case 'Village/Ward':
         return data.villageWard;
       case 'House Number':
@@ -594,7 +646,7 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
         return member.typeOfLivelihoodAssistanceRequired;
       case 'Member Type Of Skilling Assistance Required':
         return member.typeOfSkillingAssistanceRequired;
-       case 'Member Other Relationship':
+      case 'Member Other Relationship':
         return member.otherRelationship;
       case 'Member Other Gender':
         return member.otherGender;
@@ -625,14 +677,26 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
                 _buildDetailRow('Caste:', data.caste),
                 _buildDetailRow('Shelter Type:', data.shelterType),
                 _buildDetailRow(
-                    'Avg Monthly Income:',
-                    '₹${data.avgMonthlyFamilyIncome.toStringAsFixed(0)}'),
-                _buildDetailRow('Primary Income Source:', data.primaryIncomeSource),
-                _buildDetailRow('Livelihood Affected:', data.livelihoodAffected),
-                _buildDetailRow('Number of Members:', data.numMembers.toString()),
+                  'Avg Monthly Income:',
+                  '₹${data.avgMonthlyFamilyIncome.toStringAsFixed(0)}',
+                ),
+                _buildDetailRow(
+                  'Primary Income Source:',
+                  data.primaryIncomeSource,
+                ),
+                _buildDetailRow(
+                  'Livelihood Affected:',
+                  data.livelihoodAffected,
+                ),
+                _buildDetailRow(
+                  'Number of Members:',
+                  data.numMembers.toString(),
+                ),
                 const SizedBox(height: 16),
-                const Text('Family Members:',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'Family Members:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 ...(data.members ?? []).map((member) {
                   // null check
                   return Padding(
@@ -641,65 +705,94 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                            '${member.name} (${member.age} years, ${member.gender})',
-                            style: const TextStyle(fontWeight: FontWeight.bold)),
+                          '${member.name} (${member.age} years, ${member.gender})',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         _buildDetailRow('Relationship:', member.relationship),
                         _buildDetailRow('Education:', member.education),
                         _buildDetailRow('Employment:', member.employmentType),
                         _buildDetailRow('Salary', member.salary),
                         _buildDetailRow(
-                            'Unemployed Due to Disaster',
-                            member.unemployedDueToDisaster),
+                          'Unemployed Due to Disaster',
+                          member.unemployedDueToDisaster,
+                        ),
                         _buildDetailRow('Class Name', member.className),
                         _buildDetailRow(
-                            'School/Institute Name',
-                            member.schoolInstituteName),
+                          'School/Institute Name',
+                          member.schoolInstituteName,
+                        ),
                         _buildDetailRow('Are Dropout', member.areDropout),
                         _buildDetailRow(
-                            'Preferred Mode of Education',
-                            member.preferredModeOfEducation),
+                          'Preferred Mode of Education',
+                          member.preferredModeOfEducation,
+                        ),
                         _buildDetailRow(
-                            'Types of Assistance Transport',
-                            member.typesOfAssistanceTransport),
+                          'Types of Assistance Transport',
+                          member.typesOfAssistanceTransport,
+                        ),
                         _buildDetailRow(
-                            'Types of Assistance Digital Device',
-                            member.typesOfAssistanceDigitalDevice),
+                          'Types of Assistance Digital Device',
+                          member.typesOfAssistanceDigitalDevice,
+                        ),
                         _buildDetailRow(
-                            'Types of Assistance Study Materials',
-                            member.typesOfAssistanceStudyMaterials),
+                          'Types of Assistance Study Materials',
+                          member.typesOfAssistanceStudyMaterials,
+                        ),
                         _buildDetailRow(
-                            'Types of Assistance Any Other',
-                            member
-                                .typesOfAssistanceAnyOtherSpecificRequirement),
-                        _buildDetailRow('Present Skill Set', member.presentSkillSet),
+                          'Types of Assistance Any Other',
+                          member.typesOfAssistanceAnyOtherSpecificRequirement,
+                        ),
                         _buildDetailRow(
-                            'Type of Livelihood Assistance Required',
-                            member.typeOfLivelihoodAssistanceRequired),
+                          'Present Skill Set',
+                          member.presentSkillSet,
+                        ),
                         _buildDetailRow(
-                            'Type of Skilling Assistance Required',
-                            member.typeOfSkillingAssistanceRequired),
-                        _buildDetailRow('Other Relationship', member.otherRelationship),
+                          'Type of Livelihood Assistance Required',
+                          member.typeOfLivelihoodAssistanceRequired,
+                        ),
+                        _buildDetailRow(
+                          'Type of Skilling Assistance Required',
+                          member.typeOfSkillingAssistanceRequired,
+                        ),
+                        _buildDetailRow(
+                          'Other Relationship',
+                          member.otherRelationship,
+                        ),
                         _buildDetailRow('Other Gender', member.otherGender),
                         if (member.specialMedicalRequirements?.isNotEmpty ??
                             false)
                           _buildDetailRow(
-                              'Medical Needs:',
-                              member.specialMedicalRequirements!),
+                            'Medical Needs:',
+                            member.specialMedicalRequirements!,
+                          ),
                         _buildDetailRow('Marital Status', member.maritalStatus),
                         _buildDetailRow('L/D/M', member.ldm),
                         _buildDetailRow('Aadhar No', member.aadharNo),
-                        _buildDetailRow('Grievously Injured',
-                            member.grievouslyInjured),
                         _buildDetailRow(
-                            'Bedridden Palliative', member.bedriddenPalliative),
+                          'Grievously Injured',
+                          member.grievouslyInjured,
+                        ),
+                        _buildDetailRow(
+                          'Bedridden Palliative',
+                          member.bedriddenPalliative,
+                        ),
                         _buildDetailRow('PWDs', member.pwDs),
-                        _buildDetailRow('Psycho Social Assistance',
-                            member.psychoSocialAssistance),
-                        _buildDetailRow('Nursing Home Assistance',
-                            member.nursingHomeAssistance),
                         _buildDetailRow(
-                            'Assistive Devices', member.assistiveDevices),
-                        _buildDetailRow('Previous Status', member.previousStatus),
+                          'Psycho Social Assistance',
+                          member.psychoSocialAssistance,
+                        ),
+                        _buildDetailRow(
+                          'Nursing Home Assistance',
+                          member.nursingHomeAssistance,
+                        ),
+                        _buildDetailRow(
+                          'Assistive Devices',
+                          member.assistiveDevices,
+                        ),
+                        _buildDetailRow(
+                          'Previous Status',
+                          member.previousStatus,
+                        ),
                       ],
                     ),
                   );
@@ -726,8 +819,10 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
         children: [
           SizedBox(
             width: 250, // Increased width for labels
-            child: Text(label,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
           Expanded(child: Text(value.isNotEmpty ? value : 'N/A')),
         ],
@@ -737,22 +832,29 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final villageWards =
-        NeedAssessmentData.getDistinctValues(allFamilies, 'villageWard');
-    final shelterTypes =
-        NeedAssessmentData.getDistinctValues(allFamilies, 'shelterType');
-    final rationCategories =
-        NeedAssessmentData.getDistinctValues(allFamilies, 'rationCategory');
+    final villageWards = NeedAssessmentData.getDistinctValues(
+      allFamilies,
+      'villageWard',
+    );
+    final shelterTypes = NeedAssessmentData.getDistinctValues(
+      allFamilies,
+      'shelterType',
+    );
+    final rationCategories = NeedAssessmentData.getDistinctValues(
+      allFamilies,
+      'rationCategory',
+    );
     final castes = NeedAssessmentData.getDistinctValues(allFamilies, 'caste');
     final genders = NeedAssessmentData.getDistinctValues(allFamilies, 'gender');
-    final educationLevels =
-        NeedAssessmentData.getDistinctValues(allFamilies, 'education');
-    final employmentTypes =
-        NeedAssessmentData.getDistinctValues(allFamilies, 'employmentType');
-    final allHeaders = [
-      ..._getFamilyDataHeaders(),
-      ..._getMemberDataHeaders(),
-    ];
+    final educationLevels = NeedAssessmentData.getDistinctValues(
+      allFamilies,
+      'education',
+    );
+    final employmentTypes = NeedAssessmentData.getDistinctValues(
+      allFamilies,
+      'employmentType',
+    );
+    final allHeaders = [..._getFamilyDataHeaders(), ..._getMemberDataHeaders()];
 
     return Scaffold(
       appBar: AppBar(
@@ -777,29 +879,36 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
                   'Select Columns to Display',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                children: allHeaders.map((header) {
-                  return CheckboxListTile(
-                    title: Text(header),
-                    value: columnVisibility[header],
-                    onChanged: (bool? value) {
-                      setState(() {
-                        columnVisibility[header] = value ?? false;
-                      });
-                    },
-                  );
-                }).toList(),
+                children:
+                    allHeaders.map((header) {
+                      return CheckboxListTile(
+                        title: Text(header),
+                        value: columnVisibility[header],
+                        onChanged: (bool? value) {
+                          setState(() {
+                            columnVisibility[header] = value ?? false;
+                          });
+                        },
+                      );
+                    }).toList(),
               ),
               const SizedBox(height: 20),
 
               // Family-level filters
-              const Text('Family-Level Filters',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              _buildFilterDropdown('Village/Ward', villageWards, selectedVillageWard,
-                  (value) {
-                setState(() {
-                  selectedVillageWard = value;
-                });
-              }),
+              const Text(
+                'Family-Level Filters',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              _buildFilterDropdown(
+                'Village/Ward',
+                villageWards,
+                selectedVillageWard,
+                (value) {
+                  setState(() {
+                    selectedVillageWard = value;
+                  });
+                },
+              ),
               _buildFilterTextField('House Number', (value) {
                 setState(() {
                   selectedHouseNumber = value;
@@ -821,32 +930,43 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
                   });
                 },
               ),
-              _buildFilterDropdown('Shelter Type', shelterTypes, selectedShelterType,
-                  (value) {
-                setState(() {
-                  selectedShelterType = value;
-                });
-              }),
               _buildFilterDropdown(
-                  'Ration Category', rationCategories, selectedRationCategory,
-                  (value) {
-                setState(() {
-                  selectedRationCategory = value;
-                });
-              }),
+                'Shelter Type',
+                shelterTypes,
+                selectedShelterType,
+                (value) {
+                  setState(() {
+                    selectedShelterType = value;
+                  });
+                },
+              ),
+              _buildFilterDropdown(
+                'Ration Category',
+                rationCategories,
+                selectedRationCategory,
+                (value) {
+                  setState(() {
+                    selectedRationCategory = value;
+                  });
+                },
+              ),
               _buildFilterDropdown('Caste', castes, selectedCaste, (value) {
                 setState(() {
                   selectedCaste = value;
                 });
               }),
-              _buildCheckboxRow('Outside Damaged Area', outsideDamagedAreaFilter,
-                  (value) {
-                setState(() {
-                  outsideDamagedAreaFilter = value;
-                });
-              }),
-              _buildCheckboxRow('Received Allowance', receivedAllowanceFilter,
-                  (value) {
+              _buildCheckboxRow(
+                'Outside Damaged Area',
+                outsideDamagedAreaFilter,
+                (value) {
+                  setState(() {
+                    outsideDamagedAreaFilter = value;
+                  });
+                },
+              ),
+              _buildCheckboxRow('Received Allowance', receivedAllowanceFilter, (
+                value,
+              ) {
                 setState(() {
                   receivedAllowanceFilter = value;
                 });
@@ -854,8 +974,10 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
               const SizedBox(height: 20),
 
               // Individual-level filters
-              const Text('Individual-Level Filters',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text(
+                'Individual-Level Filters',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               _buildFilterTextField('Member Name', (value) {
                 setState(() {
                   memberNameFilter = value;
@@ -872,48 +994,67 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
                   });
                 },
               ),
-              _buildFilterDropdown('Gender', genders, memberGenderFilter, (value) {
+              _buildFilterDropdown('Gender', genders, memberGenderFilter, (
+                value,
+              ) {
                 setState(() {
                   memberGenderFilter = value;
                 });
               }),
               _buildFilterDropdown(
-                  'Education Level', educationLevels, memberEducationFilter,
-                  (value) {
-                setState(() {
-                  memberEducationFilter = value;
-                });
-              }),
+                'Education Level',
+                educationLevels,
+                memberEducationFilter,
+                (value) {
+                  setState(() {
+                    memberEducationFilter = value;
+                  });
+                },
+              ),
               _buildFilterDropdown(
-                  'Employment Type', employmentTypes, memberEmploymentTypeFilter,
-                  (value) {
-                setState(() {
-                  memberEmploymentTypeFilter = value;
-                });
-              }),
-              _buildCheckboxRow('Unemployed Due to Disaster',
-                  memberUnemployedDueToDisasterFilter, (value) {
-                setState(() {
-                  memberUnemployedDueToDisasterFilter = value;
-                });
-              }),
-              _buildCheckboxRow('Has Medical Needs', memberHasMedicalNeedsFilter,
-                  (value) {
-                setState(() {
-                  memberHasMedicalNeedsFilter = value;
-                });
-              }),
-              _buildCheckboxRow('Is Bedridden', memberIsBedriddenFilter, (value) {
+                'Employment Type',
+                employmentTypes,
+                memberEmploymentTypeFilter,
+                (value) {
+                  setState(() {
+                    memberEmploymentTypeFilter = value;
+                  });
+                },
+              ),
+              _buildCheckboxRow(
+                'Unemployed Due to Disaster',
+                memberUnemployedDueToDisasterFilter,
+                (value) {
+                  setState(() {
+                    memberUnemployedDueToDisasterFilter = value;
+                  });
+                },
+              ),
+              _buildCheckboxRow(
+                'Has Medical Needs',
+                memberHasMedicalNeedsFilter,
+                (value) {
+                  setState(() {
+                    memberHasMedicalNeedsFilter = value;
+                  });
+                },
+              ),
+              _buildCheckboxRow('Is Bedridden', memberIsBedriddenFilter, (
+                value,
+              ) {
                 setState(() {
                   memberIsBedriddenFilter = value;
                 });
               }),
-              _buildCheckboxRow('Needs Counselling', memberNeedsCounsellingFilter,
-                  (value) {
-                setState(() {
-                  memberNeedsCounsellingFilter = value;
-                });
-              }),
+              _buildCheckboxRow(
+                'Needs Counselling',
+                memberNeedsCounsellingFilter,
+                (value) {
+                  setState(() {
+                    memberNeedsCounsellingFilter = value;
+                  });
+                },
+              ),
               const SizedBox(height: 20),
 
               // Action buttons
@@ -926,8 +1067,9 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
                   ),
                   ElevatedButton(
                     onPressed: resetFilters,
-                    style:
-                        ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey,
+                    ),
                     child: const Text('Reset Filters'),
                   ),
                 ],
@@ -943,13 +1085,17 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
-                  columns: allHeaders
-                      .where((header) => columnVisibility[header] == true)
-                      .map((header) => DataColumn(label: Text(header)))
-                      .toList(),
+                  columns:
+                      allHeaders
+                          .where((header) => columnVisibility[header] == true)
+                          .map((header) => DataColumn(label: Text(header)))
+                          .toList(),
                   rows: _buildDataRows(allHeaders),
                 ),
               ),
+              const SizedBox(height: 20),
+              if (filteredFamilies.isEmpty && !_isLoading)
+                Center(child: Text('No family data available')),
             ],
           ),
         ),
@@ -958,33 +1104,57 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
   }
 
   List<DataRow> _buildDataRows(List<String> allHeaders) {
-  List<DataRow> rows = [];
-  for (var family in filteredFamilies) {
-    final data = family.data;
-    if (data != null) {
-      for (var member in data.members ?? []) {
-        rows.add(
-          DataRow(
-            onSelectChanged: (_) => _showFamilyDetails(family),
-            cells: allHeaders
-                .where((header) => columnVisibility[header] == true)
-                .map((header) {
-                  final value = _getMemberDataValue(member, header) ??
-                      _getFamilyDataValue(data, header);
-                  return DataCell(Text(value ?? 'N/A'));
-                })
-                .toList(),
-          ),
-        );
+    List<DataRow> rows = [];
+    for (var family in filteredFamilies) {
+      final data = family.data;
+      if (data != null) {
+        if ((data.members?.isEmpty ?? true)) {
+          // Add a single row for family with no members
+          rows.add(
+            DataRow(
+              onSelectChanged: (_) => _showFamilyDetails(family),
+              cells:
+                  allHeaders
+                      .where((header) => columnVisibility[header] == true)
+                      .map((header) {
+                        final value = _getFamilyDataValue(data, header);
+                        return DataCell(Text(value ?? 'N/A'));
+                      })
+                      .toList(),
+            ),
+          );
+        } else {
+          // Add rows for each family member
+          for (var member in data.members ?? []) {
+            rows.add(
+              DataRow(
+                onSelectChanged: (_) => _showFamilyDetails(family),
+                cells:
+                    allHeaders
+                        .where((header) => columnVisibility[header] == true)
+                        .map((header) {
+                          final value =
+                              _getMemberDataValue(member, header) ??
+                              _getFamilyDataValue(data, header);
+                          return DataCell(Text(value ?? 'N/A'));
+                        })
+                        .toList(),
+              ),
+            );
+          }
+        }
       }
     }
+
+    return rows;
   }
-  return rows;
-}
 
   Widget _buildFilterDropdown(
-      String label, List<String> options, String? selectedValue,
-      ValueChanged<String?> onChanged) {
+    String label,
+    List<String> options,
+    String? selectedValue,
+    ValueChanged<String?> onChanged,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: DropdownButtonFormField<String>(
@@ -996,10 +1166,7 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
         items: [
           const DropdownMenuItem(value: null, child: Text('All')),
           ...options.map((value) {
-            return DropdownMenuItem(
-              value: value,
-              child: Text(value),
-            );
+            return DropdownMenuItem(value: value, child: Text(value));
           }),
         ],
         onChanged: onChanged,
@@ -1007,8 +1174,7 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
     );
   }
 
-  Widget _buildFilterTextField(
-      String label, ValueChanged<String> onChanged) {
+  Widget _buildFilterTextField(String label, ValueChanged<String> onChanged) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextField(
@@ -1022,8 +1188,12 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
   }
 
   Widget _buildRangeSlider(
-      String label, RangeValues values, double min, double max,
-      ValueChanged<RangeValues> onChanged) {
+    String label,
+    RangeValues values,
+    double min,
+    double max,
+    ValueChanged<RangeValues> onChanged,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
@@ -1047,7 +1217,10 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
   }
 
   Widget _buildCheckboxRow(
-      String label, bool? value, ValueChanged<bool?> onChanged) {
+    String label,
+    bool? value,
+    ValueChanged<bool?> onChanged,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -1065,4 +1238,3 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
     );
   }
 }
-

@@ -16,7 +16,10 @@ class AuthService {
   List<String> _userRoles = [];
   Map<String, dynamic>? _userProfile;
   String? _token;
+  String? _assignPlace;
 
+
+  String? get assignPlace => _assignPlace;
   bool get isAuthenticated => _isAuthenticated;
   List<String> get userRoles => List.from(_userRoles);
 
@@ -123,13 +126,13 @@ class AuthService {
           return;
         }
 
-        final disasterId = await _readFromStorage('disaster_id');
-
+        String assignPlace = '';
         List<String> rolesList = [];
         if (rolesData is List) {
           for (var roleData in rolesData) {
             if (roleData['disasterId'] == disasterId) {
               rolesList = List<String>.from(roleData['roles'].map((role) => role.toString()));
+              assignPlace = roleData['assignPlace'] ?? '';
               break;
             }
           }
@@ -151,6 +154,7 @@ class AuthService {
 
         await _saveToStorage('user_profile', json.encode(profile));
         await _saveToStorage('disaster_id', disasterId ?? '');
+        await _saveToStorage('assigned_place', assignPlace);
 
         _token = token;
         _userRoles = rolesList;
@@ -195,21 +199,18 @@ class AuthService {
     String token,
     List<String> roles,
     String disasterId, [
-    Map<String, dynamic>? profile,
+    String? assignPlace,
   ]) async {
     try {
       await _saveToStorage('auth_token', token);
       await _saveToStorage('disaster_id', disasterId);
-
-      if (profile != null) {
-        await _saveToStorage('user_profile', json.encode(profile));
-        _userProfile = Map<String, dynamic>.from(profile);
-      }
+      await _saveToStorage('assigned_place', assignPlace ?? '');
 
       _token = token;
       _isAuthenticated = true;
       _userRoles = List.from(roles);
       _disasterId = disasterId;
+      _assignPlace = assignPlace;
 
       print(
         'Login successful - token: ${token.substring(0, 10)}... roles: $roles',

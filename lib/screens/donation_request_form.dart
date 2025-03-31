@@ -376,7 +376,7 @@ class _DonationRequestFormState extends State<DonationRequestForm> {
         'name': _nameController.text.trim(),
         'email': _emailController.text.trim(),
         'phone': _phoneController.text.trim(),
-        'donationDate': _selectedDonationDate?.toIso8601String(),
+        'confirmDate': _selectedDonationDate?.toIso8601String(),
         'items':
             _donations.map((donation) {
               final details = donation['details'];

@@ -387,9 +387,9 @@ class _CamproleCreationState extends State<CamproleCreation> {
                                   Text(
                                     'Phone: ${admin['phoneNumber'] ?? 'N/A'}',
                                   ),
-                                  if (admin['assignedPlace'] != null)
+                                  if (admin['assignPlace'] != null)
                                     Text(
-                                      'Assigned Place: ${admin['assignedPlace']['name'] ?? 'N/A'}',
+                                      'Assigned Place: ${admin['assignPlace']['name'] ?? 'N/A'}',
                                     ),
                                 ],
                               ),

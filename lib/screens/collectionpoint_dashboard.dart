@@ -99,10 +99,10 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
           String formattedDate = '';
           String formattedTime = '';
 
-          if (donation['donationDate'] != null) {
+          if (donation['confirmDate'] != null) {
             try {
               final DateTime donatedAt = DateTime.parse(
-                donation['donationDate'] ?? donation['donatedAt'].toString(),
+                donation['confirmDate'] ?? donation['donatedAt'].toString(),
               );
               formattedDate = DateFormat('dd-MM-yyyy').format(donatedAt);
               formattedTime = DateFormat('hh:mm a').format(donatedAt);
@@ -164,14 +164,14 @@ Future<void> _loadCampRequests() async {
   try {
     // Load donation requests from the API
     var donationRequest = await TokenHttp().get(
-      '/donation/campDonationRequest?disasterId=${AuthService().getDisasterId()}',
+      '/donation/allCampDonationRequest?disasterId=${AuthService().getDisasterId()}',
     );
 
     List<Map<String, dynamic>> mappedDonations = [];
 
     if (donationRequest != null && donationRequest['list'] is List) {
       for (var donation in donationRequest['list']) {
-        String formattedDate = _formatDate(donation['donationDate'] ?? donation['donatedAt']);
+        String formattedDate = _formatDate(donation['confirmDate'] ?? donation['donatedAt']);
 
         List<Map<String, dynamic>> itemDetails = [];
         if (donation['donatedItems'] is List) {
@@ -754,7 +754,7 @@ String _formatDate(dynamic date) {
           'donationId': donationId,
           'disasterId': AuthService().getDisasterId(),
           'status': status,
-          'donationDate': DateTime.parse(isoDateString).toIso8601String(),
+          'confirmDate': DateTime.parse(isoDateString).toIso8601String(),
         });
       }
     } catch (e) {

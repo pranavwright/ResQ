@@ -30,7 +30,7 @@ class CampAdminDashboard extends StatelessWidget {
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => CampSupplyRequestScreen(campId: 'greenfield_zone3'),
+                    builder: (context) => CampSupplyRequestScreen(campId: 'greenfield_zone3', campName: "hello",),
                   ),
                 );
                 

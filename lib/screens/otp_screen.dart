@@ -143,6 +143,7 @@ class _OtpScreenState extends State<OtpScreen> {
       final jwtToken = response['jwtToken'];
       final roleData = response['roles'] ?? [];
       final disasterId = roleData.isNotEmpty ? roleData[0]['disasterId'] : null;
+      final assignPlace = roleData.isNotEmpty ? roleData[0]['assignPlace'] : null;
       final role = roleData.isNotEmpty ? roleData[0]['roles'] : [];
 
       if(role.isEmpty || disasterId == null) {
@@ -153,7 +154,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
       print("Saving auth state with token: $jwtToken and roles: $roles");
 
-      await AuthService().login(jwtToken, roles, disasterId);
+      await AuthService().login(jwtToken, roles, disasterId, assignPlace);
       await AuthService().loadAuthState();
       final savedToken = await AuthService().getToken();
       print("Saved token: $savedToken");
