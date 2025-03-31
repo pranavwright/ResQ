@@ -131,6 +131,12 @@ final List<Map<String, dynamic>> menuData = [
     "route": "/logout",
     "roles": ["all"],
   },
+  {
+    'title':'Collection Point Volunteer Management',
+    'icon': Icons.group,
+    'route': '/collectionpoint-volunteer-management',
+    'roles': ['collectionPointAdmin'],
+  }
 ];
 
 List<MenuItem> menuItems =

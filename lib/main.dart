@@ -41,6 +41,7 @@ import 'package:resq/screens/familysurvey_home.dart';
 import 'package:resq/screens/section_a_screen.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
 import 'package:resq/screens/change_disaster.dart';
+import 'package:resq/screens/notice_display_screen.dart';
 
 void main() async {
   // This is required before calling any platform channels
@@ -197,8 +198,8 @@ class MyApp extends StatelessWidget {
       case '/notice-board':
         builder =
             (context) => const AuthRoute(
-              requiresAuth: true,
-              child: RoleCreationScreen(),
+              
+              child: NoticeScreen (),
             );
         break;
       case '/create-notice':
@@ -303,6 +304,13 @@ class MyApp extends StatelessWidget {
             (context) => AuthRoute(
               requiresAuth: true,
               child: ChangeDisasterScreen(),
+            );
+        break;
+        case '/manage-collectionpoint':
+        builder =
+            (context) => AuthRoute(
+              requiredRoles: ['collectionPointAdmin'],
+              child: CollectionPointDashboard(),
             );
         break;
       case '/logout':
