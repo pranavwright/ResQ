@@ -43,6 +43,7 @@ import 'package:resq/models/NeedAssessmentData.dart';
 import 'package:resq/screens/change_disaster.dart';
 import 'package:resq/screens/notice_display_screen.dart';
 import 'package:resq/screens/collectionpoint_volunteer_management.dart';
+import 'package:resq/screens/view_notice.dart';
 
 void main() async {
   // This is required before calling any platform channels
@@ -307,15 +308,28 @@ class MyApp extends StatelessWidget {
               child: CollectionPointDashboard(),
             );
         break;
+      case '/view-notice':
+        final args = settings.arguments as Map<String, dynamic>?;
+        final noticeId = args?['noticeId'] as String? ?? '';
+        builder =
+            (context) => AuthRoute(
+              requiredRoles: [],
+              child: ViewNotice(noticeId: noticeId),
+            );
+        break;
       case '/collectionpoint-volunteer-management':
         final args = settings.arguments as Map<String, dynamic>?;
         final collectionPointId = args?['collectionPointId'] as String? ?? '';
         builder =
             (context) => AuthRoute(
               requiredRoles: ['collectionPointAdmin'],
-              child: CollectionPointManagementScreen(collectionPointId: collectionPointId),
+              child: CollectionPointManagementScreen(
+                collectionPointId: collectionPointId,
+              ),
             );
         break;
+    
+        
       case '/logout':
         builder = (BuildContext context) {
           // Execute logout in the next frame after the route is built
