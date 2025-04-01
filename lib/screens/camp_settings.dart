@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:resq/screens/family_mock_data.dart';
-// Import the Family class
 import 'package:resq/screens/googlemapscreen.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
 
@@ -13,18 +12,22 @@ class CampSettingsScreen extends StatefulWidget {
 class _CampSettingsScreenState extends State<CampSettingsScreen> {
   final List<Family> _families = generateMockFamilies();
   String _campContactNumber = '9876543210';
+  String _campEmail = 'camp@example.com'; // New email field
   final TextEditingController _contactController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController(); // New controller
   LatLng? _campLocation;
 
   @override
   void initState() {
     super.initState();
     _contactController.text = _campContactNumber;
+    _emailController.text = _campEmail; // Initialize email controller
   }
 
   @override
   void dispose() {
     _contactController.dispose();
+    _emailController.dispose(); // Dispose email controller
     super.dispose();
   }
 
@@ -41,12 +44,13 @@ class _CampSettingsScreenState extends State<CampSettingsScreen> {
     }
   }
 
-  void _updateContactNumber() {
+  void _updateContactInfo() {
     setState(() {
       _campContactNumber = _contactController.text;
+      _campEmail = _emailController.text;
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Contact number updated successfully!')),
+      SnackBar(content: Text('Contact information updated successfully!')),
     );
   }
 
@@ -121,6 +125,8 @@ class _CampSettingsScreenState extends State<CampSettingsScreen> {
                     _buildInfoRow('Total Families', _totalFamilies.toString()),
                     _buildInfoRow('Total Members', _totalMembers.toString()),
                     SizedBox(height: 16),
+                    
+                    // Contact Number Field
                     Text(
                       'Contact Number',
                       style: TextStyle(
@@ -129,24 +135,42 @@ class _CampSettingsScreenState extends State<CampSettingsScreen> {
                       ),
                     ),
                     SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _contactController,
-                            keyboardType: TextInputType.phone,
-                            decoration: InputDecoration(
-                              border: OutlineInputBorder(),
-                              hintText: 'Enter camp contact number',
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        IconButton(
-                          icon: Icon(Icons.check, color: Colors.green),
-                          onPressed: _updateContactNumber,
-                        ),
-                      ],
+                    TextField(
+                      controller: _contactController,
+                      keyboardType: TextInputType.phone,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter camp contact number',
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    
+                    // Email Field
+                    Text(
+                      'Email Address',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    TextField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter camp email address',
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    
+                    // Update Button
+                    ElevatedButton(
+                      onPressed: _updateContactInfo,
+                      child: Text('Update Contact Information'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: Size(double.infinity, 48),
+                      ),
                     ),
                   ],
                 ),
@@ -154,7 +178,7 @@ class _CampSettingsScreenState extends State<CampSettingsScreen> {
             ),
             SizedBox(height: 16),
 
-            // Family Members Section
+            // Family Members Section (remains the same)
             Card(
               child: Padding(
                 padding: EdgeInsets.all(16),
@@ -248,6 +272,8 @@ class _CampSettingsScreenState extends State<CampSettingsScreen> {
     );
   }
 }
+
+// GoogleMapScreen remains the same
 
 class GoogleMapScreen extends StatefulWidget {
   @override
