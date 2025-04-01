@@ -114,16 +114,16 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
           }
 
           List<Map<String, dynamic>> itemDetails = [];
-          if (donation['donatedItems'] is List) {
-            for (var donatedItem in donation['donatedItems']) {
+          if (donation['requestItems'] is List) {
+            for (var requestItem in donation['requestItems']) {
               itemDetails.add({
-                'id': donatedItem['itemId'],
-                'quantity': donatedItem['quantity'],
-                'room': donatedItem['room'] ?? '',
-                'item': donatedItem['name'] ?? 'Unknown',
-                'category': donatedItem['category'] ?? 'Not categorized',
-                'unit': donatedItem['unit'] ?? '',
-                'description': donatedItem['description'] ?? '',
+                'id': requestItem['itemId'],
+                'quantity': requestItem['quantity'],
+                'room': requestItem['room'] ?? '',
+                'item': requestItem['name'] ?? 'Unknown',
+                'category': requestItem['category'] ?? 'Not categorized',
+                'unit': requestItem['unit'] ?? '',
+                'description': requestItem['description'] ?? '',
               });
             }
           }
@@ -156,76 +156,80 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
     }
   }
 
-Future<void> _loadCampRequests() async {
-  setState(() {
-    isLoadingCampRequests = true;
-    isLoadingDonations = true;
-  });
+  Future<void> _loadCampRequests() async {
+    setState(() {
+      isLoadingCampRequests = true;
+    });
 
-  try {
-    // Load donation requests from the API
-    var donationRequest = await TokenHttp().get(
-      '/donation/allCampDonationRequest?disasterId=${AuthService().getDisasterId()}',
-    );
+    try {
+      // Load camp requests from the API
+      var campRequest = await TokenHttp().get(
+        '/donation/allCampDonationRequest?disasterId=${AuthService().getDisasterId()}',
+      );
 
-    List<Map<String, dynamic>> mappedDonations = [];
+      List<Map<String, dynamic>> mappedCampRequests = [];
 
-    if (donationRequest != null && donationRequest['list'] is List) {
-      for (var donation in donationRequest['list']) {
-        String formattedDate = _formatDate(donation['confirmDate'] ?? donation['donatedAt']);
+      if (campRequest != null && campRequest['list'] is List) {
+        for (var request in campRequest['list']) {
+          String formattedDate = _formatDate(
+            request['confirmDate'] ?? request['pickUpDate'],
+          );
 
-        List<Map<String, dynamic>> itemDetails = [];
-        if (donation['donatedItems'] is List) {
-          itemDetails = donation['donatedItems'].map<Map<String, dynamic>>((donatedItem) {
-            return {
-              'id': donatedItem['itemId'] ?? '',
-              'quantity': donatedItem['quantity'] ?? 0,
-              'room': donatedItem['room'] ?? '',
-              'item': donatedItem['name'] ?? 'Unknown',
-              'category': donatedItem['category'] ?? 'Not categorized',
-              'unit': donatedItem['unit'] ?? '',
-              'description': donatedItem['description'] ?? '',
-            };
-          }).toList();
+          List<Map<String, dynamic>> itemDetails = [];
+          if (request['requestItems'] is List) {
+            itemDetails =
+                request['requestItems'].map<Map<String, dynamic>>((
+                  requestItem,
+                ) {
+                  return {
+                    'id': requestItem['_id'] ?? '',
+                    'quantity': requestItem['quantity'] ?? 0,
+                    'room': requestItem['room'] ?? '',
+                    'item': requestItem['name'] ?? 'Unknown',
+                    'category': requestItem['category'] ?? 'Not categorized',
+                    'unit': requestItem['unit'] ?? '',
+                    'description': requestItem['description'] ?? '',
+                  };
+                }).toList();
+          }
+
+          mappedCampRequests.add({
+            'id': request['_id'] ?? '',
+            'camp': request['campName'] ?? 'Unknown',
+            'camp_contact':
+                request['phone'] ?? request['email'] ?? 'No contact',
+            'pickup_date': formattedDate,
+            'pickup_time': '',
+            'status': request['status'] ?? 'pending',
+            'items': itemDetails,
+            'originalData': request,
+          });
         }
+      }
 
-        mappedDonations.add({
-          'id': donation['_id'] ?? '',
-          'donor': donation['donarName'] ?? 'Unknown',
-          'contact_info': donation['donarPhone'] ?? donation['donarEmail'] ?? 'No contact',
-          'arriving_date': formattedDate,
-          'arriving_time': '', 
-          'status': donation['status'] ?? 'pending',
-          'items': itemDetails,
-          'originalData': donation,
-        });
+      setState(() {
+        campRequests = mappedCampRequests;
+        isLoadingCampRequests = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoadingCampRequests = false;
+      });
+      _showErrorSnackBar('Error loading camp requests: $e');
+    }
+  }
+
+  String _formatDate(dynamic date) {
+    if (date != null) {
+      try {
+        final DateTime dateTime = DateTime.parse(date.toString());
+        return DateFormat('dd-MM-yyyy').format(dateTime);
+      } catch (e) {
+        return 'Unknown';
       }
     }
-
-    setState(() {
-      donationRequests = mappedDonations;
-      isLoadingDonations = false;
-    });
-  } catch (e) {
-    setState(() {
-      isLoadingCampRequests = false;
-      isLoadingDonations = false;
-    });
-    _showErrorSnackBar('Error loading data: $e');
+    return 'Unknown';
   }
-}
-
-String _formatDate(dynamic date) {
-  if (date != null) {
-    try {
-      final DateTime dateTime = DateTime.parse(date.toString());
-      return DateFormat('dd-MM-yyyy').format(dateTime);
-    } catch (e) {
-      return 'Unknown';
-    }
-  }
-  return 'Unknown';
-}
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(
@@ -276,7 +280,7 @@ String _formatDate(dynamic date) {
                     await TokenHttp().post('/donation/updateItemLocation', {
                       'itemId': item['id'],
                       'room': _roomController.text,
-                      'disasterId': AuthService().getDisasterId()
+                      'disasterId': AuthService().getDisasterId(),
                     });
 
                     setState(() {
@@ -312,9 +316,9 @@ String _formatDate(dynamic date) {
   void _showDonationRequestDialog(Map<String, dynamic> donation) {
     _statusController.text = donation['status'] ?? '';
 
-    // Get the original donation data which contains the donatedItems
+    // Get the original donation data which contains the requestItems
     final originalData = donation['originalData'] ?? {};
-    final donatedItems = originalData['donatedItems'] ?? [];
+    final requestItems = originalData['requestItems'] ?? [];
 
     showDialog(
       context: context,
@@ -382,10 +386,10 @@ String _formatDate(dynamic date) {
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-                  if (donatedItems.isEmpty)
+                  if (requestItems.isEmpty)
                     const Text('No items donated')
                   else
-                    ...donatedItems.map<Widget>((item) {
+                    ...requestItems.map<Widget>((item) {
                       return Card(
                         margin: const EdgeInsets.only(bottom: 8),
                         child: Padding(
@@ -842,17 +846,21 @@ String _formatDate(dynamic date) {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: campRequest['status'],
+                    value: campRequest['status'].toString().toLowerCase(),
                     decoration: const InputDecoration(
                       labelText: 'Status',
                       border: OutlineInputBorder(),
                     ),
                     items:
-                        ['Pending', 'Scheduled', 'Completed', 'Canceled'].map((
-                          status,
-                        ) {
+                        [
+                          'Pending',
+                          'Scheduled',
+                          'Arrived',
+                          'Processed',
+                          'Canceled',
+                        ].map((status) {
                           return DropdownMenuItem<String>(
-                            value: status,
+                            value: status.toLowerCase(),
                             child: Text(status),
                           );
                         }).toList(),
@@ -1285,23 +1293,23 @@ String _formatDate(dynamic date) {
       appBar: AppBar(
         title: const Text('Collection Point Dashboard'),
         backgroundColor: Colors.blueGrey[800],
-         actions: [
-        
-        
+        actions: [
           IconButton(
-  icon: const Icon(Icons.settings, color: Colors.white),
-  onPressed: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const CollectionPointManagementScreen(
-          collectionPointId: '1', // You may want to pass the actual collection point ID
-        ),
-      ),
-    );
-  },
-),
-      ],
+            icon: const Icon(Icons.settings, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => const CollectionPointManagementScreen(
+                        collectionPointId:
+                            '1', // You may want to pass the actual collection point ID
+                      ),
+                ),
+              );
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: Colors.white,

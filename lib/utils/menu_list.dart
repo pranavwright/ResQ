@@ -145,9 +145,9 @@ final List<Map<String, dynamic>> menuData = [
     "roles": ["all"],
   },
   {
-    'title': 'Collection Point Volunteer Management',
+    'title': 'Collection Point Settings',
     'icon': Icons.group,
-    'route': '/collectionpoint-volunteer-management',
+    'route': '/collectionpoint-settings',
     'roles': ['collectionPointAdmin'],
   },
 ];
