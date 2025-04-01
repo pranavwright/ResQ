@@ -21,9 +21,8 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
   List<Family> allFamilies = [];
   List<Family> filteredFamilies = [];
 
- String _aiPrompt = '';
+  String _aiPrompt = '';
   bool _showPromptDialog = false;
-
 
   // Family-level filters
   String? selectedVillageWard;
@@ -113,8 +112,6 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
     }
   }
 
-
-
   void _showConfirmationDialog(String prompt) {
     showDialog(
       context: context,
@@ -129,7 +126,9 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
               const SizedBox(height: 10),
               Text(prompt, style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 20),
-              const Text('The AI will now filter the data according to your request.'),
+              const Text(
+                'The AI will now filter the data according to your request.',
+              ),
             ],
           ),
           actions: [
@@ -161,7 +160,6 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
       },
     );
   }
-
 
   void applyFilters() {
     setState(() {
@@ -491,10 +489,7 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
         return data.otherShelterType;
       case 'Residential Land Area':
         return data.residentialLandArea;
-      case 'Accommodation Status':
-        return data.accommodationStatus;
-      case 'Other Accommodation':
-        return data.otherAccommodation;
+
       case 'Vehicle Possession':
         return data.vehiclePossession;
       case 'Vehicle Type':
@@ -704,6 +699,10 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
         return member.otherRelationship;
       case 'Member Other Gender':
         return member.otherGender;
+      case 'Accommodation Status':
+        return member.accommodationStatus;
+      case 'Other Accommodation':
+        return member.otherAccommodation;
       default:
         return null;
     }
@@ -927,62 +926,62 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-            
-            if (_showPromptDialog) ...[
-              AlertDialog(
-                title: const Text('AI Data Filter'),
-                content: TextField(
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    hintText: 'Enter your prompt for filtering data (e.g., "Show families with children under 5 who need food assistance")',
-                    border: OutlineInputBorder(),
+              if (_showPromptDialog) ...[
+                AlertDialog(
+                  title: const Text('AI Data Filter'),
+                  content: TextField(
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      hintText:
+                          'Enter your prompt for filtering data (e.g., "Show families with children under 5 who need food assistance")',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _aiPrompt = value;
+                      });
+                    },
                   ),
-                  onChanged: (value) {
-                    setState(() {
-                      _aiPrompt = value;
-                    });
-                  },
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _showPromptDialog = false;
+                        });
+                      },
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _showPromptDialog = false;
+                        });
+                        if (_aiPrompt.isNotEmpty) {
+                          _showConfirmationDialog(_aiPrompt);
+                        }
+                      },
+                      child: const Text('Submit'),
+                    ),
+                  ],
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _showPromptDialog = false;
-                      });
-                    },
-                    child: const Text('Cancel'),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _showPromptDialog = false;
-                      });
-                      if (_aiPrompt.isNotEmpty) {
-                        _showConfirmationDialog(_aiPrompt);
-                      }
-                    },
-                    child: const Text('Submit'),
-                  ),
-                ],
+              ],
+
+              // AI Filter Button at the very top (before other filters)
+              ElevatedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _showPromptDialog = true;
+                  });
+                },
+                icon: const Icon(Icons.auto_awesome),
+                label: const Text('AI Filter'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                ),
               ),
-            ],
-            
-            // AI Filter Button at the very top (before other filters)
-            ElevatedButton.icon(
-              onPressed: () {
-                setState(() {
-                  _showPromptDialog = true;
-                });
-              },
-              icon: const Icon(Icons.auto_awesome),
-              label: const Text('AI Filter'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
-                foregroundColor: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 20),
-            
+              const SizedBox(height: 20),
+
               // Column visibility toggles
               ExpansionTile(
                 title: const Text(
@@ -1171,7 +1170,6 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  
                   ElevatedButton(
                     onPressed: applyFilters,
                     child: const Text('Apply Filters'),

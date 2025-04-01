@@ -16,13 +16,9 @@ class ScreenD extends StatefulWidget {
 class _ScreenDState extends State<ScreenD> {
   String? selectedVehiclePossession;
   String? selectedVehicleLoss;
-  String? selectedAccommodationStatus;
   String? vehicleLossTypeDetails;
-  String? selectedShelterType;
-  String? selectedCampId;
-
-  List<Map<String, dynamic>> _camps = [];
-  bool _isLoading = false;
+    String? selectedShelterType;
+ 
 
   final List<String> _shelterTypeOptions = [
     'Permanent House',
@@ -32,73 +28,21 @@ class _ScreenDState extends State<ScreenD> {
     'Others',
   ];
 
-  final List<String> _accommodationStatusOptions = [
-    'Relief Camps',
-    'Friends/Relatives',
-    'Rented House',
-    'Govt Accommodation',
-    'Others',
-  ];
 
   @override
   void initState() {
     super.initState();
-    _fetchCamps();
+   selectedShelterType = widget.data.shelterType;
     selectedVehiclePossession = widget.data.vehiclePossession;
     selectedVehicleLoss = widget.data.vehicleLoss;
-    selectedAccommodationStatus = widget.data.accommodationStatus;
-    selectedShelterType = widget.data.shelterType;
-    selectedCampId = widget.data.campId;
-
-    if (selectedAccommodationStatus == '') {
-      selectedAccommodationStatus = 'Relief Camps';
-    }
-    if (selectedShelterType == '') {
+   selectedVehiclePossession = widget.data.vehiclePossession;
+    selectedVehicleLoss = widget.data.vehicleLoss;
+ if (selectedShelterType == '') {
       selectedShelterType = 'Permanent House';
     }
   }
 
-  Future<void> _fetchCamps() async {
-    try {
-      setState(() {
-        _isLoading = true;
-      });
-
-      final campResponse = await TokenHttp().get(
-        '/disaster/getCampNames?disasterId=${AuthService().getDisasterId()}',
-      );
-
-      if (campResponse != null && campResponse['list'] is List) {
-        setState(() {
-          _camps = List<Map<String, dynamic>>.from(
-            campResponse['list'].map(
-              (camp) => {
-                '_id': camp['_id']?.toString() ?? '',
-                'name': camp['name']?.toString() ?? '',
-              },
-            ),
-          );
-          if(selectedCampId==''){
-            selectedCampId = _camps.isNotEmpty ? _camps[0]['_id'] : null;
-            widget.data.campId = selectedCampId ?? '';
-          }
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      print('Error fetching camps: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to load camps: $e')));
-    }
-  }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -159,84 +103,7 @@ class _ScreenDState extends State<ScreenD> {
               ),
               SizedBox(height: 20),
 
-              // Accommodation Status (Post-Disaster) Dropdown
-              Text(
-                'Accommodation Status (Post-Disaster)',
-                style: TextStyle(fontSize: 16),
-              ),
-              DropdownButtonFormField<String>(
-                value: selectedAccommodationStatus,
-                onChanged: (String? newValue) {
-                  setState(() {
-                    selectedAccommodationStatus = newValue;
-                    widget.data.accommodationStatus = newValue!;
-                    if (newValue != 'Relief Camps') {
-                      selectedCampId = null;
-                      widget.data.campId = '';
-                    }
-                  });
-                },
-                items:
-                    _accommodationStatusOptions.map<DropdownMenuItem<String>>((
-                      String value,
-                    ) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-                decoration: InputDecoration(
-                  labelText: 'Select Accommodation Status',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: 20),
-
-              if (selectedAccommodationStatus == 'Relief Camps')
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Select Camp Name', style: TextStyle(fontSize: 16)),
-                    _isLoading
-                        ? CircularProgressIndicator()
-                        : _camps.isEmpty
-                        ? Text(
-                          "No camps available. Please check with administrator.",
-                        )
-                        : DropdownButtonFormField<String>(
-                          value:
-                              selectedCampId ??
-                              (_camps.isNotEmpty ? _camps[0]['_id'] : null),
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              selectedCampId = newValue;
-                              widget.data.campId = newValue ?? '';
-                            });
-                          },
-                          items:
-                              _camps.map<DropdownMenuItem<String>>((camp) {
-                                return DropdownMenuItem<String>(
-                                  value: camp['_id'],
-                                  child: Text(camp['name'] ?? ''),
-                                );
-                              }).toList(),
-                          decoration: InputDecoration(
-                            labelText: 'Select Camp',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                  ],
-                ),
-
-              if (selectedAccommodationStatus == 'Others')
-                TextFormField(
-                  decoration: InputDecoration(
-                    labelText: 'Other Accommodation Details',
-                  ),
-                  initialValue: widget.data.otherAccommodation,
-                  onChanged: (value) => widget.data.otherAccommodation = value,
-                ),
-
+          
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: Column(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
 import 'package:resq/screens/section_k_screen.dart';
+import 'package:resq/utils/auth/auth_service.dart';
+import 'package:resq/utils/http/token_http.dart';
 
 class ScreenI extends StatefulWidget {
   final NeedAssessmentData data;
@@ -12,12 +14,75 @@ class ScreenI extends StatefulWidget {
 }
 
 class _ScreenIState extends State<ScreenI> {
+  List<Map<String, dynamic>> _camps = [];
+  bool _isCampLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCamps();
+  }
+
+  Future<void> _fetchCamps() async {
+    try {
+      setState(() {
+        _isCampLoading = true;
+      });
+
+      final campResponse = await TokenHttp().get(
+        '/disaster/getCampNames?disasterId=${AuthService().getDisasterId()}',
+      );
+
+      if (campResponse != null && campResponse['list'] is List) {
+        final camps = List<Map<String, dynamic>>.from(
+          campResponse['list'].map(
+            (camp) => {
+              '_id': camp['_id']?.toString() ?? '',
+              'name': camp['name']?.toString() ?? '',
+            },
+          ),
+        );
+
+        // Ensure unique camp IDs
+        final uniqueCamps =
+            camps
+                .fold<Map<String, Map<String, dynamic>>>(
+                  {},
+                  (map, camp) => map..putIfAbsent(camp['_id'], () => camp),
+                )
+                .values
+                .toList();
+
+        setState(() {
+          _camps = uniqueCamps;
+        });
+        setState(() {
+          _camps = uniqueCamps;
+          _isCampLoading = false;
+        });
+      } else {
+        setState(() {
+          _isCampLoading = false;
+        });
+        throw Exception('Invalid camp data format');
+      }
+    } catch (e) {
+      setState(() {
+        _isCampLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to load camps. Please try again later.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Section I: Individual Member Details'),
-      ),
+      appBar: AppBar(title: Text('Section I: Individual Member Details')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
@@ -28,6 +93,7 @@ class _ScreenIState extends State<ScreenI> {
                 'Individual Member Details',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
+              SizedBox(height: 16),
               ListView.builder(
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
@@ -40,20 +106,27 @@ class _ScreenIState extends State<ScreenI> {
                         widget.data.members[index] = updatedMember;
                       });
                     },
+                    camps: _camps,
+                    isCampLoading: _isCampLoading,
                   );
                 },
               ),
               SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ScreenK(data: widget.data),
-                    ),
-                  );
-                },
-                child: Text('Next'),
+              Center(
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ScreenK(data: widget.data),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                  ),
+                  child: Text('Next'),
+                ),
               ),
             ],
           ),
@@ -63,562 +136,656 @@ class _ScreenIState extends State<ScreenI> {
   }
 }
 
-class IndividualMemberInput extends StatelessWidget {
+class IndividualMemberInput extends StatefulWidget {
   final Member member;
   final Function(Member) onChanged;
+  final List<Map<String, dynamic>> camps;
+  final bool isCampLoading;
 
   IndividualMemberInput({
     required this.member,
     required this.onChanged,
-  }) {
-    if (member.maritalStatus == '') {
-      member.maritalStatus = 'Single';
-    }
-    if (member.previousStatus == '') {
-      member.previousStatus = 'Unemployed';
-    }
-    if(member.employmentType == '')
-    {
-      member.employmentType = 'Others';
-    }
-  }
+    required this.camps,
+    required this.isCampLoading,
+  });
+
+  @override
+  _IndividualMemberInputState createState() => _IndividualMemberInputState();
+}
+
+class _IndividualMemberInputState extends State<IndividualMemberInput> {
+  final List<String> _accommodationStatusOptions = [
+    'Relief Camps',
+    'Friends/Relatives',
+    'Rented House',
+    'Govt Accommodation',
+    'Others',
+  ];
 
   final List<String> _maritalStatusOptions = [
     'Single',
     'Married',
     'Divorced',
     'Widowed',
-    'Other'
+    'Other',
   ];
+
   final List<String> _previousStatusOptions = [
     'Employed',
     'Unemployed',
     'Self Employed',
-    'Unemployed due to the disaster'
+    'Unemployed due to the disaster',
   ];
+
   final List<String> _employmentTypeOptions = [
     'Govt',
     'Private',
     'Plantation',
     'Agri/Allied',
     'Daily Wage',
-    'Others'
+    'Others',
   ];
+
+  late String selectedAccommodationStatus;
+  String? selectedCampId;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedAccommodationStatus =
+        widget.member.accommodationStatus.isNotEmpty
+            ? widget.member.accommodationStatus
+            : 'Relief Camps';
+
+    // Initialize camp ID safely
+    if (selectedAccommodationStatus == 'Relief Camps' &&
+        widget.camps.isNotEmpty) {
+      selectedCampId =
+          widget.member.campId.isNotEmpty &&
+                  widget.camps.any((c) => c['_id'] == widget.member.campId)
+              ? widget.member.campId
+              : widget.camps.first['_id'];
+    } else {
+      selectedCampId = null;
+    }
+
+    // Initialize empty fields with default values
+    widget.member.maritalStatus ??= 'Single';
+    widget.member.previousStatus ??= 'Unemployed';
+    widget.member.employmentType ??= 'Others';
+  }
+
+  String? _getValidCampId() {
+    if (widget.camps.isEmpty) return null;
+
+    // Check if current campId exists in camps list
+    if (widget.member.campId.isNotEmpty &&
+        widget.camps.any((camp) => camp['_id'] == widget.member.campId)) {
+      return widget.member.campId;
+    }
+
+    // Return first camp ID as default
+    return widget.camps.first['_id'];
+  }
+
+  Widget _buildRadioGroup({
+    required String title,
+    required String groupValue,
+    required Function(String) onChanged,
+    String? detailValue,
+    String? detailHint,
+    Function(String)? onDetailChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+        Row(
+          children: [
+            Radio<String>(
+              value: 'Yes',
+              groupValue: groupValue,
+              onChanged: (value) => onChanged(value!),
+            ),
+            Text('Yes'),
+            Radio<String>(
+              value: 'No',
+              groupValue: groupValue,
+              onChanged: (value) => onChanged(value!),
+            ),
+            Text('No'),
+          ],
+        ),
+        if (groupValue == 'Yes' && onDetailChanged != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: TextFormField(
+              decoration: InputDecoration(
+                labelText: detailHint,
+                border: OutlineInputBorder(),
+              ),
+              initialValue: detailValue,
+              onChanged: onDetailChanged,
+            ),
+          ),
+        SizedBox(height: 12),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    String? _getDropdownValue() {
+      // Return null if camps is empty
+      if (widget.camps.isEmpty) {
+        return null;
+      }
+
+      // Check if selectedCampId is valid
+      if (selectedCampId != null) {
+        bool campExists = false;
+
+        // Check manually to avoid any issues
+        for (var camp in widget.camps) {
+          if (camp['_id'] == selectedCampId) {
+            campExists = true;
+            break;
+          }
+        }
+
+        if (campExists) {
+          return selectedCampId;
+        }
+      }
+
+      // Select a default value if needed
+      if (widget.camps.isNotEmpty) {
+        // Use the first camp as default
+        selectedCampId = widget.camps[0]['_id'];
+        // Update the member with this campId
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          widget.onChanged(widget.member.copyWith(campId: selectedCampId));
+        });
+        return selectedCampId;
+      }
+
+      // Last resort - return null
+      return null;
+    }
+
     return Card(
+      margin: EdgeInsets.only(bottom: 20),
+      elevation: 4,
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Name'),
-              initialValue: member.name,
-              onChanged: (value) {
-                onChanged(member.copyWith(name: value));
-              },
+            // Basic Information Section
+            Text(
+              'Basic Information',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
+            SizedBox(height: 12),
             TextFormField(
-              decoration: InputDecoration(labelText: 'Age'),
-              initialValue: member.age,
-              onChanged: (value) {
-                onChanged(member.copyWith(age: value));
-              },
+              decoration: InputDecoration(
+                labelText: 'Name',
+                border: OutlineInputBorder(),
+              ),
+              initialValue: widget.member.name,
+              onChanged:
+                  (value) =>
+                      widget.onChanged(widget.member.copyWith(name: value)),
             ),
+            SizedBox(height: 12),
             TextFormField(
-              decoration: InputDecoration(labelText: 'Gender'),
-              initialValue: member.gender,
-              onChanged: (value) {
-                onChanged(member.copyWith(gender: value));
-              },
+              decoration: InputDecoration(
+                labelText: 'Age',
+                border: OutlineInputBorder(),
+              ),
+              initialValue: widget.member.age,
+              keyboardType: TextInputType.number,
+              onChanged:
+                  (value) =>
+                      widget.onChanged(widget.member.copyWith(age: value)),
             ),
+            SizedBox(height: 12),
             TextFormField(
-              decoration: InputDecoration(labelText: 'Relationship'),
-              initialValue: member.relationship,
-              onChanged: (value) {
-                onChanged(member.copyWith(relationship: value));
-              },
+              decoration: InputDecoration(
+                labelText: 'Gender',
+                border: OutlineInputBorder(),
+              ),
+              initialValue: widget.member.gender,
+              onChanged:
+                  (value) =>
+                      widget.onChanged(widget.member.copyWith(gender: value)),
             ),
+            SizedBox(height: 12),
+            TextFormField(
+              decoration: InputDecoration(
+                labelText: 'Relationship',
+                border: OutlineInputBorder(),
+              ),
+              initialValue: widget.member.relationship,
+              onChanged:
+                  (value) => widget.onChanged(
+                    widget.member.copyWith(relationship: value),
+                  ),
+            ),
+            SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              decoration: InputDecoration(labelText: 'Marital Status'),
-              value: member.maritalStatus ?? 'Single',
+              decoration: InputDecoration(
+                labelText: 'Marital Status',
+                border: OutlineInputBorder(),
+              ),
+              value: widget.member.maritalStatus,
               onChanged: (String? newValue) {
                 if (newValue != null) {
-                  onChanged(member.copyWith(maritalStatus: newValue));
+                  widget.onChanged(
+                    widget.member.copyWith(maritalStatus: newValue),
+                  );
                 }
               },
-              items: _maritalStatusOptions
-                  .map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
+              items:
+                  _maritalStatusOptions.map<DropdownMenuItem<String>>((
+                    String value,
+                  ) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
             ),
+            SizedBox(height: 12),
             TextFormField(
-              decoration: InputDecoration(labelText: 'L/D/M'),
-              initialValue: member.ldm,
-              onChanged: (value) {
-                onChanged(member.copyWith(ldm: value));
-              },
+              decoration: InputDecoration(
+                labelText: 'L/D/M',
+                border: OutlineInputBorder(),
+              ),
+              initialValue: widget.member.ldm,
+              onChanged:
+                  (value) =>
+                      widget.onChanged(widget.member.copyWith(ldm: value)),
             ),
+            SizedBox(height: 12),
             TextFormField(
-              decoration: InputDecoration(labelText: 'Aadhar No.'),
-              initialValue: member.aadharNo,
-              onChanged: (value) {
-                onChanged(member.copyWith(aadharNo: value));
-              },
-            ),
-            // Grievously Injured (Radio Buttons)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  Text('Grievously Injured: '),
-                  Radio<String>(
-                    value: 'Yes',
-                    groupValue: member.grievouslyInjured,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(grievouslyInjured: value!));
-                    },
-                  ),
-                  Text('Yes'),
-                  Radio<String>(
-                    value: 'No',
-                    groupValue: member.grievouslyInjured,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(grievouslyInjured: value!));
-                    },
-                  ),
-                  Text('No'),
-                ],
+              decoration: InputDecoration(
+                labelText: 'Aadhar No.',
+                border: OutlineInputBorder(),
               ),
+              initialValue: widget.member.aadharNo,
+              keyboardType: TextInputType.number,
+              onChanged:
+                  (value) =>
+                      widget.onChanged(widget.member.copyWith(aadharNo: value)),
             ),
-            // Bedridden/Palliative (Radio Buttons)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  Text('Bedridden/Palliative: '),
-                  Radio<String>(
-                    value: 'Yes',
-                    groupValue: member.bedriddenPalliative,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(bedriddenPalliative: value!));
-                    },
-                  ),
-                  Text('Yes'),
-                  Radio<String>(
-                    value: 'No',
-                    groupValue: member.bedriddenPalliative,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(bedriddenPalliative: value!));
-                    },
-                  ),
-                  Text('No'),
-                ],
-              ),
-            ),
-            // PWDS (Radio Buttons)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      Text('PWDS: '),
-                      Radio<String>(
-                        value: 'Yes',
-                        groupValue: member.pwDs,
-                        onChanged: (value) {
-                          onChanged(member.copyWith(pwDs: value!));
-                        },
-                      ),
-                      Text('Yes'),
-                      Radio<String>(
-                        value: 'No',
-                        groupValue: member.pwDs,
-                        onChanged: (value) {
-                          onChanged(member.copyWith(pwDs: value!));
-                        },
-                      ),
-                      Text('No'),
-                    ],
-                  ),
-                ),
-                if (member.pwDs == 'Yes')
-                  TextFormField(
-                    decoration: InputDecoration(labelText: 'Specify PWDS Details'),
-                    initialValue: member.pwDs,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(pwDs: value));
-                    },
-                  ),
-              ],
-            ),
+            SizedBox(height: 20),
 
-            // Psycho-Social Assistance (Radio Buttons)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  Text('Psycho-Social Assistance: '),
-                  Radio<String>(
-                    value: 'Yes',
-                    groupValue: member.psychoSocialAssistance,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(psychoSocialAssistance: value!));
-                    },
-                  ),
-                  Text('Yes'),
-                  Radio<String>(
-                    value: 'No',
-                    groupValue: member.psychoSocialAssistance,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(psychoSocialAssistance: value!));
-                    },
-                  ),
-                  Text('No'),
-                ],
-              ),
+            // Health Status Section
+            Text(
+              'Health Status',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            // Nursing Home Assistance (Radio Buttons)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  Text('Nursing Home Assistance: '),
-                  Radio<String>(
-                    value: 'Yes',
-                    groupValue: member.nursingHomeAssistance,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(nursingHomeAssistance: value!));
-                    },
+            SizedBox(height: 12),
+            _buildRadioGroup(
+              title: 'Grievously Injured:',
+              groupValue: widget.member.grievouslyInjured,
+              onChanged:
+                  (value) => widget.onChanged(
+                    widget.member.copyWith(grievouslyInjured: value),
                   ),
-                  Text('Yes'),
-                  Radio<String>(
-                    value: 'No',
-                    groupValue: member.nursingHomeAssistance,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(nursingHomeAssistance: value!));
-                    },
-                  ),
-                  Text('No'),
-                ],
-              ),
             ),
-            // Assistive Devices (Radio Buttons)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      Text('Assistive Devices: '),
-                      Radio<String>(
-                        value: 'Yes',
-                        groupValue: member.assistiveDevices,
-                        onChanged: (value) {
-                          onChanged(member.copyWith(assistiveDevices: value!));
-                        },
-                      ),
-                      Text('Yes'),
-                      Radio<String>(
-                        value: 'No',
-                        groupValue: member.assistiveDevices,
-                        onChanged: (value) {
-                          onChanged(member.copyWith(assistiveDevices: value!));
-                        },
-                      ),
-                      Text('No'),
-                    ],
+            _buildRadioGroup(
+              title: 'Bedridden/Palliative:',
+              groupValue: widget.member.bedriddenPalliative,
+              onChanged:
+                  (value) => widget.onChanged(
+                    widget.member.copyWith(bedriddenPalliative: value),
                   ),
-                ),
-                if (member.assistiveDevices == 'Yes')
-                  TextFormField(
-                    decoration: InputDecoration(labelText: 'Specify Assistive Devices'),
-                    initialValue: member.assistiveDevices,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(assistiveDevices: value));
-                    },
-                  ),
-              ],
             ),
-            // Special Medical Requirements (Radio Buttons)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      Text(' Medical Requirements: '),
-                      Radio<String>(
-                        value: 'Yes',
-                        groupValue: member.specialMedicalRequirements,
-                        onChanged: (value) {
-                          onChanged(member.copyWith(specialMedicalRequirements: value!));
-                        },
-                      ),
-                      Text('Yes'),
-                      Radio<String>(
-                        value: 'No',
-                        groupValue: member.specialMedicalRequirements,
-                        onChanged: (value) {
-                          onChanged(member.copyWith(specialMedicalRequirements: value!));
-                        },
-                      ),
-                      Text('No'),
-                    ],
-                  ),
-                ),
-                if (member.specialMedicalRequirements == 'Yes')
-                  TextFormField(
-                    decoration: InputDecoration(labelText: 'Specify Medical Requirements'),
-                    initialValue: member.specialMedicalRequirements,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(specialMedicalRequirements: value));
-                    },
-                  ),
-              ],
+            _buildRadioGroup(
+              title: 'PWDS:',
+              groupValue: widget.member.pwDs,
+              onChanged:
+                  (value) =>
+                      widget.onChanged(widget.member.copyWith(pwDs: value)),
             ),
-            // Are Dropout (Radio Buttons)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      Text('Are Dropout: '),
-                      Radio<String>(
-                        value: 'Yes',
-                        groupValue: member.areDropout,
-                        onChanged: (value) {
-                          onChanged(member.copyWith(areDropout: value!));
-                        },
-                      ),
-                      Text('Yes'),
-                      Radio<String>(
-                        value: 'No',
-                        groupValue: member.areDropout,
-                        onChanged: (value) {
-                          onChanged(member.copyWith(areDropout: value!));
-                        },
-                      ),
-                      Text('No'),
-                    ],
+            _buildRadioGroup(
+              title: 'Psycho-Social Assistance:',
+              groupValue: widget.member.psychoSocialAssistance,
+              onChanged:
+                  (value) => widget.onChanged(
+                    widget.member.copyWith(psychoSocialAssistance: value),
                   ),
-                ),
-                if (member.areDropout == 'Yes')
-                  TextFormField(
-                    decoration: InputDecoration(labelText: 'Specify Dropout Reason'),
-                    initialValue: member.areDropout,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(areDropout: value));
-                    },
-                  ),
-              ],
             ),
+            _buildRadioGroup(
+              title: 'Nursing Home Assistance:',
+              groupValue: widget.member.nursingHomeAssistance,
+              onChanged:
+                  (value) => widget.onChanged(
+                    widget.member.copyWith(nursingHomeAssistance: value),
+                  ),
+            ),
+            _buildRadioGroup(
+              title: 'Assistive Devices:',
+              groupValue: widget.member.assistiveDevices,
+              onChanged:
+                  (value) => widget.onChanged(
+                    widget.member.copyWith(assistiveDevices: value),
+                  ),
+            ),
+            _buildRadioGroup(
+              title: 'Special Medical Requirements:',
+              groupValue: widget.member.specialMedicalRequirements,
+              onChanged:
+                  (value) => widget.onChanged(
+                    widget.member.copyWith(specialMedicalRequirements: value),
+                  ),
+            ),
+            SizedBox(height: 20),
 
-            // Types of Assistance - Transport (Radio Buttons)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      Text('Transportation: '),
-                      Radio<String>(
-                        value: 'Yes',
-                        groupValue: member.typesOfAssistanceTransport,
-                        onChanged: (value) {
-                          onChanged(member.copyWith(typesOfAssistanceTransport: value!));
-                        },
-                      ),
-                      Text('Yes'),
-                      Radio<String>(
-                        value: 'No',
-                        groupValue: member.typesOfAssistanceTransport,
-                        onChanged: (value) {
-                          onChanged(member.copyWith(typesOfAssistanceTransport: value!));
-                        },
-                      ),
-                      Text('No'),
-                    ],
-                  ),
-                ),
-                if (member.typesOfAssistanceTransport == 'Yes')
-                  TextFormField(
-                    decoration: InputDecoration(labelText: 'Specify Transport Needs'),
-                    initialValue: member.typesOfAssistanceTransport,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(typesOfAssistanceTransport: value));
-                    },
-                  ),
-              ],
+            // Education Section
+            Text(
+              'Education Information',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            // Types of Assistance - Digital Device (Radio Buttons)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      Text(' Digital Device: '),
-                      Radio<String>(
-                        value: 'Yes',
-                        groupValue: member.typesOfAssistanceDigitalDevice,
-                        onChanged: (value) {
-                          onChanged(member.copyWith(typesOfAssistanceDigitalDevice: value!));
-                        },
-                      ),
-                      Text('Yes'),
-                      Radio<String>(
-                        value: 'No',
-                        groupValue: member.typesOfAssistanceDigitalDevice,
-                        onChanged: (value) {
-                          onChanged(member.copyWith(typesOfAssistanceDigitalDevice: value!));
-                        },
-                      ),
-                      Text('No'),
-                    ],
+            SizedBox(height: 12),
+            _buildRadioGroup(
+              title: 'Are Dropout:',
+              groupValue: widget.member.areDropout,
+              onChanged:
+                  (value) => widget.onChanged(
+                    widget.member.copyWith(areDropout: value),
                   ),
-                ),
-                if (member.typesOfAssistanceDigitalDevice == 'Yes')
-                  TextFormField(
-                    decoration: InputDecoration(labelText: 'Specify Device Needs'),
-                    initialValue: member.typesOfAssistanceDigitalDevice,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(typesOfAssistanceDigitalDevice: value));
-                    },
-                  ),
-              ],
             ),
-            // Types of Assistance - Study Materials (Radio Buttons)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      Text('Study Materials: '),
-                      Radio<String>(
-                        value: 'Yes',
-                        groupValue: member.typesOfAssistanceStudyMaterials,
-                        onChanged: (value) {
-                          onChanged(member.copyWith(typesOfAssistanceStudyMaterials: value!));
-                        },
-                      ),
-                      Text('Yes'),
-                      Radio<String>(
-                        value: 'No',
-                        groupValue: member.typesOfAssistanceStudyMaterials,
-                        onChanged: (value) {
-                          onChanged(member.copyWith(typesOfAssistanceStudyMaterials: value!));
-                        },
-                      ),
-                      Text('No'),
-                    ],
+            TextFormField(
+              decoration: InputDecoration(
+                labelText: 'Class/Course',
+                border: OutlineInputBorder(),
+              ),
+              initialValue: widget.member.className,
+              onChanged:
+                  (value) => widget.onChanged(
+                    widget.member.copyWith(className: value),
                   ),
-                ),
-                if (member.typesOfAssistanceStudyMaterials == 'Yes')
-                  TextFormField(
-                    decoration: InputDecoration(labelText: 'Specify Study Material Needs'),
-                    initialValue: member.typesOfAssistanceStudyMaterials,
-                    onChanged: (value) {
-                      onChanged(member.copyWith(typesOfAssistanceStudyMaterials: value));
-                    },
-                  ),
-              ],
             ),
-            // Other fields remain unchanged...
+            SizedBox(height: 12),
+            TextFormField(
+              decoration: InputDecoration(
+                labelText: 'School/Institution Name',
+                border: OutlineInputBorder(),
+              ),
+              initialValue: widget.member.schoolInstituteName,
+              onChanged:
+                  (value) => widget.onChanged(
+                    widget.member.copyWith(schoolInstituteName: value),
+                  ),
+            ),
+            SizedBox(height: 12),
+            TextFormField(
+              decoration: InputDecoration(
+                labelText: 'Preferred Mode of Education',
+                border: OutlineInputBorder(),
+              ),
+              initialValue: widget.member.preferredModeOfEducation,
+              onChanged:
+                  (value) => widget.onChanged(
+                    widget.member.copyWith(preferredModeOfEducation: value),
+                  ),
+            ),
+            SizedBox(height: 20),
+
+            // Employment Section
+            Text(
+              'Employment Information',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              decoration: InputDecoration(labelText: 'Previous Status'),
-              value: member.previousStatus ?? 'Unemployed',
+              decoration: InputDecoration(
+                labelText: 'Previous Status',
+                border: OutlineInputBorder(),
+              ),
+              value: widget.member.previousStatus,
               onChanged: (String? newValue) {
                 if (newValue != null) {
-                  onChanged(member.copyWith(previousStatus: newValue));
+                  widget.onChanged(
+                    widget.member.copyWith(previousStatus: newValue),
+                  );
                 }
               },
-              items: _previousStatusOptions
-                  .map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
+              items:
+                  _previousStatusOptions.map<DropdownMenuItem<String>>((
+                    String value,
+                  ) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
             ),
+            SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              decoration: InputDecoration(labelText: 'Employment Type'),
-              value: member.employmentType ?? 'Others',
+              decoration: InputDecoration(
+                labelText: 'Employment Type',
+                border: OutlineInputBorder(),
+              ),
+              value: widget.member.employmentType,
               onChanged: (String? newValue) {
                 if (newValue != null) {
-                  onChanged(member.copyWith(employmentType: newValue));
+                  widget.onChanged(
+                    widget.member.copyWith(employmentType: newValue),
+                  );
                 }
               },
-              items: _employmentTypeOptions
-                  .map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
+              items:
+                  _employmentTypeOptions.map<DropdownMenuItem<String>>((
+                    String value,
+                  ) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
             ),
-            if (member.employmentType == 'Others')
+            SizedBox(height: 12),
+            if (widget.member.employmentType == 'Others')
               TextFormField(
-                decoration: InputDecoration(labelText: 'Specify Other Employment'),
-                initialValue: member.employmentType,
-                onChanged: (value) {
-                  onChanged(member.copyWith(employmentType: value));
-                },
+                decoration: InputDecoration(
+                  labelText: 'Specify Other Employment',
+                  border: OutlineInputBorder(),
+                ),
+                initialValue: widget.member.employmentType,
+                onChanged:
+                    (value) => widget.onChanged(
+                      widget.member.copyWith(employmentType: value),
+                    ),
               ),
+            SizedBox(height: 12),
             TextFormField(
-              decoration: InputDecoration(labelText: 'Education'),
-              initialValue: member.education,
-              onChanged: (value) {
-                onChanged(member.copyWith(education: value));
-              },
+              decoration: InputDecoration(
+                labelText: 'Education',
+                border: OutlineInputBorder(),
+              ),
+              initialValue: widget.member.education,
+              onChanged:
+                  (value) => widget.onChanged(
+                    widget.member.copyWith(education: value),
+                  ),
             ),
+            SizedBox(height: 12),
+            TextFormField(
+              decoration: InputDecoration(
+                labelText: 'Salary',
+                border: OutlineInputBorder(),
+              ),
+              initialValue: widget.member.salary,
+              keyboardType: TextInputType.number,
+              onChanged:
+                  (value) =>
+                      widget.onChanged(widget.member.copyWith(salary: value)),
+            ),
+            SizedBox(height: 20),
 
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Salary'),
-              initialValue: member.salary,
-              onChanged: (value) {
-                onChanged(member.copyWith(salary: value));
-              },
+            // Assistance Needs Section
+            Text(
+              'Assistance Needs',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Class/Course'),
-              initialValue: member.className,
-              onChanged: (value) {
-                onChanged(member.copyWith(className: value));
-              },
+            SizedBox(height: 12),
+            _buildRadioGroup(
+              title: 'Transportation:',
+              groupValue: widget.member.typesOfAssistanceTransport,
+              onChanged:
+                  (value) => widget.onChanged(
+                    widget.member.copyWith(typesOfAssistanceTransport: value),
+                  ),
             ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'School/Institution Name'),
-              initialValue: member.schoolInstituteName,
-              onChanged: (value) {
-                onChanged(member.copyWith(schoolInstituteName: value));
-              },
+            _buildRadioGroup(
+              title: 'Digital Device:',
+              groupValue: widget.member.typesOfAssistanceDigitalDevice,
+              onChanged:
+                  (value) => widget.onChanged(
+                    widget.member.copyWith(
+                      typesOfAssistanceDigitalDevice: value,
+                    ),
+                  ),
             ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Preferred Mode of Education'),
-              initialValue: member.preferredModeOfEducation,
-              onChanged: (value) {
-                onChanged(member.copyWith(preferredModeOfEducation: value));
-              },
+            _buildRadioGroup(
+              title: 'Study Materials:',
+              groupValue: widget.member.typesOfAssistanceStudyMaterials,
+              onChanged:
+                  (value) => widget.onChanged(
+                    widget.member.copyWith(
+                      typesOfAssistanceStudyMaterials: value,
+                    ),
+                  ),
             ),
+            SizedBox(height: 20),
+
+            // Accommodation Status Section
+            Text(
+              'Accommodation Status (Post-Disaster)',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              decoration: InputDecoration(
+                labelText: 'Select Accommodation Status',
+                border: OutlineInputBorder(),
+              ),
+              value: selectedAccommodationStatus,
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  setState(() {
+                    selectedAccommodationStatus = newValue;
+                    widget.onChanged(
+                      widget.member.copyWith(
+                        accommodationStatus: newValue,
+                        campId:
+                            newValue == 'Relief Camps' ? selectedCampId : '',
+                      ),
+                    );
+                  });
+                }
+              },
+              items:
+                  _accommodationStatusOptions.map<DropdownMenuItem<String>>((
+                    String value,
+                  ) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+            ),
+            SizedBox(height: 12),
+            if (selectedAccommodationStatus == 'Relief Camps') ...[
+              Text(
+                'Select Camp',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+              widget.isCampLoading
+                  ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                  : widget.camps.isEmpty
+                  ? Text(
+                    "No camps available. Please check with administrator.",
+                    style: TextStyle(color: Colors.red),
+                  )
+                  : Builder(
+                    builder: (context) {
+                      // DEBUG: Print to verify what camps and selection we have
+                      print(
+                        'Camps: ${widget.camps.map((c) => "${c['_id']}: ${c['name']}").join(', ')}',
+                      );
+                      print('Selected Camp ID: $selectedCampId');
+
+                      // Find a valid camp ID to use
+                      String? validCampId = null;
+
+                      // If we have a selectedCampId and it exists in the camps list, use it
+                      if (selectedCampId != null &&
+                          widget.camps.any(
+                            (camp) => camp['_id'] == selectedCampId,
+                          )) {
+                        validCampId = selectedCampId;
+                      }
+                      // Otherwise use the first camp ID if available
+                      else if (widget.camps.isNotEmpty) {
+                        validCampId = widget.camps[0]['_id'];
+                        // Also update selectedCampId to keep in sync
+                        selectedCampId = validCampId;
+                      }
+
+                      print('Using valid camp ID: $validCampId');
+
+                      return DropdownButtonFormField<String>(
+                        decoration: InputDecoration(
+                          labelText: 'Select Camp',
+                          border: OutlineInputBorder(),
+                        ),
+                        value: validCampId,
+                        onChanged: (String? newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              selectedCampId = newValue;
+                              widget.onChanged(
+                                widget.member.copyWith(campId: newValue),
+                              );
+                            });
+                          }
+                        },
+                        items:
+                            widget.camps.map<DropdownMenuItem<String>>((camp) {
+                              return DropdownMenuItem<String>(
+                                value: camp['_id'],
+                                child: Text(camp['name'] ?? 'Unknown Camp'),
+                              );
+                            }).toList(),
+                      );
+                    },
+                  ),
+              SizedBox(height: 12),
+            ],
+            if (selectedAccommodationStatus == 'Others') ...[
+              TextFormField(
+                decoration: InputDecoration(
+                  labelText: 'Other Accommodation Details',
+                  border: OutlineInputBorder(),
+                ),
+                initialValue: widget.member.otherAccommodation,
+                onChanged:
+                    (value) => widget.onChanged(
+                      widget.member.copyWith(otherAccommodation: value),
+                    ),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 }
-

@@ -1,4 +1,3 @@
-
 class NeedAssessmentData {
   String villageWard = '';
   String houseNumber = '';
@@ -697,6 +696,7 @@ class Member {
   String otherGender = '';
     String accommodationStatus = '';
   String otherAccommodation = '';
+  String campId = '';
 
   Member({
     required this.name,
@@ -733,6 +733,7 @@ class Member {
     this.otherGender = '',
      this.accommodationStatus = '',
   this.otherAccommodation = '',
+  this.campId = '',
   });
 
   Member copyWith({
@@ -768,6 +769,9 @@ class Member {
     String? typeOfSkillingAssistanceRequired,
     String? otherRelationship,
     String? otherGender,
+ String? accommodationStatus,
+    String? campId,
+    String? otherAccommodation,
   }) {
     return Member(
       name: name ?? this.name,
@@ -817,8 +821,9 @@ class Member {
           this.typeOfSkillingAssistanceRequired,
       otherRelationship: otherRelationship ?? this.otherRelationship,
       otherGender: otherGender ?? this.otherGender,
-       accommodationStatus:   accommodationStatus ?? this.accommodationStatus,
-   otherAccommodation:otherAccommodation ?? this.otherAccommodation,
+       accommodationStatus: accommodationStatus ?? this.accommodationStatus,
+      campId: campId ?? this.campId,
+      otherAccommodation: otherAccommodation ?? this.otherAccommodation,
     );
   }
 
@@ -862,8 +867,9 @@ class Member {
           json['typeOfSkillingAssistanceRequired'] ?? '',
       otherRelationship: json['otherRelationship'] ?? '',
       otherGender: json['otherGender'] ?? '',
-          accommodationStatus : json['accommodationStatus'] ?? '',
-  otherAccommodation :json['otherAccommodation'] ?? '',
+      accommodationStatus: json['accommodationStatus'] ?? '',
+      otherAccommodation: json['otherAccommodation'] ?? '',
+      campId: json['campId'] ?? '',
     );
   }
 
@@ -904,6 +910,7 @@ class Member {
       'otherGender': otherGender,
       'accommodationStatus': accommodationStatus,
       'otherAccommodation': otherAccommodation,
+      'campId': campId,
     };
   }
 }
