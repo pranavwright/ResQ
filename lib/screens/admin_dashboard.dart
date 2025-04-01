@@ -262,7 +262,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-   Widget _buildResourceDistributionChart() {
+  Widget _buildResourceDistributionChart() {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -274,93 +274,96 @@ class _AdminDashboardState extends State<AdminDashboard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Resource Distribution', 
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              'Resource Distribution',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             SizedBox(
               height: 250,
               child: BarChart(
                 BarChartData(
-                  alignment: BarChartAlignment.spaceAround,
-                  groupsSpace: 20,
+                  alignment: BarChartAlignment.spaceBetween,
+                  groupsSpace: 30,
                   barGroups: [
                     // Day 1
                     BarChartGroupData(
                       x: 0,
-                      groupVertically: true,
                       barsSpace: 4,
                       barRods: [
-                        // Incoming donations
                         BarChartRodData(
                           toY: 1200,
                           color: Colors.blue[400]!,
-                          width: 15,
-                          borderRadius: BorderRadius.circular(4),
+                          width: 12,
+                          borderRadius: BorderRadius.circular(0),
                         ),
-                        // Outgoing donations
                         BarChartRodData(
                           toY: 850,
                           color: Colors.green[400]!,
-                          width: 15,
-                          borderRadius: BorderRadius.circular(4),
+                          width: 12,
+                          borderRadius: BorderRadius.circular(0),
                         ),
                       ],
                     ),
                     // Day 2
                     BarChartGroupData(
                       x: 1,
-                      groupVertically: true,
                       barsSpace: 4,
                       barRods: [
                         BarChartRodData(
                           toY: 900,
                           color: Colors.blue[400]!,
-                          width: 15,
-                          borderRadius: BorderRadius.circular(4),
+                          width: 12,
+                          borderRadius: BorderRadius.circular(0),
                         ),
                         BarChartRodData(
                           toY: 700,
                           color: Colors.green[400]!,
-                          width: 15,
-                          borderRadius: BorderRadius.circular(4),
+                          width: 12,
+                          borderRadius: BorderRadius.circular(0),
                         ),
                       ],
                     ),
                     // Day 3
                     BarChartGroupData(
                       x: 2,
-                      groupVertically: true,
                       barsSpace: 4,
                       barRods: [
                         BarChartRodData(
                           toY: 600,
                           color: Colors.blue[400]!,
-                          width: 15,
-                          borderRadius: BorderRadius.circular(4),
+                          width: 12,
+                          borderRadius: BorderRadius.circular(0),
                         ),
                         BarChartRodData(
                           toY: 500,
                           color: Colors.green[400]!,
-                          width: 15,
-                          borderRadius: BorderRadius.circular(4),
+                          width: 12,
+                          borderRadius: BorderRadius.circular(0),
                         ),
                       ],
                     ),
                   ],
                   titlesData: FlTitlesData(
                     show: true,
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          const labels = ['Day 1', 'Day 2', 'Day 3'];
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(labels[value.toInt()]),
-                          );
-                        },
-                      ),
-                    ),
+                 bottomTitles: AxisTitles(
+  sideTitles: SideTitles(
+    showTitles: true,
+    getTitlesWidget: (value, meta) {
+      final titles = ['Day 1', 'Day 2', 'Day 3'];
+      return Padding(
+        padding: const EdgeInsets.only(top: 8.0),
+        child: Text(
+          titles[value.toInt()],
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.black,
+          ),
+        ),
+      );
+    },
+  ),
+),
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
@@ -390,172 +393,172 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
     );
   }
-  
-Widget _buildDayTimelineChart() {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey[200]!),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Disaster Timeline', 
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 250,
-              child: BarChart(
-                BarChartData(
-                  barGroups: [
-                    // Day 1
-                    BarChartGroupData(
-                      x: 0,
-                      barRods: [
-                        // Alive (bottom segment)
-                        BarChartRodData(
-                          fromY: 0,
-                          toY: 30,
-                          color: Colors.green[400]!,
-                          width: 25,
-                          borderRadius: BorderRadius.circular(0),
-                        ),
-                        // Missing (middle segment)
-                        BarChartRodData(
-                          fromY: 30,
-                          toY: 40,
-                          color: Colors.orange[400]!,
-                          width: 25,
-                          borderRadius: BorderRadius.circular(0),
-                        ),
-                        // Deceased (top segment)
-                        BarChartRodData(
-                          fromY: 40,
-                          toY: 45,
-                          color: Colors.red[400]!,
-                          width: 25,
-                          borderRadius: BorderRadius.circular(0),
-                        ),
-                      ],
-                    ),
-                    // Day 2
-                    BarChartGroupData(
-                      x: 1,
-                      barRods: [
-                        BarChartRodData(
-                          fromY: 0,
-                          toY: 18,
-                          color: Colors.green[400]!,
-                          width: 25,
-                          borderRadius: BorderRadius.circular(0),
-                        ),
-                        BarChartRodData(
-                          fromY: 18,
-                          toY: 25,
-                          color: Colors.orange[400]!,
-                          width: 25,
-                          borderRadius: BorderRadius.circular(0),
-                        ),
-                        BarChartRodData(
-                          fromY: 25,
-                          toY: 28,
-                          color: Colors.red[400]!,
-                          width: 25,
-                          borderRadius: BorderRadius.circular(0),
-                        ),
-                      ],
-                    ),
-                    // Day 3
-                    BarChartGroupData(
-                      x: 2,
-                      barRods: [
-                        BarChartRodData(
-                          fromY: 0,
-                          toY: 8,
-                          color: Colors.green[400]!,
-                          width: 25,
-                          borderRadius: BorderRadius.circular(0),
-                        ),
-                        BarChartRodData(
-                          fromY: 8,
-                          toY: 13,
-                          color: Colors.orange[400]!,
-                          width: 25,
-                          borderRadius: BorderRadius.circular(0),
-                        ),
-                        BarChartRodData(
-                          fromY: 13,
-                          toY: 15,
-                          color: Colors.red[400]!,
-                          width: 25,
-                          borderRadius: BorderRadius.circular(0),
-                        ),
-                      ],
-                    ),
-                  ],
-                  titlesData: FlTitlesData(
-                    show: true,
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          const labels = ['Day 1', 'Day 2', 'Day 3'];
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(labels[value.toInt()]),
-                          );
-                        },
+
+  Widget _buildDayTimelineChart() {
+  return Card(
+    elevation: 0,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+      side: BorderSide(color: Colors.grey[200]!),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Disaster Timeline', 
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 250,
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceBetween,
+                groupsSpace: 20, // Space between day groups
+                barGroups: [
+                  // Day 1
+                  BarChartGroupData(
+                    x: 0,
+                    barsSpace: 4, // Space between bars in same group
+                    barRods: [
+                      BarChartRodData(
+                        toY: 30, // Alive
+                        color: Colors.green[400]!,
+                        width: 12,
+                        borderRadius: BorderRadius.circular(0),
                       ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        interval: 10,
-                        getTitlesWidget: (value, meta) {
-                          return Text(value.toInt().toString());
-                        },
+                      BarChartRodData(
+                        toY: 10, // Missing (40-30)
+                        color: Colors.orange[400]!,
+                        width: 12,
+                        borderRadius: BorderRadius.circular(0),
                       ),
+                      BarChartRodData(
+                        toY: 5, // Deceased (45-40)
+                        color: Colors.red[400]!,
+                        width: 12,
+                        borderRadius: BorderRadius.circular(0),
+                      ),
+                    ],
+                  ),
+                  // Day 2
+                  BarChartGroupData(
+                    x: 1,
+                    barsSpace: 4,
+                    barRods: [
+                      BarChartRodData(
+                        toY: 18, // Alive
+                        color: Colors.green[400]!,
+                        width: 12,
+                        borderRadius: BorderRadius.circular(0),
+                      ),
+                      BarChartRodData(
+                        toY: 7, // Missing (25-18)
+                        color: Colors.orange[400]!,
+                        width: 12,
+                        borderRadius: BorderRadius.circular(0),
+                      ),
+                      BarChartRodData(
+                        toY: 3, // Deceased (28-25)
+                        color: Colors.red[400]!,
+                        width: 12,
+                        borderRadius: BorderRadius.circular(0),
+                      ),
+                    ],
+                  ),
+                  // Day 3
+                  BarChartGroupData(
+                    x: 2,
+                    barsSpace: 4,
+                    barRods: [
+                      BarChartRodData(
+                        toY: 8, // Alive
+                        color: Colors.green[400]!,
+                        width: 12,
+                        borderRadius: BorderRadius.circular(0),
+                      ),
+                      BarChartRodData(
+                        toY: 5, // Missing (13-8)
+                        color: Colors.orange[400]!,
+                        width: 12,
+                        borderRadius: BorderRadius.circular(0),
+                      ),
+                      BarChartRodData(
+                        toY: 2, // Deceased (15-13)
+                        color: Colors.red[400]!,
+                        width: 12,
+                        borderRadius: BorderRadius.circular(0),
+                      ),
+                    ],
+                  ),
+                ],
+                titlesData: FlTitlesData(
+                  show: true,
+               bottomTitles: AxisTitles(
+  sideTitles: SideTitles(
+    showTitles: true,
+    getTitlesWidget: (value, meta) {
+      final titles = ['Day 1', 'Day 2', 'Day 3'];
+      return SideTitleWidget(
+        angle: 0,
+        space: 4,  // Space from the axis
+        meta: meta,
+        child: Text(
+          titles[value.toInt()],
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.black,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    },
+  ),
+),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      interval: 10,
+                      getTitlesWidget: (value, meta) {
+                        return Text(value.toInt().toString());
+                      },
                     ),
                   ),
-                  gridData: FlGridData(show: true),
-                  borderData: FlBorderData(show: true),
                 ),
+                gridData: FlGridData(show: true),
+                borderData: FlBorderData(show: true),
               ),
             ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 12,
-              runSpacing: 8,
-              children: [
-                _buildLegendItem(Colors.green[400]!, 'Alive'),
-                _buildLegendItem(Colors.orange[400]!, 'Missing'),
-                _buildLegendItem(Colors.red[400]!, 'Deceased'),
-              ],
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              _buildLegendItem(Colors.green[400]!, 'Alive'),
+              _buildLegendItem(Colors.orange[400]!, 'Missing'),
+              _buildLegendItem(Colors.red[400]!, 'Deceased'),
+            ],
+          ),
+        ],
       ),
-    );
-  }
-
+    ),
+  );
+}
 
   Widget _buildLegendItem(Color color, String text) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          width: 16,
+          height: 16,
+          color: color,
         ),
         const SizedBox(width: 4),
-        Text(text, style: const TextStyle(fontSize: 12)),
+        Text(text),
       ],
     );
   }
@@ -604,13 +607,17 @@ class _NoticeCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(notice.title, 
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text(
+                    notice.title, 
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 4),
-                  Text(notice.content,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: Colors.grey[600])),
+                  Text(
+                    notice.content,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
                 ],
               ),
             ),
