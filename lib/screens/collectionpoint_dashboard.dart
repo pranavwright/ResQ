@@ -159,59 +159,91 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
 Future<void> _loadCampRequests() async {
   setState(() {
     isLoadingCampRequests = true;
-    isLoadingDonations = true;
   });
 
   try {
-    // Load donation requests from the API
-    var donationRequest = await TokenHttp().get(
+    // Load camp donation requests from the API
+    var response = await TokenHttp().get(
       '/donation/allCampDonationRequest?disasterId=${AuthService().getDisasterId()}',
     );
 
-    List<Map<String, dynamic>> mappedDonations = [];
+    List<Map<String, dynamic>> mappedCampRequests = [];
 
-    if (donationRequest != null && donationRequest['list'] is List) {
-      for (var donation in donationRequest['list']) {
-        String formattedDate = _formatDate(donation['confirmDate'] ?? donation['donatedAt']);
-
+    if (response != null && response['list'] is List) {
+      for (var request in response['list']) {
+        // Parse pickup date
+        String formattedPickupDate = _formatDate(request['pickUpDate']);
+        
+        // Get requested items
         List<Map<String, dynamic>> itemDetails = [];
-        if (donation['donatedItems'] is List) {
-          itemDetails = donation['donatedItems'].map<Map<String, dynamic>>((donatedItem) {
+        if (request['requestItems'] is List) {
+          itemDetails = (request['requestItems'] as List).map<Map<String, dynamic>>((item) {
             return {
-              'id': donatedItem['itemId'] ?? '',
-              'quantity': donatedItem['quantity'] ?? 0,
-              'room': donatedItem['room'] ?? '',
-              'item': donatedItem['name'] ?? 'Unknown',
-              'category': donatedItem['category'] ?? 'Not categorized',
-              'unit': donatedItem['unit'] ?? '',
-              'description': donatedItem['description'] ?? '',
+              'id': item['_id'] ?? '',
+              'quantity': item['quantity'] ?? 0,
+              'room': item['room'] ?? '',
+              'item': item['name'] ?? 'Unknown',
+              'category': item['category'] ?? 'Not categorized',
+              'unit': item['unit'] ?? '',
+              'description': item['description'] ?? '',
+            };
+          }).toList();
+        } else if (request['items'] is List) {
+          // Map item IDs to full item details
+          List<String> itemIds = [];
+          Map<String, int> itemQuantities = {};
+          
+          for (var itemEntry in request['items']) {
+            String itemId = itemEntry['itemId'] ?? '';
+            int quantity = itemEntry['quantity'] ?? 0;
+            
+            if (itemId.isNotEmpty) {
+              itemIds.add(itemId);
+              itemQuantities[itemId] = quantity;
+            }
+          }
+          
+          // If requestItems doesn't exist but items does, create basic item entries
+          itemDetails = itemIds.map<Map<String, dynamic>>((itemId) {
+            return {
+              'id': itemId,
+              'quantity': itemQuantities[itemId] ?? 0,
+              'room': '',
+              'item': 'Item $itemId',
+              'category': 'Not categorized',
+              'unit': '',
+              'description': '',
             };
           }).toList();
         }
-
-        mappedDonations.add({
-          'id': donation['_id'] ?? '',
-          'donor': donation['donarName'] ?? 'Unknown',
-          'contact_info': donation['donarPhone'] ?? donation['donarEmail'] ?? 'No contact',
-          'arriving_date': formattedDate,
-          'arriving_time': '', 
-          'status': donation['status'] ?? 'pending',
+        
+        // Get camp name (might need to be fetched from another endpoint if not available)
+        String campName = request['campId'] ?? 'Unknown Camp';
+        
+        mappedCampRequests.add({
+          'id': request['_id'] ?? '',
+          'camp': campName,
+          'camp_contact': 'Contact info', // This might need to be fetched separately
+          'pickup_date': formattedPickupDate,
+          'pickup_time': '', // Extract time if available
+          'status': request['status'] ?? 'pending',
           'items': itemDetails,
-          'originalData': donation,
+          'priority': request['priority'] ?? 0,
+          'notes': request['notes'] ?? '',
+          'originalData': request,
         });
       }
     }
 
     setState(() {
-      donationRequests = mappedDonations;
-      isLoadingDonations = false;
+      campRequests = mappedCampRequests;  // Fixed: update campRequests, not donationRequests
+      isLoadingCampRequests = false;      // Fixed: update correct loading state
     });
   } catch (e) {
     setState(() {
       isLoadingCampRequests = false;
-      isLoadingDonations = false;
     });
-    _showErrorSnackBar('Error loading data: $e');
+    _showErrorSnackBar('Error loading camp requests: $e');
   }
 }
 
@@ -852,7 +884,7 @@ String _formatDate(dynamic date) {
                           status,
                         ) {
                           return DropdownMenuItem<String>(
-                            value: status,
+                            value: status.toLowerCase(),
                             child: Text(status),
                           );
                         }).toList(),
@@ -923,7 +955,47 @@ String _formatDate(dynamic date) {
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
+                  try {
+                    // Parse date from the controller
+                    List<String> dateParts = _dateController.text.split('-');
+                    if (dateParts.length != 3) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Invalid date format. Please use DD-MM-YYYY')),
+                      );
+                      return;
+                    }
+                    List<String> timeParts = _timeController.text.split(':');
+                    if (dateParts.length != 3) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Invalid date format. Please use DD-MM-YYYY')),
+                      );
+                      return;
+                    }
+                    
+                    DateTime pickUpDate = DateTime(
+                      int.parse(dateParts[2]),  // year
+                      int.parse(dateParts[1]),  // month
+                      int.parse(dateParts[0]),  // day
+                      int.parse(timeParts[0]),
+                      int.parse(timeParts[1])
+                    );
+                    
+                    await TokenHttp().post(
+                      '/donation/updateCampDonationRequest',
+                      {
+                        'requestId': campRequest['id'],
+                        'pickUpDate': pickUpDate.toIso8601String(),
+                        'status': campRequest['status'],
+                        'items': campRequest['items'],
+                        'disasterId': AuthService().getDisasterId()
+                      },
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('An error ocuured, Please try again')),
+                  );
+                  }
                   setState(() {
                     final index = campRequests.indexWhere(
                       (c) => c['id'] == campRequest['id'],

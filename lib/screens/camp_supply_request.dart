@@ -70,34 +70,16 @@ class _CampSupplyRequestScreenState extends State<CampSupplyRequestScreen> {
       );
 
       if (response != null && response['requests'] is List) {
-        _supplyRequests =
-            (response['requests'] as List)
-                .map((request) {
-                  return {
-                    'id': request['_id'] ?? '',
-                    'campId': request['campId'] ?? '',
-                    'requesterName': request['requesterName'] ?? 'Unknown',
-                    'requested_date': _formatDate(request['createdAt']),
-                    'pickup_date': _formatDate(request['pickUpDate']),
-                    'status': request['status'] ?? 'pending',
-                    'items': request['items'] ?? [],
-                    'notes': request['notes'] ?? '',
-                    'originalData': request,
-                  };
-                })
-                .toList()
-                .cast<Map<String, dynamic>>();
+        _supplyRequests = List<Map<String, dynamic>>.from(response['requests']);
       } else {
         _supplyRequests = [];
       }
-      setState(() {
-        _isLoading = false;
-      });
     } catch (e) {
+      _showErrorSnackBar('Error loading supply requests: $e');
+    } finally {
       setState(() {
         _isLoading = false;
       });
-      _showErrorSnackBar('Error loading supply requests: $e');
     }
   }
 
@@ -108,33 +90,13 @@ class _CampSupplyRequestScreenState extends State<CampSupplyRequestScreen> {
         '/donation/items?disasterId=${AuthService().getDisasterId()}',
       );
 
-      if (response is Map &&
-          response.containsKey('list') &&
-          response['list'] is List) {
-        List<Map<String, dynamic>> fetchedItems =
-            List<Map<String, dynamic>>.from(
-              response['list'].map((item) => item as Map<String, dynamic>),
-            );
-
-        _itemCategories.forEach((_, value) => value.clear());
-
-        for (var item in fetchedItems) {
-          final category = item['category'] ?? 'Other';
-          final itemId = item['_id'];
-          final itemNameWithUnit = {
-            'name': item['name'],
-            '_id': itemId, // Store the ID in the item data
-            'unit': item['unit'] ?? 'N/A',
-          };
-          _itemCategories.putIfAbsent(category, () => []).add(itemNameWithUnit);
-          // await _checkItemAvailability(itemId, 0); // Use ID directly
-        }
-        setState(() => _itemsList = fetchedItems);
+      if (response is Map && response.containsKey('list') && response['list'] is List) {
+        _itemsList = List<Map<String, dynamic>>.from(response['list']);
       } else {
-        throw Exception('Expected map with list response.');
+        throw Exception('Unexpected response format');
       }
     } catch (e) {
-      setState(() => _error = 'Error fetching items: $e');
+      _error = 'Error fetching items: $e';
     } finally {
       setState(() => _loadingItems = false);
     }

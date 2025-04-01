@@ -23,8 +23,7 @@ class NeedAssessmentData {
   String shelterType = '';
   String otherShelterType = '';
   String residentialLandArea = '';
-  String accommodationStatus = '';
-  String otherAccommodation = '';
+
   String vehiclePossession = '';
   String vehicleType = '';
   String otherVehicleType = '';
@@ -139,8 +138,7 @@ class NeedAssessmentData {
     data.otherShelterType = json['otherShelterType'] ?? '';
     data.campId = json['campId'] ?? '';
     data.residentialLandArea = json['residentialLandArea'] ?? '';
-    data.accommodationStatus = json['accommodationStatus'] ?? '';
-    data.otherAccommodation = json['otherAccommodation'] ?? '';
+
 
     // Vehicle information
     data.vehiclePossession = json['vehiclePossession'] ?? '';
@@ -296,8 +294,7 @@ class NeedAssessmentData {
       'otherShelterType': otherShelterType,
       'campId': campId,
       'residentialLandArea': residentialLandArea,
-      'accommodationStatus': accommodationStatus,
-      'otherAccommodation': otherAccommodation,
+      
       'vehiclePossession': vehiclePossession,
       'vehicleType': vehicleType,
       'otherVehicleType': otherVehicleType,
@@ -698,6 +695,8 @@ class Member {
   String typeOfSkillingAssistanceRequired = '';
   String otherRelationship = '';
   String otherGender = '';
+    String accommodationStatus = '';
+  String otherAccommodation = '';
 
   Member({
     required this.name,
@@ -732,6 +731,8 @@ class Member {
     this.typeOfSkillingAssistanceRequired = '',
     this.otherRelationship = '',
     this.otherGender = '',
+     this.accommodationStatus = '',
+  this.otherAccommodation = '',
   });
 
   Member copyWith({
@@ -816,6 +817,8 @@ class Member {
           this.typeOfSkillingAssistanceRequired,
       otherRelationship: otherRelationship ?? this.otherRelationship,
       otherGender: otherGender ?? this.otherGender,
+       accommodationStatus:   accommodationStatus ?? this.accommodationStatus,
+   otherAccommodation:otherAccommodation ?? this.otherAccommodation,
     );
   }
 
@@ -859,6 +862,8 @@ class Member {
           json['typeOfSkillingAssistanceRequired'] ?? '',
       otherRelationship: json['otherRelationship'] ?? '',
       otherGender: json['otherGender'] ?? '',
+          accommodationStatus : json['accommodationStatus'] ?? '',
+  otherAccommodation :json['otherAccommodation'] ?? '',
     );
   }
 
@@ -897,6 +902,8 @@ class Member {
       'typeOfSkillingAssistanceRequired': typeOfSkillingAssistanceRequired,
       'otherRelationship': otherRelationship,
       'otherGender': otherGender,
+      'accommodationStatus': accommodationStatus,
+      'otherAccommodation': otherAccommodation,
     };
   }
 }

@@ -295,15 +295,15 @@ class _ViewNoticeState extends State<ViewNotice> {
                         child: Text('All Notices'),
                       ),
                       DropdownMenuItem(
-                        value: 'Pending',
+                        value: 'pending',
                         child: Text('Pending'),
                       ),
                       DropdownMenuItem(
-                        value: 'In Progress',
+                        value: 'in_progress',
                         child: Text('In Progress'),
                       ),
                       DropdownMenuItem(
-                        value: 'Completed',
+                        value: 'completed',
                         child: Text('Completed'),
                       ),
                     ],

@@ -69,7 +69,7 @@ class _ItemsListState extends State<ItemsList> {
 
   // In _fetchItems method:
   Future<void> _fetchItems() async {
-    if (_selectedDisasterId == null) {
+    if (_selectedDisasterId == null || _selectedDisasterId!.isEmpty) {
       setState(() {
         _itemsList = [];
       });
