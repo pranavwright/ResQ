@@ -262,7 +262,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildResourceDistributionChart() {
+   Widget _buildResourceDistributionChart() {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -281,25 +281,65 @@ class _AdminDashboardState extends State<AdminDashboard> {
               height: 250,
               child: BarChart(
                 BarChartData(
+                  alignment: BarChartAlignment.spaceAround,
+                  groupsSpace: 20,
                   barGroups: [
-                    // Donations Received
+                    // Day 1
                     BarChartGroupData(
                       x: 0,
+                      groupVertically: true,
+                      barsSpace: 4,
                       barRods: [
+                        // Incoming donations
                         BarChartRodData(
                           toY: 1200,
                           color: Colors.blue[400]!,
                           width: 15,
                           borderRadius: BorderRadius.circular(4),
                         ),
-                      ],
-                    ),
-                    // Camp Intake
-                    BarChartGroupData(
-                      x: 1,
-                      barRods: [
+                        // Outgoing donations
                         BarChartRodData(
                           toY: 850,
+                          color: Colors.green[400]!,
+                          width: 15,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ],
+                    ),
+                    // Day 2
+                    BarChartGroupData(
+                      x: 1,
+                      groupVertically: true,
+                      barsSpace: 4,
+                      barRods: [
+                        BarChartRodData(
+                          toY: 900,
+                          color: Colors.blue[400]!,
+                          width: 15,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        BarChartRodData(
+                          toY: 700,
+                          color: Colors.green[400]!,
+                          width: 15,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ],
+                    ),
+                    // Day 3
+                    BarChartGroupData(
+                      x: 2,
+                      groupVertically: true,
+                      barsSpace: 4,
+                      barRods: [
+                        BarChartRodData(
+                          toY: 600,
+                          color: Colors.blue[400]!,
+                          width: 15,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        BarChartRodData(
+                          toY: 500,
                           color: Colors.green[400]!,
                           width: 15,
                           borderRadius: BorderRadius.circular(4),
@@ -313,7 +353,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       sideTitles: SideTitles(
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
-                          const labels = ['Donations Received', 'Camp Intake'];
+                          const labels = ['Day 1', 'Day 2', 'Day 3'];
                           return Padding(
                             padding: const EdgeInsets.only(top: 8.0),
                             child: Text(labels[value.toInt()]),
@@ -341,8 +381,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
               spacing: 12,
               runSpacing: 8,
               children: [
-                _buildLegendItem(Colors.blue[400]!, 'Donations Received (1200)'),
-                _buildLegendItem(Colors.green[400]!, 'Camp Intake (850)'),
+                _buildLegendItem(Colors.blue[400]!, 'Incoming Donations'),
+                _buildLegendItem(Colors.green[400]!, 'Outgoing Donations'),
               ],
             ),
           ],
@@ -350,8 +390,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
     );
   }
-
-  Widget _buildDayTimelineChart() {
+  
+Widget _buildDayTimelineChart() {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -371,36 +411,87 @@ class _AdminDashboardState extends State<AdminDashboard> {
               child: BarChart(
                 BarChartData(
                   barGroups: [
+                    // Day 1
                     BarChartGroupData(
                       x: 0,
                       barRods: [
+                        // Alive (bottom segment)
                         BarChartRodData(
-                          toY: 45,
+                          fromY: 0,
+                          toY: 30,
+                          color: Colors.green[400]!,
+                          width: 25,
+                          borderRadius: BorderRadius.circular(0),
+                        ),
+                        // Missing (middle segment)
+                        BarChartRodData(
+                          fromY: 30,
+                          toY: 40,
                           color: Colors.orange[400]!,
-                          width: 15,
-                          borderRadius: BorderRadius.circular(4),
+                          width: 25,
+                          borderRadius: BorderRadius.circular(0),
+                        ),
+                        // Deceased (top segment)
+                        BarChartRodData(
+                          fromY: 40,
+                          toY: 45,
+                          color: Colors.red[400]!,
+                          width: 25,
+                          borderRadius: BorderRadius.circular(0),
                         ),
                       ],
                     ),
+                    // Day 2
                     BarChartGroupData(
                       x: 1,
                       barRods: [
                         BarChartRodData(
+                          fromY: 0,
+                          toY: 18,
+                          color: Colors.green[400]!,
+                          width: 25,
+                          borderRadius: BorderRadius.circular(0),
+                        ),
+                        BarChartRodData(
+                          fromY: 18,
+                          toY: 25,
+                          color: Colors.orange[400]!,
+                          width: 25,
+                          borderRadius: BorderRadius.circular(0),
+                        ),
+                        BarChartRodData(
+                          fromY: 25,
                           toY: 28,
                           color: Colors.red[400]!,
-                          width: 15,
-                          borderRadius: BorderRadius.circular(4),
+                          width: 25,
+                          borderRadius: BorderRadius.circular(0),
                         ),
                       ],
                     ),
+                    // Day 3
                     BarChartGroupData(
                       x: 2,
                       barRods: [
                         BarChartRodData(
+                          fromY: 0,
+                          toY: 8,
+                          color: Colors.green[400]!,
+                          width: 25,
+                          borderRadius: BorderRadius.circular(0),
+                        ),
+                        BarChartRodData(
+                          fromY: 8,
+                          toY: 13,
+                          color: Colors.orange[400]!,
+                          width: 25,
+                          borderRadius: BorderRadius.circular(0),
+                        ),
+                        BarChartRodData(
+                          fromY: 13,
                           toY: 15,
-                          color: Colors.purple[400]!,
-                          width: 15,
-                          borderRadius: BorderRadius.circular(4),
+                          color: Colors.red[400]!,
+                          width: 25,
+                          borderRadius: BorderRadius.circular(0),
                         ),
                       ],
                     ),
@@ -439,9 +530,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
               spacing: 12,
               runSpacing: 8,
               children: [
-                _buildLegendItem(Colors.orange[400]!, 'Day 1 (45)'),
-                _buildLegendItem(Colors.red[400]!, 'Day 2 (28)'),
-                _buildLegendItem(Colors.purple[400]!, 'Day 3 (15)'),
+                _buildLegendItem(Colors.green[400]!, 'Alive'),
+                _buildLegendItem(Colors.orange[400]!, 'Missing'),
+                _buildLegendItem(Colors.red[400]!, 'Deceased'),
               ],
             ),
           ],
@@ -449,6 +540,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
     );
   }
+
 
   Widget _buildLegendItem(Color color, String text) {
     return Row(
