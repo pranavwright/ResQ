@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:resq/constants/api_constants.dart';
 import 'package:resq/utils/auth/auth_service.dart';
 import 'package:resq/utils/http/token_http.dart';
 import 'package:resq/widgets/locationwidget.dart' show LocationSelectionWidget;
@@ -56,9 +57,9 @@ class _CollectionPointManagementScreenState
   bool _isSaving = false;
 
   // Editing controllers
-  TextEditingController phoneController = TextEditingController();
-  TextEditingController emailController = TextEditingController();
-  TextEditingController nameController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController nameController = TextEditingController();
 
   // Volunteers list
   List<Volunteer> volunteers = [];
@@ -66,23 +67,20 @@ class _CollectionPointManagementScreenState
   @override
   void initState() {
     super.initState();
-    _getsettings();
+    _getSettings();
   }
 
   @override
   void dispose() {
-    // Dispose controllers to prevent memory leaks
     phoneController.dispose();
     emailController.dispose();
     nameController.dispose();
     super.dispose();
   }
 
-  Future<void> _getsettings() async {
+  Future<void> _getSettings() async {
     try {
-      setState(() {
-        _isLoadingAddress = true;
-      });
+      setState(() => _isLoadingAddress = true);
 
       final response = await TokenHttp().get(
         '/settings/getPoints?disasterId=${AuthService().getDisasterId()}&type=collectionPoint',
@@ -90,7 +88,7 @@ class _CollectionPointManagementScreenState
 
       if (response['success']) {
         final settings = response['settings'];
-        String locationLink = settings['locationString'] ?? "";
+        final locationLink = settings['locationString'] ?? "";
 
         setState(() {
           // Parse location
@@ -104,7 +102,7 @@ class _CollectionPointManagementScreenState
                 );
               }
             } catch (e) {
-              print('Error parsing location: $e');
+              debugPrint('Error parsing location: $e');
             }
           }
 
@@ -140,18 +138,12 @@ class _CollectionPointManagementScreenState
           await _fetchAddressFromLocation(_currentLocation!);
         }
       } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Could not get settings')));
+        _showSnackBar('Could not get settings');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading settings: ${e.toString()}')),
-      );
+      _showSnackBar('Error loading settings: ${e.toString()}');
     } finally {
-      setState(() {
-        _isLoadingAddress = false;
-      });
+      setState(() => _isLoadingAddress = false);
     }
   }
 
@@ -159,21 +151,19 @@ class _CollectionPointManagementScreenState
     if (_isSaving) return;
 
     try {
-      setState(() {
-        _isSaving = true;
-      });
+      setState(() => _isSaving = true);
 
       String locationString = "";
       String googleMapsLink = "";
       if (_currentLocation != null) {
         locationString =
             "${_currentLocation!.latitude},${_currentLocation!.longitude}";
-        googleMapsLink = "https://www.google.com/maps?q=${locationString}";
+        googleMapsLink = "https://www.google.com/maps?q=$locationString";
       }
 
       final response = await TokenHttp().post('/settings/updatePoints', {
         'disasterId': AuthService().getDisasterId(),
-        'pointId': AuthService().assignPlace,
+        'pointId': widget.collectionPointId,
         'location': googleMapsLink,
         'locationString': locationString,
         'contact': phoneController.text,
@@ -183,42 +173,25 @@ class _CollectionPointManagementScreenState
       });
 
       if (response['success']) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Settings updated successfully')),
-        );
-        // Refresh settings after update
-        await _getsettings();
+        _showSnackBar('Settings updated successfully', isError: false);
+        await _getSettings();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Failed to update: ${response['message'] ?? 'Unknown error'}',
-            ),
-          ),
-        );
+        _showSnackBar(response['message'] ?? 'Failed to update settings');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error updating settings: ${e.toString()}')),
-      );
+      _showSnackBar('Error updating settings: ${e.toString()}');
     } finally {
-      setState(() {
-        _isSaving = false;
-      });
+      setState(() => _isSaving = false);
     }
   }
 
   Future<void> _fetchCurrentLocation() async {
-    setState(() {
-      _isLoadingAddress = true;
-    });
+    setState(() => _isLoadingAddress = true);
 
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Location services are disabled')),
-        );
+        _showSnackBar('Location services are disabled');
         return;
       }
 
@@ -226,19 +199,13 @@ class _CollectionPointManagementScreenState
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Location permissions are denied')),
-          );
+          _showSnackBar('Location permissions are denied');
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Location permissions are permanently denied'),
-          ),
-        );
+        _showSnackBar('Location permissions are permanently denied');
         return;
       }
 
@@ -246,29 +213,23 @@ class _CollectionPointManagementScreenState
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      setState(() {
-        _currentLocation = LatLng(position.latitude, position.longitude);
-      });
+      setState(
+        () => _currentLocation = LatLng(position.latitude, position.longitude),
+      );
 
       if (_currentLocation != null) {
         await _fetchAddressFromLocation(_currentLocation!);
-        await _updateAllSettings(); // Auto-save new location
+        await _updateAllSettings();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not get current location')),
-      );
+      _showSnackBar('Could not get current location');
     } finally {
-      setState(() {
-        _isLoadingAddress = false;
-      });
+      setState(() => _isLoadingAddress = false);
     }
   }
 
   Future<void> _fetchAddressFromLocation(LatLng location) async {
-    setState(() {
-      _isLoadingAddress = true;
-    });
+    setState(() => _isLoadingAddress = true);
 
     try {
       List<Placemark> placemarks = await placemarkFromCoordinates(
@@ -277,20 +238,16 @@ class _CollectionPointManagementScreenState
       );
 
       if (placemarks.isNotEmpty) {
-        Placemark place = placemarks.first;
+        final place = placemarks.first;
         setState(() {
           _currentAddress =
               '${place.street}, ${place.locality}, ${place.country}';
         });
       }
     } catch (e) {
-      setState(() {
-        _currentAddress = 'Address could not be determined';
-      });
+      setState(() => _currentAddress = 'Address could not be determined');
     } finally {
-      setState(() {
-        _isLoadingAddress = false;
-      });
+      setState(() => _isLoadingAddress = false);
     }
   }
 
@@ -304,8 +261,8 @@ class _CollectionPointManagementScreenState
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) {
         return DraggableScrollableSheet(
@@ -432,7 +389,7 @@ class _CollectionPointManagementScreenState
   }
 
   void _showAddVolunteerForm() {
-    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
     String name = '';
     String email = '';
     String phone = '';
@@ -440,8 +397,8 @@ class _CollectionPointManagementScreenState
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) {
         return Padding(
@@ -472,15 +429,13 @@ class _CollectionPointManagementScreenState
                     ),
                     prefixIcon: const Icon(Icons.person),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter volunteer name';
-                    }
-                    return null;
-                  },
+                  validator:
+                      (value) =>
+                          value?.isEmpty ?? true
+                              ? 'Please enter volunteer name'
+                              : null,
                   onSaved: (value) => name = value ?? '',
                 ),
-
                 const SizedBox(height: 16),
                 TextFormField(
                   decoration: InputDecoration(
@@ -491,12 +446,11 @@ class _CollectionPointManagementScreenState
                     prefixIcon: const Icon(Icons.phone),
                   ),
                   keyboardType: TextInputType.phone,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter phone number';
-                    }
-                    return null;
-                  },
+                  validator:
+                      (value) =>
+                          value?.isEmpty ?? true
+                              ? 'Please enter phone number'
+                              : null,
                   onSaved: (value) => phone = value ?? '',
                 ),
                 const SizedBox(height: 24),
@@ -519,37 +473,39 @@ class _CollectionPointManagementScreenState
                       child: ElevatedButton(
                         onPressed: () async {
                           try {
-                            setState(() {
-                              _isLoadingAddress = true;
-                            });
+                            setState(() => _isLoadingAddress = true);
+
                             if (formKey.currentState!.validate()) {
                               formKey.currentState!.save();
-                              await TokenHttp().post('/auth/addVolunteer', {
-                                'disasterId': AuthService().getDisasterId(),
-                                'pointId': widget.collectionPointId,
-                                'name': name,
-                                'phoneNumber': phone,
-                                'email': email,
-                              });
+                              _showSnackBar('Adding volunteer...', duration: 1);
 
-                              _getsettings();
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('$name added as volunteer'),
-                                  duration: const Duration(seconds: 2),
-                                ),
-                              );
+                              final response = await TokenHttp()
+                                  .post('/auth/addVolunteer', {
+                                    'disasterId': AuthService().getDisasterId(),
+                                    'pointId': widget.collectionPointId,
+                                    'name': name,
+                                    'phoneNumber': phone,
+                                    'email': email,
+                                  });
+
+                              if (response['success'] == true) {
+                                await _getSettings();
+                                Navigator.pop(context);
+                                _showSnackBar(
+                                  '$name added as volunteer',
+                                  isError: false,
+                                );
+                              } else {
+                                _showSnackBar(
+                                  response['message'] ??
+                                      'Failed to add volunteer',
+                                );
+                              }
                             }
                           } catch (e) {
-                            setState(() {
-                              _isLoadingAddress = false;
-                            });
+                            _showSnackBar('Error: ${e.toString()}');
                           } finally {
-                            setState(() {
-                              _isLoadingAddress = false;
-                            });
-                            dispose();
+                            setState(() => _isLoadingAddress = false);
                           }
                         },
                         style: ElevatedButton.styleFrom(
@@ -568,6 +524,50 @@ class _CollectionPointManagementScreenState
           ),
         );
       },
+    );
+  }
+
+  Widget _buildStaticMapImage() {
+    if (_currentLocation == null) return Container();
+
+    final lat = _currentLocation!.latitude;
+    final lng = _currentLocation!.longitude;
+    final staticMapUrl =
+    'https://maps.googleapis.com/maps/api/staticmap?center=$lat,$lng&zoom=14&size=400x300&markers=color:red%7C$lat,$lng&key=${ApiConstants.GOOGLE_MAPS_API_KEY}';
+    print(staticMapUrl);
+    return Image.network(
+      staticMapUrl,
+      width: double.infinity,
+      height: 150,
+      fit: BoxFit.cover,
+      errorBuilder:
+          (context, error, stackTrace) => Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.map, size: 40, color: Colors.grey.shade400),
+                Text(
+                  'Map not available',
+                  style: TextStyle(color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          ),
+      loadingBuilder: (context, child, loadingProgress) {
+        return loadingProgress == null
+            ? child
+            : const Center(child: CircularProgressIndicator());
+      },
+    );
+  }
+
+  void _showSnackBar(String message, {bool isError = true, int duration = 2}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        duration: Duration(seconds: duration),
+      ),
     );
   }
 
@@ -593,13 +593,10 @@ class _CollectionPointManagementScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Location Section
             _buildLocationCard(),
             const SizedBox(height: 16),
-            // Contact Information Section
             _buildContactCard(),
             const SizedBox(height: 16),
-            // Volunteers Section
             _buildVolunteersCard(),
           ],
         ),
@@ -626,11 +623,9 @@ class _CollectionPointManagementScreenState
           );
 
           if (newLocation != null) {
-            setState(() {
-              _currentLocation = newLocation;
-            });
+            setState(() => _currentLocation = newLocation);
             await _fetchAddressFromLocation(newLocation);
-            await _updateAllSettings(); // Auto-save when location changes
+            await _updateAllSettings();
           }
         },
         child: Padding(
@@ -662,56 +657,59 @@ class _CollectionPointManagementScreenState
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.grey.shade300),
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: GoogleMap(
-                    initialCameraPosition: CameraPosition(
-                      target: _currentLocation ?? const LatLng(0, 0),
-                      zoom: 14,
-                    ),
-                    liteModeEnabled: true,
-                    zoomControlsEnabled: false,
-                    zoomGesturesEnabled: false,
-                    rotateGesturesEnabled: false,
-                    scrollGesturesEnabled: false,
-                    mapToolbarEnabled: false,
-                    compassEnabled: false,
-                    myLocationButtonEnabled: false,
-                    markers:
-                        _currentLocation != null
-                            ? {
-                              Marker(
-                                markerId: const MarkerId(
-                                  'collection_point_marker',
-                                ),
-                                position: _currentLocation!,
-                                infoWindow: const InfoWindow(
-                                  title: 'Collection Point',
-                                ),
-                              ),
-                            }
-                            : {},
+                child:
+                    _currentLocation == null
+                        ? Center(
+                          child: Text(
+                            'Set a location',
+                            style: TextStyle(color: Colors.grey.shade600),
+                          ),
+                        )
+                        : _buildStaticMapImage(),
+              ),
+              if (_currentLocation != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.pin_drop,
+                        size: 16,
+                        color: Colors.red.shade600,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Lat: ${_currentLocation!.latitude.toStringAsFixed(6)}, Long: ${_currentLocation!.longitude.toStringAsFixed(6)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade800,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
+              ],
               const SizedBox(height: 8),
               if (_isLoadingAddress)
                 const Center(child: CircularProgressIndicator())
               else
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _currentAddress,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade700,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
+                Text(
+                  _currentAddress,
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
             ],
           ),
@@ -734,8 +732,6 @@ class _CollectionPointManagementScreenState
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-
-            // Point Name Field
             TextFormField(
               controller: nameController,
               decoration: InputDecoration(
@@ -745,16 +741,11 @@ class _CollectionPointManagementScreenState
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter a name';
-                }
-                return null;
-              },
+              validator:
+                  (value) =>
+                      value?.isEmpty ?? true ? 'Please enter a name' : null,
             ),
             const SizedBox(height: 16),
-
-            // Phone Field
             TextFormField(
               controller: phoneController,
               decoration: InputDecoration(
@@ -765,16 +756,13 @@ class _CollectionPointManagementScreenState
                 ),
               ),
               keyboardType: TextInputType.phone,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter a phone number';
-                }
-                return null;
-              },
+              validator:
+                  (value) =>
+                      value?.isEmpty ?? true
+                          ? 'Please enter a phone number'
+                          : null,
             ),
             const SizedBox(height: 16),
-
-            // Email Field
             TextFormField(
               controller: emailController,
               decoration: InputDecoration(
@@ -786,20 +774,17 @@ class _CollectionPointManagementScreenState
               ),
               keyboardType: TextInputType.emailAddress,
               validator: (value) {
-                if (value == null || value.isEmpty) {
+                if (value?.isEmpty ?? true)
                   return 'Please enter an email address';
-                }
                 if (!RegExp(
                   r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                ).hasMatch(value)) {
+                ).hasMatch(value!)) {
                   return 'Please enter a valid email';
                 }
                 return null;
               },
             ),
             const SizedBox(height: 16),
-
-            // Save Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -812,11 +797,7 @@ class _CollectionPointManagementScreenState
                               emailController.text.isNotEmpty) {
                             _updateAllSettings();
                           } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Please fill all fields'),
-                              ),
-                            );
+                            _showSnackBar('Please fill all fields');
                           }
                         },
                 style: ElevatedButton.styleFrom(
@@ -928,17 +909,13 @@ class _CollectionPointManagementScreenState
                                     : Colors.grey.shade400,
                             size: 30,
                           ),
-                          onPressed: () {
-                            _toggleVolunteerStatus(index);
-                          },
+                          onPressed: () => _toggleVolunteerStatus(index),
                         ),
                         const SizedBox(width: 4),
                         const Icon(Icons.chevron_right),
                       ],
                     ),
-                    onTap: () {
-                      _showVolunteerDuties(volunteer);
-                    },
+                    onTap: () => _showVolunteerDuties(volunteer),
                   );
                 },
               ),

@@ -11,6 +11,7 @@ import 'package:resq/firebase_options.dart';
 import 'package:resq/screens/collectionpoint_volunteer.dart';
 import 'package:resq/screens/identity.dart';
 import 'package:resq/screens/splash_screen.dart';
+import 'package:resq/utils/notification_service.dart';
 
 import 'utils/auth/auth_service.dart';
 import 'utils/auth/auth_route.dart';
@@ -45,9 +46,10 @@ import 'package:resq/screens/change_disaster.dart';
 import 'package:resq/screens/notice_display_screen.dart';
 import 'package:resq/screens/collectionpoint_volunteer_management.dart';
 import 'package:resq/screens/view_notice.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // Initialize the FlutterLocalNotificationsPlugin instance
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = 
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
 // Background handler must be top-level function
@@ -57,29 +59,45 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("Handling a background message: ${message.messageId}");
   // Process the message data
   print("Background message data: ${message.data}");
+  if (message.data.isNotEmpty) {
+    String? route = message.data['navigation'];
+    if (route != null) {
+      await NotificationService.savePendingNotification(
+        route,
+        message.data['arguments'],
+      );
+    }
+  }
 }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  try {
+    // Load .env file with better error handling
+    await dotenv.load(fileName: '.env');
+    print("Loaded .env file successfully");
+  } catch (e) {
+    print("Error loading .env file: $e");
+    // Provide a fallback for your API key if needed
+  }
+
   // Initialize Firebase first
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   // Set up background message handler
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  
+
   // Initialize local notifications
   await _initLocalNotifications();
-  
+
   // Request notification permissions early
   await _requestNotificationPermissions();
-  
+
   if (kIsWeb) {
     setUrlStrategy(PathUrlStrategy());
   }
-  
+
   runApp(const MyApp());
 }
 
@@ -95,7 +113,7 @@ Future<void> _requestNotificationPermissions() async {
     sound: true,
   );
   print('Authorization status: ${settings.authorizationStatus}');
-  
+
   // Get FCM token for this device
   final token = await messaging.getToken();
   print('FCM Token: $token');
@@ -105,15 +123,15 @@ Future<void> _requestNotificationPermissions() async {
 Future<void> _initLocalNotifications() async {
   const AndroidInitializationSettings androidInitializationSettings =
       AndroidInitializationSettings('@mipmap/ic_launcher');
-      
+
   const DarwinInitializationSettings iosInitializationSettings =
       DarwinInitializationSettings();
-      
+
   const InitializationSettings initializationSettings = InitializationSettings(
     android: androidInitializationSettings,
     iOS: iosInitializationSettings,
   );
-  
+
   await flutterLocalNotificationsPlugin.initialize(
     initializationSettings,
     onDidReceiveNotificationResponse: (NotificationResponse response) {
@@ -126,7 +144,7 @@ Future<void> _initLocalNotifications() async {
       }
     },
   );
-  
+
   // Create notification channel for Android
   if (!kIsWeb) {
     if (Platform.isAndroid) {
@@ -136,9 +154,11 @@ Future<void> _initLocalNotifications() async {
         description: 'This channel is used for important notifications.',
         importance: Importance.high,
       );
-      
+
       await flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
           ?.createNotificationChannel(channel);
     }
   }
@@ -159,7 +179,7 @@ class MyApp extends StatelessWidget {
         print('Initial route from URL: $initialRoute');
       }
     }
-    
+
     // Set up foreground message handler once
     _setupFirebaseMessaging();
 
@@ -192,17 +212,17 @@ class MyApp extends StatelessWidget {
       onGenerateRoute: _generateRoute,
     );
   }
-  
+
   void _setupFirebaseMessaging() {
     // Listen for foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print('Got a message whilst in the foreground!');
       print('Message data: ${message.data}');
-      
+
       // Show notification when app is in foreground
       RemoteNotification? notification = message.notification;
       AndroidNotification? android = message.notification?.android;
-      
+
       // If message contains a notification and we're not on web
       if (notification != null && !kIsWeb) {
         flutterLocalNotificationsPlugin.show(
@@ -220,35 +240,33 @@ class MyApp extends StatelessWidget {
           payload: message.data.toString(),
         );
       }
-      
+
       // You can store the notification data or update UI here
       // For example, if you have a notification center in your app
     });
-    
-    // Handle notification clicks when app is in background but open
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('A notification was clicked while app was in background!');
-      print('Message data: ${message.data}');
-      
-      // Navigate to appropriate screen based on the notification data
-      _handleNotificationClick(message.data);
-    });
-    
-    // Check for messages that caused the app to open
-    FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
-      if (message != null) {
-        print('App was opened by clicking a notification!');
-        print('Initial message data: ${message.data}');
-        
-        // Navigate to appropriate screen based on the notification data
-        _handleNotificationClick(message.data);
-      }
-    });
+
+    try {
+      // Check for messages that caused the app to open
+      FirebaseMessaging.instance.getInitialMessage().then((
+        RemoteMessage? message,
+      ) {
+        if (message != null) {
+          print('App was opened by clicking a notification!');
+          print('Initial message data: ${message.data}');
+
+          // Navigate to appropriate screen based on the notification data
+          _handleNotificationClick(message.data);
+        }
+      });
+    } catch (e) {
+      print('error in FirebaseMessaging.instance.getInitialMessage $e');
+    }
   }
-  
+
   void _handleNotificationClick(Map<String, dynamic> data) {
     // Parse data and navigate accordingly
     // Example:
+    print(data);
     if (data.containsKey('screen')) {
       String screenName = data['screen'];
       // Use your navigation service or context to navigate
@@ -383,8 +401,17 @@ class MyApp extends StatelessWidget {
         break;
       case '/manage-collectionpoint':
         builder =
-            (context) =>
-                AuthRoute(requiredRoles: ['collectionPointAdmin'], child: CollectionPointDashboard());
+            (context) => AuthRoute(
+              requiredRoles: ['collectionPointAdmin'],
+              child: CollectionPointDashboard(),
+            );
+        break;
+      case '/collectionpoint-volunteer':
+        builder =
+            (context) => AuthRoute(
+              requiredRoles: ['collectionpointvolunteer'],
+              child: VolunteerScreen(),
+            );
         break;
       case '/profile-update':
         builder =
@@ -455,8 +482,7 @@ class MyApp extends StatelessWidget {
               ),
             );
         break;
-    
-        
+
       case '/logout':
         builder = (BuildContext context) {
           // Execute logout in the next frame after the route is built

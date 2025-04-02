@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:resq/firebase_options.dart';
 import 'package:resq/screens/main_home.dart';
+import 'package:resq/utils/notification_service.dart';
 import 'package:resq/widgets/text_animation.dart';
 import 'package:resq/utils/auth/auth_service.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -33,6 +34,7 @@ class _SplashScreenState extends State<SplashScreen> {
       _initStarted = true;
       _initialize(widget.initialRoute);
     }
+    _checkPendingNotifications();
 
     // Add a timeout to prevent the splash screen from hanging indefinitely
     Future.delayed(Duration(seconds: 10), () {
@@ -53,8 +55,22 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _checkPendingNotifications();
     if (_isLoading) {
       _initialize(widget.initialRoute);
+    }
+  }
+
+  Future<void> _checkPendingNotifications() async {
+    final pendingNotification =
+        await NotificationService.getPendingNotification();
+    if (pendingNotification != null && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushNamed(
+          pendingNotification['route'],
+          arguments: pendingNotification['arguments'],
+        );
+      });
     }
   }
 
@@ -65,46 +81,43 @@ class _SplashScreenState extends State<SplashScreen> {
     print("Handling a background message: ${message.messageId}");
   }
 
+  Future<void> requestPermission() async {
+    print("Requesting storage permissions...");
 
-Future<void> requestPermission() async {
-  print("Requesting storage permissions...");
+    if (Platform.isAndroid) {
+      // For Android 13+ (SDK 33+), we need more specific permissions
+      if (await Permission.storage.isDenied) {
+        await Permission.storage.request();
+      }
 
-  if (Platform.isAndroid) {
-    // For Android 13+ (SDK 33+), we need more specific permissions
-    if (await Permission.storage.isDenied) {
-      await Permission.storage.request();
+      // For files in external storage on newer Android versions
+      if (await Permission.manageExternalStorage.isDenied) {
+        await Permission.manageExternalStorage.request();
+      }
+
+      // For photos and media
+      if (await Permission.photos.isDenied) {
+        await Permission.photos.request();
+      }
+    } else if (Platform.isIOS) {
+      // iOS requires specific permissions
+      if (await Permission.photos.isDenied) {
+        await Permission.photos.request();
+      }
     }
 
-    // For files in external storage on newer Android versions
-    if (await Permission.manageExternalStorage.isDenied) {
-      await Permission.manageExternalStorage.request();
-    }
-
-    // For photos and media
-    if (await Permission.photos.isDenied) {
-      await Permission.photos.request();
-    }
-  } else if (Platform.isIOS) {
-    // iOS requires specific permissions
-    if (await Permission.photos.isDenied) {
-      await Permission.photos.request();
-    }
+    // Check final status and log it
+    final storageStatus = await Permission.storage.status;
+    print("Storage permission status: $storageStatus");
   }
-
-  // Check final status and log it
-  final storageStatus = await Permission.storage.status;
-  print("Storage permission status: $storageStatus");
-}
-
 
   Future<void> _initialize(String initialRoute) async {
     try {
-    
       FirebaseMessaging.onBackgroundMessage(
         _firebaseMessagingBackgroundHandler,
       );
 
-      if(!kIsWeb){
+      if (!kIsWeb) {
         print("Requesting permissions...");
         await requestPermission();
       }
@@ -121,12 +134,24 @@ Future<void> requestPermission() async {
 
       print("Initializing app...");
       // Check connectivity first
-      final connectivityResult = await Connectivity().checkConnectivity();
-      final bool hasConnection = connectivityResult != ConnectivityResult.none;
-      print("Network connectivity: $hasConnection");
+      try {
+        final connectivityResult = await Connectivity().checkConnectivity();
+        final bool hasConnection =
+            connectivityResult != ConnectivityResult.none;
+        print("Network connectivity: $hasConnection");
 
-      if (!hasConnection) {
-        print("No network connection, showing no-network screen");
+        if (!hasConnection) {
+          print("No network connection, showing no-network screen");
+          if (mounted) {
+            Navigator.of(context).pushReplacementNamed('/no-network');
+          }
+          setState(() {
+            _isLoading = false;
+          });
+          return;
+        }
+      } catch (e) {
+        print("Error checking connectivity: $e");
         if (mounted) {
           Navigator.of(context).pushReplacementNamed('/no-network');
         }

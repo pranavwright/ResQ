@@ -29,11 +29,7 @@ android {
         versionCode = flutter.versionCode.toInt()
         versionName = flutter.versionName
 
-        // Load API key
-        val localProperties = Properties().apply {
-            load(rootProject.file("local.properties").inputStream())
-        }
-        manifestPlaceholders["apiKey"] = localProperties.getProperty("MAP_API_KEY", "")
+       
     }
 
     buildTypes {

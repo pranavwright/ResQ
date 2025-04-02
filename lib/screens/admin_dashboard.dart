@@ -11,7 +11,7 @@ class AdminDashboard extends StatefulWidget {
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
-  bool _isLoading = true;
+  bool _isLoading = false;
   
   // Mock notice data
   final Notice _mockCriticalNotice = Notice(
@@ -53,12 +53,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
   void initState() {
     super.initState();
     _priorityNotices.add(_mockCriticalNotice); // Add the banner notice
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() => _isLoading = false);
   }
 
   Widget _buildEmergencyAlertBanner() {
