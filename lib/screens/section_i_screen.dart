@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
 import 'package:resq/screens/section_k_screen.dart';
 import 'package:resq/utils/auth/auth_service.dart';
@@ -43,19 +44,14 @@ class _ScreenIState extends State<ScreenI> {
           ),
         );
 
-        // Ensure unique camp IDs
-        final uniqueCamps =
-            camps
-                .fold<Map<String, Map<String, dynamic>>>(
-                  {},
-                  (map, camp) => map..putIfAbsent(camp['_id'], () => camp),
-                )
-                .values
-                .toList();
+        final uniqueCamps = camps
+            .fold<Map<String, Map<String, dynamic>>>(
+              {},
+              (map, camp) => map..putIfAbsent(camp['_id'], () => camp),
+            )
+            .values
+            .toList();
 
-        setState(() {
-          _camps = uniqueCamps;
-        });
         setState(() {
           _camps = uniqueCamps;
           _isCampLoading = false;
@@ -192,40 +188,56 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
   @override
   void initState() {
     super.initState();
-    selectedAccommodationStatus =
-        widget.member.accommodationStatus.isNotEmpty
-            ? widget.member.accommodationStatus
-            : 'Relief Camps';
-
-    // Initialize camp ID safely
-    if (selectedAccommodationStatus == 'Relief Camps' &&
-        widget.camps.isNotEmpty) {
-      selectedCampId =
-          widget.member.campId.isNotEmpty &&
-                  widget.camps.any((c) => c['_id'] == widget.member.campId)
-              ? widget.member.campId
-              : widget.camps.first['_id'];
-    } else {
-      selectedCampId = null;
-    }
-
-    // Initialize empty fields with default values
-    widget.member.maritalStatus ??= 'Single';
-    widget.member.previousStatus ??= 'Unemployed';
-    widget.member.employmentType ??= 'Others';
+    selectedAccommodationStatus = widget.member.accommodationStatus.isNotEmpty
+        ? widget.member.accommodationStatus
+        : 'Relief Camps';
+    
+    // Initialize with member's campId if it exists and is valid
+    selectedCampId = widget.member.campId;
   }
 
-  String? _getValidCampId() {
-    if (widget.camps.isEmpty) return null;
-
-    // Check if current campId exists in camps list
-    if (widget.member.campId.isNotEmpty &&
-        widget.camps.any((camp) => camp['_id'] == widget.member.campId)) {
-      return widget.member.campId;
+  Widget _buildCampDropdown() {
+    // First, check if camps list is empty
+    if (widget.camps.isEmpty) {
+      return Text(
+        "No camps available. Please check with administrator.",
+        style: TextStyle(color: Colors.red),
+      );
     }
 
-    // Return first camp ID as default
-    return widget.camps.first['_id'];
+    // If no camp is selected or the selected camp is invalid, select the first one
+    if (selectedCampId == null || 
+        !widget.camps.any((camp) => camp['_id'] == selectedCampId)) {
+      selectedCampId = widget.camps.first['_id'];
+      // Update the member data with the new campId
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          widget.onChanged(widget.member.copyWith(campId: selectedCampId));
+        }
+      });
+    }
+
+    return DropdownButtonFormField<String>(
+      decoration: InputDecoration(
+        labelText: 'Select Camp',
+        border: OutlineInputBorder(),
+      ),
+      value: selectedCampId,
+      onChanged: (String? newValue) {
+        if (newValue != null) {
+          setState(() {
+            selectedCampId = newValue;
+            widget.onChanged(widget.member.copyWith(campId: newValue));
+          });
+        }
+      },
+      items: widget.camps.map<DropdownMenuItem<String>>((camp) {
+        return DropdownMenuItem<String>(
+          value: camp['_id'],
+          child: Text(camp['name'] ?? 'Unknown Camp'),
+        );
+      }).toList(),
+    );
   }
 
   Widget _buildRadioGroup({
@@ -275,44 +287,6 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
 
   @override
   Widget build(BuildContext context) {
-    String? _getDropdownValue() {
-      // Return null if camps is empty
-      if (widget.camps.isEmpty) {
-        return null;
-      }
-
-      // Check if selectedCampId is valid
-      if (selectedCampId != null) {
-        bool campExists = false;
-
-        // Check manually to avoid any issues
-        for (var camp in widget.camps) {
-          if (camp['_id'] == selectedCampId) {
-            campExists = true;
-            break;
-          }
-        }
-
-        if (campExists) {
-          return selectedCampId;
-        }
-      }
-
-      // Select a default value if needed
-      if (widget.camps.isNotEmpty) {
-        // Use the first camp as default
-        selectedCampId = widget.camps[0]['_id'];
-        // Update the member with this campId
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          widget.onChanged(widget.member.copyWith(campId: selectedCampId));
-        });
-        return selectedCampId;
-      }
-
-      // Last resort - return null
-      return null;
-    }
-
     return Card(
       margin: EdgeInsets.only(bottom: 20),
       elevation: 4,
@@ -333,9 +307,7 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
                 border: OutlineInputBorder(),
               ),
               initialValue: widget.member.name,
-              onChanged:
-                  (value) =>
-                      widget.onChanged(widget.member.copyWith(name: value)),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(name: value)),
             ),
             SizedBox(height: 12),
             TextFormField(
@@ -345,9 +317,7 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
               ),
               initialValue: widget.member.age,
               keyboardType: TextInputType.number,
-              onChanged:
-                  (value) =>
-                      widget.onChanged(widget.member.copyWith(age: value)),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(age: value)),
             ),
             SizedBox(height: 12),
             TextFormField(
@@ -356,9 +326,7 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
                 border: OutlineInputBorder(),
               ),
               initialValue: widget.member.gender,
-              onChanged:
-                  (value) =>
-                      widget.onChanged(widget.member.copyWith(gender: value)),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(gender: value)),
             ),
             SizedBox(height: 12),
             TextFormField(
@@ -367,10 +335,7 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
                 border: OutlineInputBorder(),
               ),
               initialValue: widget.member.relationship,
-              onChanged:
-                  (value) => widget.onChanged(
-                    widget.member.copyWith(relationship: value),
-                  ),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(relationship: value)),
             ),
             SizedBox(height: 12),
             DropdownButtonFormField<String>(
@@ -378,23 +343,18 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
                 labelText: 'Marital Status',
                 border: OutlineInputBorder(),
               ),
-              value: widget.member.maritalStatus,
+              value: widget.member.maritalStatus.isNotEmpty ? widget.member.maritalStatus : null,
               onChanged: (String? newValue) {
                 if (newValue != null) {
-                  widget.onChanged(
-                    widget.member.copyWith(maritalStatus: newValue),
-                  );
+                  widget.onChanged(widget.member.copyWith(maritalStatus: newValue));
                 }
               },
-              items:
-                  _maritalStatusOptions.map<DropdownMenuItem<String>>((
-                    String value,
-                  ) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
+              items: _maritalStatusOptions.map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
             ),
             SizedBox(height: 12),
             TextFormField(
@@ -403,9 +363,7 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
                 border: OutlineInputBorder(),
               ),
               initialValue: widget.member.ldm,
-              onChanged:
-                  (value) =>
-                      widget.onChanged(widget.member.copyWith(ldm: value)),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(ldm: value)),
             ),
             SizedBox(height: 12),
             TextFormField(
@@ -415,9 +373,7 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
               ),
               initialValue: widget.member.aadharNo,
               keyboardType: TextInputType.number,
-              onChanged:
-                  (value) =>
-                      widget.onChanged(widget.member.copyWith(aadharNo: value)),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(aadharNo: value)),
             ),
             SizedBox(height: 20),
 
@@ -430,57 +386,37 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
             _buildRadioGroup(
               title: 'Grievously Injured:',
               groupValue: widget.member.grievouslyInjured,
-              onChanged:
-                  (value) => widget.onChanged(
-                    widget.member.copyWith(grievouslyInjured: value),
-                  ),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(grievouslyInjured: value)),
             ),
             _buildRadioGroup(
               title: 'Bedridden/Palliative:',
               groupValue: widget.member.bedriddenPalliative,
-              onChanged:
-                  (value) => widget.onChanged(
-                    widget.member.copyWith(bedriddenPalliative: value),
-                  ),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(bedriddenPalliative: value)),
             ),
             _buildRadioGroup(
               title: 'PWDS:',
               groupValue: widget.member.pwDs,
-              onChanged:
-                  (value) =>
-                      widget.onChanged(widget.member.copyWith(pwDs: value)),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(pwDs: value)),
             ),
             _buildRadioGroup(
               title: 'Psycho-Social Assistance:',
               groupValue: widget.member.psychoSocialAssistance,
-              onChanged:
-                  (value) => widget.onChanged(
-                    widget.member.copyWith(psychoSocialAssistance: value),
-                  ),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(psychoSocialAssistance: value)),
             ),
             _buildRadioGroup(
               title: 'Nursing Home Assistance:',
               groupValue: widget.member.nursingHomeAssistance,
-              onChanged:
-                  (value) => widget.onChanged(
-                    widget.member.copyWith(nursingHomeAssistance: value),
-                  ),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(nursingHomeAssistance: value)),
             ),
             _buildRadioGroup(
               title: 'Assistive Devices:',
               groupValue: widget.member.assistiveDevices,
-              onChanged:
-                  (value) => widget.onChanged(
-                    widget.member.copyWith(assistiveDevices: value),
-                  ),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(assistiveDevices: value)),
             ),
             _buildRadioGroup(
               title: 'Special Medical Requirements:',
               groupValue: widget.member.specialMedicalRequirements,
-              onChanged:
-                  (value) => widget.onChanged(
-                    widget.member.copyWith(specialMedicalRequirements: value),
-                  ),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(specialMedicalRequirements: value)),
             ),
             SizedBox(height: 20),
 
@@ -493,10 +429,7 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
             _buildRadioGroup(
               title: 'Are Dropout:',
               groupValue: widget.member.areDropout,
-              onChanged:
-                  (value) => widget.onChanged(
-                    widget.member.copyWith(areDropout: value),
-                  ),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(areDropout: value)),
             ),
             TextFormField(
               decoration: InputDecoration(
@@ -504,10 +437,7 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
                 border: OutlineInputBorder(),
               ),
               initialValue: widget.member.className,
-              onChanged:
-                  (value) => widget.onChanged(
-                    widget.member.copyWith(className: value),
-                  ),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(className: value)),
             ),
             SizedBox(height: 12),
             TextFormField(
@@ -516,10 +446,7 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
                 border: OutlineInputBorder(),
               ),
               initialValue: widget.member.schoolInstituteName,
-              onChanged:
-                  (value) => widget.onChanged(
-                    widget.member.copyWith(schoolInstituteName: value),
-                  ),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(schoolInstituteName: value)),
             ),
             SizedBox(height: 12),
             TextFormField(
@@ -528,10 +455,7 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
                 border: OutlineInputBorder(),
               ),
               initialValue: widget.member.preferredModeOfEducation,
-              onChanged:
-                  (value) => widget.onChanged(
-                    widget.member.copyWith(preferredModeOfEducation: value),
-                  ),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(preferredModeOfEducation: value)),
             ),
             SizedBox(height: 20),
 
@@ -546,23 +470,18 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
                 labelText: 'Previous Status',
                 border: OutlineInputBorder(),
               ),
-              value: widget.member.previousStatus,
+              value: widget.member.previousStatus.isNotEmpty ? widget.member.previousStatus : null,
               onChanged: (String? newValue) {
                 if (newValue != null) {
-                  widget.onChanged(
-                    widget.member.copyWith(previousStatus: newValue),
-                  );
+                  widget.onChanged(widget.member.copyWith(previousStatus: newValue));
                 }
               },
-              items:
-                  _previousStatusOptions.map<DropdownMenuItem<String>>((
-                    String value,
-                  ) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
+              items: _previousStatusOptions.map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
             ),
             SizedBox(height: 12),
             DropdownButtonFormField<String>(
@@ -570,23 +489,18 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
                 labelText: 'Employment Type',
                 border: OutlineInputBorder(),
               ),
-              value: widget.member.employmentType,
+              value: widget.member.employmentType.isNotEmpty ? widget.member.employmentType : null,
               onChanged: (String? newValue) {
                 if (newValue != null) {
-                  widget.onChanged(
-                    widget.member.copyWith(employmentType: newValue),
-                  );
+                  widget.onChanged(widget.member.copyWith(employmentType: newValue));
                 }
               },
-              items:
-                  _employmentTypeOptions.map<DropdownMenuItem<String>>((
-                    String value,
-                  ) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
+              items: _employmentTypeOptions.map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
             ),
             SizedBox(height: 12),
             if (widget.member.employmentType == 'Others')
@@ -596,10 +510,7 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
                   border: OutlineInputBorder(),
                 ),
                 initialValue: widget.member.employmentType,
-                onChanged:
-                    (value) => widget.onChanged(
-                      widget.member.copyWith(employmentType: value),
-                    ),
+                onChanged: (value) => widget.onChanged(widget.member.copyWith(employmentType: value)),
               ),
             SizedBox(height: 12),
             TextFormField(
@@ -608,10 +519,7 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
                 border: OutlineInputBorder(),
               ),
               initialValue: widget.member.education,
-              onChanged:
-                  (value) => widget.onChanged(
-                    widget.member.copyWith(education: value),
-                  ),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(education: value)),
             ),
             SizedBox(height: 12),
             TextFormField(
@@ -621,9 +529,7 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
               ),
               initialValue: widget.member.salary,
               keyboardType: TextInputType.number,
-              onChanged:
-                  (value) =>
-                      widget.onChanged(widget.member.copyWith(salary: value)),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(salary: value)),
             ),
             SizedBox(height: 20),
 
@@ -636,30 +542,17 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
             _buildRadioGroup(
               title: 'Transportation:',
               groupValue: widget.member.typesOfAssistanceTransport,
-              onChanged:
-                  (value) => widget.onChanged(
-                    widget.member.copyWith(typesOfAssistanceTransport: value),
-                  ),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(typesOfAssistanceTransport: value)),
             ),
             _buildRadioGroup(
               title: 'Digital Device:',
               groupValue: widget.member.typesOfAssistanceDigitalDevice,
-              onChanged:
-                  (value) => widget.onChanged(
-                    widget.member.copyWith(
-                      typesOfAssistanceDigitalDevice: value,
-                    ),
-                  ),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(typesOfAssistanceDigitalDevice: value)),
             ),
             _buildRadioGroup(
               title: 'Study Materials:',
               groupValue: widget.member.typesOfAssistanceStudyMaterials,
-              onChanged:
-                  (value) => widget.onChanged(
-                    widget.member.copyWith(
-                      typesOfAssistanceStudyMaterials: value,
-                    ),
-                  ),
+              onChanged: (value) => widget.onChanged(widget.member.copyWith(typesOfAssistanceStudyMaterials: value)),
             ),
             SizedBox(height: 20),
 
@@ -679,25 +572,30 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
                 if (newValue != null) {
                   setState(() {
                     selectedAccommodationStatus = newValue;
-                    widget.onChanged(
-                      widget.member.copyWith(
+                    // Reset camp selection if not in relief camps
+                    if (newValue != 'Relief Camps') {
+                      selectedCampId = null;
+                      widget.onChanged(widget.member.copyWith(
                         accommodationStatus: newValue,
-                        campId:
-                            newValue == 'Relief Camps' ? selectedCampId : '',
-                      ),
-                    );
+                        campId: '',
+                      ));
+                    } else if (widget.camps.isNotEmpty) {
+                      // Set to first camp if switching to relief camps
+                      selectedCampId = widget.camps.first['_id'];
+                      widget.onChanged(widget.member.copyWith(
+                        accommodationStatus: newValue,
+                        campId: selectedCampId,
+                      ));
+                    }
                   });
                 }
               },
-              items:
-                  _accommodationStatusOptions.map<DropdownMenuItem<String>>((
-                    String value,
-                  ) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
+              items: _accommodationStatusOptions.map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
             ),
             SizedBox(height: 12),
             if (selectedAccommodationStatus == 'Relief Camps') ...[
@@ -705,69 +603,10 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
                 'Select Camp',
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
+              SizedBox(height: 8),
               widget.isCampLoading
-                  ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                  : widget.camps.isEmpty
-                  ? Text(
-                    "No camps available. Please check with administrator.",
-                    style: TextStyle(color: Colors.red),
-                  )
-                  : Builder(
-                    builder: (context) {
-                      // DEBUG: Print to verify what camps and selection we have
-                      print(
-                        'Camps: ${widget.camps.map((c) => "${c['_id']}: ${c['name']}").join(', ')}',
-                      );
-                      print('Selected Camp ID: $selectedCampId');
-
-                      // Find a valid camp ID to use
-                      String? validCampId = null;
-
-                      // If we have a selectedCampId and it exists in the camps list, use it
-                      if (selectedCampId != null &&
-                          widget.camps.any(
-                            (camp) => camp['_id'] == selectedCampId,
-                          )) {
-                        validCampId = selectedCampId;
-                      }
-                      // Otherwise use the first camp ID if available
-                      else if (widget.camps.isNotEmpty) {
-                        validCampId = widget.camps[0]['_id'];
-                        // Also update selectedCampId to keep in sync
-                        selectedCampId = validCampId;
-                      }
-
-                      print('Using valid camp ID: $validCampId');
-
-                      return DropdownButtonFormField<String>(
-                        decoration: InputDecoration(
-                          labelText: 'Select Camp',
-                          border: OutlineInputBorder(),
-                        ),
-                        value: validCampId,
-                        onChanged: (String? newValue) {
-                          if (newValue != null) {
-                            setState(() {
-                              selectedCampId = newValue;
-                              widget.onChanged(
-                                widget.member.copyWith(campId: newValue),
-                              );
-                            });
-                          }
-                        },
-                        items:
-                            widget.camps.map<DropdownMenuItem<String>>((camp) {
-                              return DropdownMenuItem<String>(
-                                value: camp['_id'],
-                                child: Text(camp['name'] ?? 'Unknown Camp'),
-                              );
-                            }).toList(),
-                      );
-                    },
-                  ),
+                  ? Center(child: CircularProgressIndicator())
+                  : _buildCampDropdown(),
               SizedBox(height: 12),
             ],
             if (selectedAccommodationStatus == 'Others') ...[
@@ -777,10 +616,7 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
                   border: OutlineInputBorder(),
                 ),
                 initialValue: widget.member.otherAccommodation,
-                onChanged:
-                    (value) => widget.onChanged(
-                      widget.member.copyWith(otherAccommodation: value),
-                    ),
+                onChanged: (value) => widget.onChanged(widget.member.copyWith(otherAccommodation: value)),
               ),
             ],
           ],

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:resq/constants/india_sates.dart';
+import 'package:resq/constants/india_states.dart';
 import 'package:resq/screens/login_screen.dart';
 import 'package:resq/utils/auth/auth_service.dart';
 import 'package:file_picker/file_picker.dart';
