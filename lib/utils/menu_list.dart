@@ -113,13 +113,6 @@ final List<Map<String, dynamic>> menuData = [
     'route': '/stat-dashboard',
     'roles': ['stat'],
   },
-
-  {
-    'title': 'Collection Point Requests',
-    'icon': Icons.request_page,
-    'route': '/collectionpoint-volunteer',
-    'roles': ['collectionpointvolunteer'],
-  },
   {
     'title': 'Change Disaster',
     'icon': Icons.change_circle,
@@ -139,15 +132,21 @@ final List<Map<String, dynamic>> menuData = [
     'roles': ['stat'],
   },
   {
+    'title': 'CLP volunteer',
+    'icon': Icons.leaderboard_rounded,
+    'route': '/collectionpoint-volunteer',
+    'roles': ['collectionpointvolunteer'],
+  },
+  {
     "title": "Logout",
     "icon": Icons.exit_to_app,
     "route": "/logout",
     "roles": ["all"],
   },
   {
-    'title': 'Collection Point Volunteer Management',
+    'title': 'Collection Point Settings',
     'icon': Icons.group,
-    'route': '/collectionpoint-volunteer-management',
+    'route': '/collectionpoint-settings',
     'roles': ['collectionPointAdmin'],
   },
 ];

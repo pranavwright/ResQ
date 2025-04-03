@@ -114,16 +114,16 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
           }
 
           List<Map<String, dynamic>> itemDetails = [];
-          if (donation['donatedItems'] is List) {
-            for (var donatedItem in donation['donatedItems']) {
+          if (donation['requestItems'] is List) {
+            for (var requestItem in donation['requestItems']) {
               itemDetails.add({
-                'id': donatedItem['itemId'],
-                'quantity': donatedItem['quantity'],
-                'room': donatedItem['room'] ?? '',
-                'item': donatedItem['name'] ?? 'Unknown',
-                'category': donatedItem['category'] ?? 'Not categorized',
-                'unit': donatedItem['unit'] ?? '',
-                'description': donatedItem['description'] ?? '',
+                'id': requestItem['itemId'],
+                'quantity': requestItem['quantity'],
+                'room': requestItem['room'] ?? '',
+                'item': requestItem['name'] ?? 'Unknown',
+                'category': requestItem['category'] ?? 'Not categorized',
+                'unit': requestItem['unit'] ?? '',
+                'description': requestItem['description'] ?? '',
               });
             }
           }
@@ -245,19 +245,6 @@ Future<void> _loadCampRequests() async {
     });
     _showErrorSnackBar('Error loading camp requests: $e');
   }
-}
-
-String _formatDate(dynamic date) {
-  if (date != null) {
-    try {
-      final DateTime dateTime = DateTime.parse(date.toString());
-      return DateFormat('dd-MM-yyyy').format(dateTime);
-    } catch (e) {
-      return 'Unknown';
-    }
-  }
-  return 'Unknown';
-}
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(
@@ -308,7 +295,7 @@ String _formatDate(dynamic date) {
                     await TokenHttp().post('/donation/updateItemLocation', {
                       'itemId': item['id'],
                       'room': _roomController.text,
-                      'disasterId': AuthService().getDisasterId()
+                      'disasterId': AuthService().getDisasterId(),
                     });
 
                     setState(() {
@@ -344,9 +331,9 @@ String _formatDate(dynamic date) {
   void _showDonationRequestDialog(Map<String, dynamic> donation) {
     _statusController.text = donation['status'] ?? '';
 
-    // Get the original donation data which contains the donatedItems
+    // Get the original donation data which contains the requestItems
     final originalData = donation['originalData'] ?? {};
-    final donatedItems = originalData['donatedItems'] ?? [];
+    final requestItems = originalData['requestItems'] ?? [];
 
     showDialog(
       context: context,
@@ -414,10 +401,10 @@ String _formatDate(dynamic date) {
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-                  if (donatedItems.isEmpty)
+                  if (requestItems.isEmpty)
                     const Text('No items donated')
                   else
-                    ...donatedItems.map<Widget>((item) {
+                    ...requestItems.map<Widget>((item) {
                       return Card(
                         margin: const EdgeInsets.only(bottom: 8),
                         child: Padding(
@@ -874,15 +861,19 @@ String _formatDate(dynamic date) {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: campRequest['status'],
+                    value: campRequest['status'].toString().toLowerCase(),
                     decoration: const InputDecoration(
                       labelText: 'Status',
                       border: OutlineInputBorder(),
                     ),
                     items:
-                        ['Pending', 'Scheduled', 'Completed', 'Canceled'].map((
-                          status,
-                        ) {
+                        [
+                          'Pending',
+                          'Scheduled',
+                          'Arrived',
+                          'Processed',
+                          'Canceled',
+                        ].map((status) {
                           return DropdownMenuItem<String>(
                             value: status.toLowerCase(),
                             child: Text(status),
@@ -1357,23 +1348,23 @@ String _formatDate(dynamic date) {
       appBar: AppBar(
         title: const Text('Collection Point Dashboard'),
         backgroundColor: Colors.blueGrey[800],
-         actions: [
-        
-        
+        actions: [
           IconButton(
-  icon: const Icon(Icons.settings, color: Colors.white),
-  onPressed: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const CollectionPointManagementScreen(
-          collectionPointId: '1', // You may want to pass the actual collection point ID
-        ),
-      ),
-    );
-  },
-),
-      ],
+            icon: const Icon(Icons.settings, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => const CollectionPointManagementScreen(
+                        collectionPointId:
+                            '1', // You may want to pass the actual collection point ID
+                      ),
+                ),
+              );
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: Colors.white,

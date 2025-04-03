@@ -1,90 +1,125 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:geocoding/geocoding.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart' show CameraPosition, GoogleMap, LatLng;
+import 'package:resq/constants/api_constants.dart';
+import 'package:universal_html/html.dart' as html if (dart.library.io) 'package:flutter/foundation.dart';
 
-class LocationScreen extends StatefulWidget {
-  const LocationScreen({super.key});
+class LocationSelectionWidget extends StatefulWidget {
+  final LatLng initialLocation;
+  final Function(LatLng) onLocationSelected;
+
+  const LocationSelectionWidget({
+    Key? key,
+    required this.initialLocation,
+    required this.onLocationSelected,
+  }) : super(key: key);
 
   @override
-  _LocationScreenState createState() => _LocationScreenState();
+  State<LocationSelectionWidget> createState() => _LocationSelectionWidgetState();
 }
 
-class _LocationScreenState extends State<LocationScreen> {
-  String? _locationMessage = "Fetching location...";
-  String? _googleMapsLink; // To store the generated Google Maps link
+class _LocationSelectionWidgetState extends State<LocationSelectionWidget> {
+  late LatLng _selectedLocation;
+  String _address = 'Loading address...';
+  bool _isLoading = false;
+  bool _isWebMapInitialized = false;
 
-  // Function to get the current location
-  Future<void> _getLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
+  @override
+  void initState() {
+    super.initState();
+    _selectedLocation = widget.initialLocation;
+    _getAddressFromLatLng(_selectedLocation);
+    if (kIsWeb) _initializeWebMap();
+  }
 
-    // Check if location services are enabled
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      // If services are disabled, ask the user to enable them
-      _showLocationServicesDialog();
-      return;
-    }
-
-    // Check if permission to access location is granted
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission != LocationPermission.whileInUse &&
-          permission != LocationPermission.always) {
-        setState(() {
-          _locationMessage = "Location permissions are denied.";
-        });
-        return;
-      }
-    }
-
-    // Get the current position
-    Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
-
-    // Construct the Google Maps URL link
-    _googleMapsLink = 'https://www.google.com/maps?q=${position.latitude},${position.longitude}';
-
-    setState(() {
-      _locationMessage = "Latitude: ${position.latitude}\nLongitude: ${position.longitude}";
-    });
-
-    // Optionally, you can open the link directly in Google Maps
-    if (await canLaunch(_googleMapsLink!)) {
-      await launch(_googleMapsLink!);
-    } else {
-      throw 'Could not launch $_googleMapsLink';
+  Future<void> _initializeWebMap() async {
+    // For web, we need to inject the Google Maps JavaScript API
+    final apiKey = ApiConstants.GOOGLE_MAPS_API_KEY;
+    if (apiKey.isNotEmpty) {
+      final script = html.ScriptElement()
+        ..src = 'https://maps.googleapis.com/maps/api/js?key=$apiKey'
+        ..async = true
+        ..defer = true;
+      html.document.body!.append(script);
+      setState(() => _isWebMapInitialized = true);
     }
   }
 
-  // Show a dialog asking the user to enable location services
-  void _showLocationServicesDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Location Services Disabled'),
-          content: const Text(
-              'Please enable location services to continue using this feature.'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                // Open device settings to enable location services
-                await Geolocator.openLocationSettings();
-              },
-              child: const Text('Open Settings'),
-            ),
-          ],
-        );
+  Future<void> _getAddressFromLatLng(LatLng position) async {
+    if (!mounted) return;
+    
+    setState(() => _isLoading = true);
+
+    try {
+      final placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        setState(() {
+          _address = [
+            if (place.street != null) place.street,
+            if (place.locality != null) place.locality,
+            if (place.country != null) place.country,
+          ].where((part) => part != null).join(', ');
+        });
+      } else {
+        setState(() => _address = 'Address not found');
+      }
+    } catch (e) {
+      setState(() => _address = 'Failed to get address: ${e.toString()}');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Widget _buildMobileMap() {
+    return GoogleMap(
+      initialCameraPosition: CameraPosition(
+        target: widget.initialLocation,
+        zoom: 15,
+      ),
+      onCameraMove: (position) {
+        _selectedLocation = position.target;
       },
+      onCameraIdle: () {
+        _getAddressFromLatLng(_selectedLocation);
+      },
+    );
+  }
+
+  Widget _buildWebMap() {
+    if (!_isWebMapInitialized) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // For web, you would typically use google_maps_flutter_web
+    // This is a placeholder - you'll need to implement the actual web map
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('Web Map Implementation'),
+          Text('Lat: ${_selectedLocation.latitude.toStringAsFixed(6)}'),
+          Text('Lng: ${_selectedLocation.longitude.toStringAsFixed(6)}'),
+          ElevatedButton(
+            onPressed: () {
+              // Simulate location change for web
+              setState(() {
+                _selectedLocation = LatLng(
+                  _selectedLocation.latitude + 0.001,
+                  _selectedLocation.longitude + 0.001,
+                );
+                _getAddressFromLatLng(_selectedLocation);
+              });
+            },
+            child: const Text('Simulate Move'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -92,51 +127,64 @@ class _LocationScreenState extends State<LocationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Location Finder'),
-        backgroundColor: Colors.green.shade300,
+        title: const Text('Select Location'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.check),
+            onPressed: () {
+              widget.onLocationSelected(_selectedLocation);
+              Navigator.pop(context);
+            },
+          ),
+        ],
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                _locationMessage ?? "Fetching location...",
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 18),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _getLocation,
-                style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.all(Colors.green.shade400),
-                ),
-                child: const Text('Get Current Location'),
-              ),
-              const SizedBox(height: 20),
-              // Display the clickable Google Maps link
-              if (_googleMapsLink != null)
-                GestureDetector(
-                  onTap: () async {
-                    if (await canLaunch(_googleMapsLink!)) {
-                      await launch(_googleMapsLink!);
-                    } else {
-                      throw 'Could not launch $_googleMapsLink';
-                    }
-                  },
-                  child: Text(
-                    'Open in Google Maps',
-                    style: TextStyle(
-                      color: Colors.blue.shade600,
-                      fontSize: 16,
-                      decoration: TextDecoration.underline,
-                    ),
+      body: Column(
+        children: [
+          Expanded(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                kIsWeb ? _buildWebMap() : _buildMobileMap(),
+                // Centered marker pin
+                const IgnorePointer(
+                  child: Icon(
+                    Icons.location_pin,
+                    color: Colors.red,
+                    size: 36,
                   ),
                 ),
-            ],
+              ],
+            ),
           ),
-        ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Theme.of(context).cardColor,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Selected Location',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : Text(
+                        _address,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    widget.onLocationSelected(_selectedLocation);
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Confirm Location'),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

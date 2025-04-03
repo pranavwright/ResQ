@@ -17,6 +17,7 @@ class AuthService {
   Map<String, dynamic>? _userProfile;
   String? _token;
   String? _assignPlace;
+  String? _userId = '';
 
 
   String? get assignPlace => _assignPlace;
@@ -30,6 +31,30 @@ class AuthService {
   Map<String, dynamic>? getUserProfile() {
     return _userProfile;
   }
+
+  Future<void> saveToLocal(String key, String value) async {
+    try {
+     return _saveToStorage(key, value);
+    } catch (e) {
+      print('Error saving to local storage: $e');
+    }
+  }
+  Future<String?> readFromStorage(String key) async {
+    try {
+     return await _readFromStorage(key) ?? "";
+    } catch (e) {
+      print('Error saving to local storage: $e');
+    }
+  }
+
+  Future<void> deleteFromStorage(String key) async {
+    try {
+      return _deleteFromStorage(key);
+    } catch (e) {
+      print('Error deleting from local storage: $e');
+    }
+  }
+
 
   Future<void> _saveToStorage(String key, String value) async {
     try {
@@ -123,6 +148,7 @@ class AuthService {
           _userRoles = [];
           _userProfile = null;
           _disasterId = '';
+          _userId = user['uid'] ?? '';
           return;
         }
 
@@ -271,5 +297,8 @@ class AuthService {
 
   String getDisasterId() {
     return _disasterId;
+  }
+  String getCurrentUserId() {
+    return _userId ?? "";
   }
 }
