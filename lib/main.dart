@@ -46,12 +46,11 @@ import 'package:resq/screens/change_disaster.dart';
 import 'package:resq/screens/notice_display_screen.dart';
 import 'package:resq/screens/collectionpoint_volunteer_management.dart';
 import 'package:resq/screens/view_notice.dart';
+import 'package:resq/screens/loan_listing.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-   await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform,
-        );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await _requestNotificationPermissions(); // Request early
   if (kIsWeb) {
     setUrlStrategy(PathUrlStrategy());
@@ -200,6 +199,13 @@ class MyApp extends StatelessWidget {
             );
 
         break;
+      case '/loan-list':
+        builder =
+            (context) => AuthRoute(
+              requiredRoles: ['admin', 'stat'],
+              child: LoanListingPage(),
+            );
+        break;
       case '/public-donation':
         final args = settings.arguments as dynamic?;
         String disasterId = args['disasterId'] ?? '';
@@ -246,8 +252,10 @@ class MyApp extends StatelessWidget {
         break;
       case '/manage-collectionpoint':
         builder =
-            (context) =>
-                AuthRoute(requiredRoles: ['collectionPointAdmin'], child: CollectionPointDashboard());
+            (context) => AuthRoute(
+              requiredRoles: ['collectionPointAdmin'],
+              child: CollectionPointDashboard(),
+            );
         break;
       case '/profile-update':
         builder =
@@ -318,8 +326,7 @@ class MyApp extends StatelessWidget {
               ),
             );
         break;
-    
-        
+
       case '/logout':
         builder = (BuildContext context) {
           // Execute logout in the next frame after the route is built
