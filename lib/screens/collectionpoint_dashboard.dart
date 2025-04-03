@@ -156,94 +156,79 @@ class _CollectionPointDashboardState extends State<CollectionPointDashboard>
     }
   }
 
-Future<void> _loadCampRequests() async {
-  setState(() {
-    isLoadingCampRequests = true;
-  });
+  Future<void> _loadCampRequests() async {
+    setState(() {
+      isLoadingCampRequests = true;
+    });
 
-  try {
-    // Load camp donation requests from the API
-    var response = await TokenHttp().get(
-      '/donation/allCampDonationRequest?disasterId=${AuthService().getDisasterId()}',
-    );
+    try {
+      // Load camp requests from the API
+      var campRequest = await TokenHttp().get(
+        '/donation/allCampDonationRequest?disasterId=${AuthService().getDisasterId()}',
+      );
 
-    List<Map<String, dynamic>> mappedCampRequests = [];
+      List<Map<String, dynamic>> mappedCampRequests = [];
 
-    if (response != null && response['list'] is List) {
-      for (var request in response['list']) {
-        // Parse pickup date
-        String formattedPickupDate = _formatDate(request['pickUpDate']);
-        
-        // Get requested items
-        List<Map<String, dynamic>> itemDetails = [];
-        if (request['requestItems'] is List) {
-          itemDetails = (request['requestItems'] as List).map<Map<String, dynamic>>((item) {
-            return {
-              'id': item['_id'] ?? '',
-              'quantity': item['quantity'] ?? 0,
-              'room': item['room'] ?? '',
-              'item': item['name'] ?? 'Unknown',
-              'category': item['category'] ?? 'Not categorized',
-              'unit': item['unit'] ?? '',
-              'description': item['description'] ?? '',
-            };
-          }).toList();
-        } else if (request['items'] is List) {
-          // Map item IDs to full item details
-          List<String> itemIds = [];
-          Map<String, int> itemQuantities = {};
-          
-          for (var itemEntry in request['items']) {
-            String itemId = itemEntry['itemId'] ?? '';
-            int quantity = itemEntry['quantity'] ?? 0;
-            
-            if (itemId.isNotEmpty) {
-              itemIds.add(itemId);
-              itemQuantities[itemId] = quantity;
-            }
+      if (campRequest != null && campRequest['list'] is List) {
+        for (var request in campRequest['list']) {
+          String formattedDate = _formatDate(
+            request['confirmDate'] ?? request['pickUpDate'],
+          );
+
+          List<Map<String, dynamic>> itemDetails = [];
+          if (request['requestItems'] is List) {
+            itemDetails =
+                request['requestItems'].map<Map<String, dynamic>>((
+                  requestItem,
+                ) {
+                  return {
+                    'id': requestItem['_id'] ?? '',
+                    'quantity': requestItem['quantity'] ?? 0,
+                    'room': requestItem['room'] ?? '',
+                    'item': requestItem['name'] ?? 'Unknown',
+                    'category': requestItem['category'] ?? 'Not categorized',
+                    'unit': requestItem['unit'] ?? '',
+                    'description': requestItem['description'] ?? '',
+                  };
+                }).toList();
           }
-          
-          // If requestItems doesn't exist but items does, create basic item entries
-          itemDetails = itemIds.map<Map<String, dynamic>>((itemId) {
-            return {
-              'id': itemId,
-              'quantity': itemQuantities[itemId] ?? 0,
-              'room': '',
-              'item': 'Item $itemId',
-              'category': 'Not categorized',
-              'unit': '',
-              'description': '',
-            };
-          }).toList();
+
+          mappedCampRequests.add({
+            'id': request['_id'] ?? '',
+            'camp': request['campName'] ?? 'Unknown',
+            'camp_contact':
+                request['phone'] ?? request['email'] ?? 'No contact',
+            'pickup_date': formattedDate,
+            'pickup_time': '',
+            'status': request['status'] ?? 'pending',
+            'items': itemDetails,
+            'originalData': request,
+          });
         }
-        
-        // Get camp name (might need to be fetched from another endpoint if not available)
-        String campName = request['campId'] ?? 'Unknown Camp';
-        
-        mappedCampRequests.add({
-          'id': request['_id'] ?? '',
-          'camp': campName,
-          'camp_contact': 'Contact info', // This might need to be fetched separately
-          'pickup_date': formattedPickupDate,
-          'pickup_time': '', // Extract time if available
-          'status': request['status'] ?? 'pending',
-          'items': itemDetails,
-          'priority': request['priority'] ?? 0,
-          'notes': request['notes'] ?? '',
-          'originalData': request,
-        });
+      }
+
+      setState(() {
+        campRequests = mappedCampRequests;
+        isLoadingCampRequests = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoadingCampRequests = false;
+      });
+      _showErrorSnackBar('Error loading camp requests: $e');
+    }
+  }
+
+  String _formatDate(dynamic date) {
+    if (date != null) {
+      try {
+        final DateTime dateTime = DateTime.parse(date.toString());
+        return DateFormat('dd-MM-yyyy').format(dateTime);
+      } catch (e) {
+        return 'Unknown';
       }
     }
-
-    setState(() {
-      campRequests = mappedCampRequests;  // Fixed: update campRequests, not donationRequests
-      isLoadingCampRequests = false;      // Fixed: update correct loading state
-    });
-  } catch (e) {
-    setState(() {
-      isLoadingCampRequests = false;
-    });
-    _showErrorSnackBar('Error loading camp requests: $e');
+    return 'Unknown';
   }
 
   void _showErrorSnackBar(String message) {
@@ -946,47 +931,7 @@ Future<void> _loadCampRequests() async {
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
-                onPressed: () async {
-                  try {
-                    // Parse date from the controller
-                    List<String> dateParts = _dateController.text.split('-');
-                    if (dateParts.length != 3) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Invalid date format. Please use DD-MM-YYYY')),
-                      );
-                      return;
-                    }
-                    List<String> timeParts = _timeController.text.split(':');
-                    if (dateParts.length != 3) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Invalid date format. Please use DD-MM-YYYY')),
-                      );
-                      return;
-                    }
-                    
-                    DateTime pickUpDate = DateTime(
-                      int.parse(dateParts[2]),  // year
-                      int.parse(dateParts[1]),  // month
-                      int.parse(dateParts[0]),  // day
-                      int.parse(timeParts[0]),
-                      int.parse(timeParts[1])
-                    );
-                    
-                    await TokenHttp().post(
-                      '/donation/updateCampDonationRequest',
-                      {
-                        'requestId': campRequest['id'],
-                        'pickUpDate': pickUpDate.toIso8601String(),
-                        'status': campRequest['status'],
-                        'items': campRequest['items'],
-                        'disasterId': AuthService().getDisasterId()
-                      },
-                    );
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('An error ocuured, Please try again')),
-                  );
-                  }
+                onPressed: () {
                   setState(() {
                     final index = campRequests.indexWhere(
                       (c) => c['id'] == campRequest['id'],
