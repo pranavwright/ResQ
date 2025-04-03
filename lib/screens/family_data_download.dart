@@ -23,6 +23,7 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
 
   String _aiPrompt = '';
   bool _showPromptDialog = false;
+  // Track if "Select None" is active
 
   // Family-level filters
   String? selectedVillageWard;
@@ -50,19 +51,17 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
 
   // Track visibility of columns
   Map<String, bool> columnVisibility = {};
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchFamilies();
-    filteredFamilies = allFamilies;
-
-    // Initialize column visibility
-    final allHeaders = [..._getFamilyDataHeaders(), ..._getMemberDataHeaders()];
-    for (var header in allHeaders) {
-      columnVisibility[header] = true; // Default all columns to visible
-    }
-  }
+@override
+void initState() {
+  super.initState();
+  _fetchFamilies();
+  
+  // Initialize columnVisibility for all headers
+  final allHeaders = [..._getFamilyDataHeaders(), ..._getMemberDataHeaders()];
+  columnVisibility = {
+    for (var header in allHeaders) header: true, // Default all to visible
+  };
+}
 
   Future<void> _fetchFamilies() async {
     try {
@@ -983,7 +982,7 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
               const SizedBox(height: 20),
 
               // Column visibility toggles
-              ExpansionTile(
+   ExpansionTile(
                 title: const Text(
                   'Select Columns to Display',
                   style: TextStyle(fontWeight: FontWeight.bold),
@@ -1001,168 +1000,172 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
                       );
                     }).toList(),
               ),
+              const SizedBox(height: 20),    // Family-level filters as ExpansionTile
+              ExpansionTile(
+                title: const Text(
+                  'Family-Level Filters',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                children: [
+                  _buildFilterDropdown(
+                    'Village/Ward',
+                    villageWards,
+                    selectedVillageWard,
+                    (value) {
+                      setState(() {
+                        selectedVillageWard = value;
+                      });
+                    },
+                  ),
+                  _buildFilterTextField('House Number', (value) {
+                    setState(() {
+                      selectedHouseNumber = value;
+                    });
+                  }),
+                  _buildFilterTextField('Head of Household', (value) {
+                    setState(() {
+                      selectedHouseholdHead = value;
+                    });
+                  }),
+                  _buildRangeSlider(
+                    'Monthly Income Range: ₹${incomeRange.start.round()} - ₹${incomeRange.end.round()}',
+                    incomeRange,
+                    0,
+                    50000,
+                    (values) {
+                      setState(() {
+                        incomeRange = values;
+                      });
+                    },
+                  ),
+                  _buildFilterDropdown(
+                    'Shelter Type',
+                    shelterTypes,
+                    selectedShelterType,
+                    (value) {
+                      setState(() {
+                        selectedShelterType = value;
+                      });
+                    },
+                  ),
+                  _buildFilterDropdown(
+                    'Ration Category',
+                    rationCategories,
+                    selectedRationCategory,
+                    (value) {
+                      setState(() {
+                        selectedRationCategory = value;
+                      });
+                    },
+                  ),
+                  _buildFilterDropdown('Caste', castes, selectedCaste, (value) {
+                    setState(() {
+                      selectedCaste = value;
+                    });
+                  }),
+                  _buildCheckboxRow(
+                    'Outside Damaged Area',
+                    outsideDamagedAreaFilter,
+                    (value) {
+                      setState(() {
+                        outsideDamagedAreaFilter = value;
+                      });
+                    },
+                  ),
+                  _buildCheckboxRow('Received Allowance', receivedAllowanceFilter, (
+                    value,
+                  ) {
+                    setState(() {
+                      receivedAllowanceFilter = value;
+                    });
+                  }),
+                ],
+              ),
               const SizedBox(height: 20),
-
-              // Family-level filters
-              const Text(
-                'Family-Level Filters',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              _buildFilterDropdown(
-                'Village/Ward',
-                villageWards,
-                selectedVillageWard,
-                (value) {
-                  setState(() {
-                    selectedVillageWard = value;
-                  });
-                },
-              ),
-              _buildFilterTextField('House Number', (value) {
-                setState(() {
-                  selectedHouseNumber = value;
-                });
-              }),
-              _buildFilterTextField('Head of Household', (value) {
-                setState(() {
-                  selectedHouseholdHead = value;
-                });
-              }),
-              _buildRangeSlider(
-                'Monthly Income Range: ₹${incomeRange.start.round()} - ₹${incomeRange.end.round()}',
-                incomeRange,
-                0,
-                50000,
-                (values) {
-                  setState(() {
-                    incomeRange = values;
-                  });
-                },
-              ),
-              _buildFilterDropdown(
-                'Shelter Type',
-                shelterTypes,
-                selectedShelterType,
-                (value) {
-                  setState(() {
-                    selectedShelterType = value;
-                  });
-                },
-              ),
-              _buildFilterDropdown(
-                'Ration Category',
-                rationCategories,
-                selectedRationCategory,
-                (value) {
-                  setState(() {
-                    selectedRationCategory = value;
-                  });
-                },
-              ),
-              _buildFilterDropdown('Caste', castes, selectedCaste, (value) {
-                setState(() {
-                  selectedCaste = value;
-                });
-              }),
-              _buildCheckboxRow(
-                'Outside Damaged Area',
-                outsideDamagedAreaFilter,
-                (value) {
-                  setState(() {
-                    outsideDamagedAreaFilter = value;
-                  });
-                },
-              ),
-              _buildCheckboxRow('Received Allowance', receivedAllowanceFilter, (
-                value,
-              ) {
-                setState(() {
-                  receivedAllowanceFilter = value;
-                });
-              }),
-              const SizedBox(height: 20),
-
-              // Individual-level filters
-              const Text(
-                'Individual-Level Filters',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              _buildFilterTextField('Member Name', (value) {
-                setState(() {
-                  memberNameFilter = value;
-                });
-              }),
-              _buildRangeSlider(
-                'Age Range: ${memberAgeRange.start.round()} - ${memberAgeRange.end.round()} years',
-                memberAgeRange,
-                0,
-                100,
-                (values) {
-                  setState(() {
-                    memberAgeRange = values;
-                  });
-                },
-              ),
-              _buildFilterDropdown('Gender', genders, memberGenderFilter, (
-                value,
-              ) {
-                setState(() {
-                  memberGenderFilter = value;
-                });
-              }),
-              _buildFilterDropdown(
-                'Education Level',
-                educationLevels,
-                memberEducationFilter,
-                (value) {
-                  setState(() {
-                    memberEducationFilter = value;
-                  });
-                },
-              ),
-              _buildFilterDropdown(
-                'Employment Type',
-                employmentTypes,
-                memberEmploymentTypeFilter,
-                (value) {
-                  setState(() {
-                    memberEmploymentTypeFilter = value;
-                  });
-                },
-              ),
-              _buildCheckboxRow(
-                'Unemployed Due to Disaster',
-                memberUnemployedDueToDisasterFilter,
-                (value) {
-                  setState(() {
-                    memberUnemployedDueToDisasterFilter = value;
-                  });
-                },
-              ),
-              _buildCheckboxRow(
-                'Has Medical Needs',
-                memberHasMedicalNeedsFilter,
-                (value) {
-                  setState(() {
-                    memberHasMedicalNeedsFilter = value;
-                  });
-                },
-              ),
-              _buildCheckboxRow('Is Bedridden', memberIsBedriddenFilter, (
-                value,
-              ) {
-                setState(() {
-                  memberIsBedriddenFilter = value;
-                });
-              }),
-              _buildCheckboxRow(
-                'Needs Counselling',
-                memberNeedsCounsellingFilter,
-                (value) {
-                  setState(() {
-                    memberNeedsCounsellingFilter = value;
-                  });
-                },
+ ExpansionTile(
+                title: const Text(
+                  'Individual-Level Filters',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                children: [
+                  _buildFilterTextField('Member Name', (value) {
+                    setState(() {
+                      memberNameFilter = value;
+                    });
+                  }),
+                  _buildRangeSlider(
+                    'Age Range: ${memberAgeRange.start.round()} - ${memberAgeRange.end.round()} years',
+                    memberAgeRange,
+                    0,
+                    100,
+                    (values) {
+                      setState(() {
+                        memberAgeRange = values;
+                      });
+                    },
+                  ),
+                  _buildFilterDropdown('Gender', genders, memberGenderFilter, (
+                    value,
+                  ) {
+                    setState(() {
+                      memberGenderFilter = value;
+                    });
+                  }),
+                  _buildFilterDropdown(
+                    'Education Level',
+                    educationLevels,
+                    memberEducationFilter,
+                    (value) {
+                      setState(() {
+                        memberEducationFilter = value;
+                      });
+                    },
+                  ),
+                  _buildFilterDropdown(
+                    'Employment Type',
+                    employmentTypes,
+                    memberEmploymentTypeFilter,
+                    (value) {
+                      setState(() {
+                        memberEmploymentTypeFilter = value;
+                      });
+                    },
+                  ),
+                  _buildCheckboxRow(
+                    'Unemployed Due to Disaster',
+                    memberUnemployedDueToDisasterFilter,
+                    (value) {
+                      setState(() {
+                        memberUnemployedDueToDisasterFilter = value;
+                      });
+                    },
+                  ),
+                  _buildCheckboxRow(
+                    'Has Medical Needs',
+                    memberHasMedicalNeedsFilter,
+                    (value) {
+                      setState(() {
+                        memberHasMedicalNeedsFilter = value;
+                      });
+                    },
+                  ),
+                  _buildCheckboxRow('Is Bedridden', memberIsBedriddenFilter, (
+                    value,
+                  ) {
+                    setState(() {
+                      memberIsBedriddenFilter = value;
+                    });
+                  }),
+                  _buildCheckboxRow(
+                    'Needs Counselling',
+                    memberNeedsCounsellingFilter,
+                    (value) {
+                      setState(() {
+                        memberNeedsCounsellingFilter = value;
+                      });
+                    },
+                  ),
+                ],
               ),
               const SizedBox(height: 20),
 
@@ -1191,17 +1194,16 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
               ),
               const SizedBox(height: 10),
               // Data table
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columns:
-                      allHeaders
-                          .where((header) => columnVisibility[header] == true)
-                          .map((header) => DataColumn(label: Text(header)))
-                          .toList(),
-                  rows: _buildDataRows(allHeaders),
-                ),
-              ),
+             SingleChildScrollView(
+  scrollDirection: Axis.horizontal,
+  child: DataTable(
+    columns: allHeaders
+        .where((header) => columnVisibility[header] == true)
+        .map((header) => DataColumn(label: Text(header)))
+        .toList(),
+    rows: _buildDataRows(allHeaders),
+  ),
+),
               const SizedBox(height: 20),
               if (filteredFamilies.isEmpty && !_isLoading)
                 Center(child: Text('No family data available')),
@@ -1212,51 +1214,26 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
     );
   }
 
-  List<DataRow> _buildDataRows(List<String> allHeaders) {
-    List<DataRow> rows = [];
-    for (var family in filteredFamilies) {
-      final data = family.data;
-      if (data != null) {
-        if ((data.members?.isEmpty ?? true)) {
-          // Add a single row for family with no members
-          rows.add(
-            DataRow(
-              onSelectChanged: (_) => _showFamilyDetails(family),
-              cells:
-                  allHeaders
-                      .where((header) => columnVisibility[header] == true)
-                      .map((header) {
-                        final value = _getFamilyDataValue(data, header);
-                        return DataCell(Text(value ?? 'N/A'));
-                      })
-                      .toList(),
-            ),
-          );
-        } else {
-          // Add rows for each family member
-          for (var member in data.members ?? []) {
-            rows.add(
-              DataRow(
-                onSelectChanged: (_) => _showFamilyDetails(family),
-                cells:
-                    allHeaders
-                        .where((header) => columnVisibility[header] == true)
-                        .map((header) {
-                          final value =
-                              _getMemberDataValue(member, header) ??
-                              _getFamilyDataValue(data, header);
-                          return DataCell(Text(value ?? 'N/A'));
-                        })
-                        .toList(),
-              ),
-            );
-          }
-        }
-      }
-    }
 
-    return rows;
-  }
+  List<DataRow> _buildDataRows(List<String> allHeaders) {
+  // First filter the headers to only include visible ones
+  final visibleHeaders = allHeaders.where((header) => columnVisibility[header] ?? true).toList();
+
+  return filteredFamilies.map((family) {
+    final data = family.data;
+    return DataRow(
+      cells: visibleHeaders.map((header) {  // Only use visible headers here
+        return DataCell(
+          Text(
+            data != null 
+                ? _getFamilyDataValue(data, header) ?? 'N/A'
+                : 'N/A',
+          ),
+        );
+      }).toList(),
+    );
+  }).toList();
+}
 
   Widget _buildFilterDropdown(
     String label,
