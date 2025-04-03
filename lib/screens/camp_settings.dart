@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:resq/screens/family_mock_data.dart';
-import 'package:resq/screens/googlemapscreen.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
 
 class CampSettingsScreen extends StatefulWidget {
@@ -10,7 +8,7 @@ class CampSettingsScreen extends StatefulWidget {
 }
 
 class _CampSettingsScreenState extends State<CampSettingsScreen> {
-  final List<Family> _families = generateMockFamilies();
+  final List<Family> _families =[];
   String _campContactNumber = '9876543210';
   String _campEmail = 'camp@example.com'; // New email field
   final TextEditingController _contactController = TextEditingController();
