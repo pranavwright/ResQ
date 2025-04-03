@@ -59,39 +59,43 @@ class _IdentityState extends State<Identity> {
     }
   }
 
-  Future<void> _uploadImage(dynamic imageFile) async {
-    setState(() {
-      _isUploading = true;
-    });
+ Future<void> _uploadImage(dynamic imageFile) async {
+  setState(() {
+    _isUploading = true;
+  });
 
-    try {
-      final response = await TokenHttp().putWithFileUpload(
-        endpoint: '/auth/updateProfilePicture',
-        file: imageFile,
-        fieldName: 'profilePicture',
-      );
+  try {
+    final response = await TokenHttp().putWithFileUpload(
+      endpoint: '/auth/updateProfilePicture',
+      file: imageFile,
+      fieldName: 'profilePicture',
+      additionalFields: {
+        if (name.isNotEmpty) 'name': name,
+        if (email.isNotEmpty) 'email': email,
+      },
+    );
 
-      if (response != null && response['photoUrl'] != null) {
-        setState(() {
-          imageUrl = response['photoUrl'];
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Profile picture updated successfully')),
-          );
-        });
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to upload image: $e')),
-      );
-    } finally {
+    if (response != null && response['photoUrl'] != null) {
       setState(() {
-        _isUploading = false;
+        imageUrl = response['photoUrl'];
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile picture updated successfully')),
+        );
       });
     }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Failed to upload image: $e')),
+    );
+  } finally {
+    setState(() {
+      _isUploading = false;
+    });
   }
+}
 
   Future<void> _pickImage() async {
-    final pickedFile = await showDialog<XFile?>( 
+    final pickedFile = await showDialog<XFile?>(
       context: context,
       builder: (context) => SimpleDialog(
         title: const Text('Select Image Source'),
@@ -139,15 +143,57 @@ class _IdentityState extends State<Identity> {
     }
   }
 
-  ImageProvider _getImageProvider() {
-    if (kIsWeb) {
-      if (_webImage != null) return MemoryImage(_webImage!);
-      return NetworkImage(imageUrl);
-    } else {
-      if (_imageFile != null) return FileImage(_imageFile!);
-      return NetworkImage(imageUrl);
+  Future<void> _updateProfile(String field, String value) async {
+  try {
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Prepare the update data
+    final Map<String, dynamic> updateData = {field: value};
+    
+    // For name updates, we might not need to upload a file
+    if (field == 'name') {
+      final response = await TokenHttp().put('/auth/updateUser', updateData);
+
+      if (response != null && response['success'] == true) {
+        setState(() {
+          name = value;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Name updated successfully'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } 
+    // For email updates
+    else if (field == 'email') {
+      final response = await TokenHttp().put('/auth/updateUser', updateData);
+
+      if (response != null && response['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Email updated successfully'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Failed to update $field: $e'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  } finally {
+    setState(() {
+      _isLoading = false;
+    });
   }
+}
 
   void _showEditDialog(String field) {
     if (field == 'name') {
@@ -183,35 +229,11 @@ class _IdentityState extends State<Identity> {
                 ),
               ),
               onPressed: () async {
-                try {
-                  final response = await TokenHttp().post('/auth/updateUser', {
-                    field: field == 'name' ? nameController.text : emailController.text,
-                  });
-
-                  if (response != null && response['success'] == true) {
-                    setState(() {
-                      if (field == 'name') {
-                        name = nameController.text;
-                      } else {
-                        email = emailController.text;
-                      }
-                    });
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Profile updated successfully'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Failed to update $field: $e'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
+                final newValue = field == 'name' 
+                    ? nameController.text 
+                    : emailController.text;
+                Navigator.of(context).pop();
+                await _updateProfile(field, newValue);
               },
               child: const Text('Save', style: TextStyle(color: Colors.white)),
             ),
@@ -219,6 +241,16 @@ class _IdentityState extends State<Identity> {
         );
       },
     );
+  }
+
+  ImageProvider _getImageProvider() {
+    if (kIsWeb) {
+      if (_webImage != null) return MemoryImage(_webImage!);
+      return NetworkImage(imageUrl);
+    } else {
+      if (_imageFile != null) return FileImage(_imageFile!);
+      return NetworkImage(imageUrl);
+    }
   }
 
   @override
@@ -245,7 +277,6 @@ class _IdentityState extends State<Identity> {
               child: Center(
                 child: Column(
                   children: [
-                    // Profile Card
                     Card(
                       elevation: 8,
                       shape: RoundedRectangleBorder(
@@ -264,44 +295,6 @@ class _IdentityState extends State<Identity> {
                         ),
                         child: Column(
                           children: [
-                            // Header
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 15),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.shade800,
-                                borderRadius: BorderRadius.circular(15),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Image.asset(
-                                    'assets/images/logo.jpg',
-                                    height: 30,
-                                    width: 30,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return const Icon(
-                                        Icons.volunteer_activism,
-                                        size: 30,
-                                        color: Colors.white,
-                                      );
-                                    },
-                                  ),
-                                  const SizedBox(width: 15),
-                                  const Text(
-                                    'RESQ IDENTITY CARD',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 30),
-
                             // Profile Picture
                             Stack(
                               alignment: Alignment.center,
@@ -315,13 +308,6 @@ class _IdentityState extends State<Identity> {
                                       color: Colors.blue.shade300,
                                       width: 3,
                                     ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.blue.withOpacity(0.2),
-                                        blurRadius: 10,
-                                        spreadRadius: 2,
-                                      ),
-                                    ],
                                   ),
                                   child: ClipOval(
                                     child: _isUploading
@@ -329,25 +315,6 @@ class _IdentityState extends State<Identity> {
                                         : Image(
                                             image: _getImageProvider(),
                                             fit: BoxFit.cover,
-                                            loadingBuilder: (BuildContext context,
-                                                Widget child,
-                                                ImageChunkEvent? loadingProgress) {
-                                              if (loadingProgress == null) {
-                                                return child;
-                                              }
-                                              return Center(
-                                                child: CircularProgressIndicator(
-                                                  value: loadingProgress
-                                                              .expectedTotalBytes !=
-                                                          null
-                                                      ? loadingProgress
-                                                              .cumulativeBytesLoaded /
-                                                          loadingProgress
-                                                              .expectedTotalBytes!
-                                                      : null,
-                                                ),
-                                              );
-                                            },
                                             errorBuilder: (context, error, stackTrace) {
                                               return const Icon(
                                                 Icons.person,
@@ -364,8 +331,6 @@ class _IdentityState extends State<Identity> {
                                   child: GestureDetector(
                                     onTap: _isUploading ? null : _pickImage,
                                     child: Container(
-                                      width: 40,
-                                      height: 40,
                                       decoration: BoxDecoration(
                                         color: Colors.blue,
                                         shape: BoxShape.circle,
@@ -374,6 +339,7 @@ class _IdentityState extends State<Identity> {
                                           width: 3,
                                         ),
                                       ),
+                                      padding: const EdgeInsets.all(8),
                                       child: const Icon(
                                         Icons.edit,
                                         color: Colors.white,
@@ -384,105 +350,43 @@ class _IdentityState extends State<Identity> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 30),
+                            const SizedBox(height: 20),
 
-                            // User Info
-                            Column(
-                              children: [
-                                // Name
-                                GestureDetector(
-                                  onTap: () => _showEditDialog('name'),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 20, vertical: 15),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.grey.withOpacity(0.1),
-                                          blurRadius: 10,
-                                          spreadRadius: 2,
-                                        ),
-                                      ],
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            name,
-                                            style: const TextStyle(
-                                              fontSize: 22,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.blueGrey,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        const Icon(
-                                          Icons.edit,
-                                          color: Colors.blue,
-                                          size: 20,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
+                            // Name Field
+                            ListTile(
+                              title: Text(
+                                'Name',
+                                style: TextStyle(color: Colors.grey.shade600),
+                              ),
+                              subtitle: Text(name),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.edit),
+                                onPressed: () => _showEditDialog('name'),
+                              ),
+                            ),
+                            const Divider(),
 
-                                // Email
-                                GestureDetector(
-                                  onTap: () => _showEditDialog('email'),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 20, vertical: 15),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.grey.withOpacity(0.1),
-                                          blurRadius: 10,
-                                          spreadRadius: 2,
-                                        ),
-                                      ],
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            email,
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              color: Colors.blueGrey,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        const Icon(
-                                          Icons.edit,
-                                          color: Colors.blue,
-                                          size: 20,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            // Email Field
+                            ListTile(
+                              title: Text(
+                                'Email',
+                                style: TextStyle(color: Colors.grey.shade600),
+                              ),
+                              subtitle: Text(email),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.edit),
+                                onPressed: () => _showEditDialog('email'),
+                              ),
                             ),
                           ],
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 20),
 
-                    // Additional Info Section
-                    if (roles.isNotEmpty) ...[
+                    // Roles Section
+                    if (roles.isNotEmpty)
                       Card(
                         elevation: 8,
                         shape: RoundedRectangleBorder(
@@ -490,7 +394,7 @@ class _IdentityState extends State<Identity> {
                         ),
                         child: Container(
                           width: MediaQuery.of(context).size.width * 0.9,
-                          padding: const EdgeInsets.all(25),
+                          padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [Colors.blue.shade50, Colors.white],
@@ -503,38 +407,22 @@ class _IdentityState extends State<Identity> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'Roles & Permissions',
+                                'Roles',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.blueGrey,
                                 ),
                               ),
-                              const SizedBox(height: 15),
-                              ...roles.map((role) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 10),
-                                    child: Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.verified,
-                                          color: Colors.green,
-                                          size: 18,
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Text(
-                                          role['roleName'] ?? 'Unknown Role',
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                              const SizedBox(height: 10),
+                              ...roles.map((role) => ListTile(
+                                    leading: const Icon(Icons.verified,
+                                        color: Colors.green),
+                                    title: Text(role['roleName'] ?? 'Unknown Role'),
                                   )),
                             ],
                           ),
                         ),
                       ),
-                    ],
                   ],
                 ),
               ),

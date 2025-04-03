@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:resq/screens/donation_request_form.dart';
-import 'package:resq/screens/donations_screen.dart';
+import 'package:intl/intl.dart';
 import 'package:resq/utils/http/token_less_http.dart';
 
 class ItemsList extends StatefulWidget {
@@ -15,46 +13,49 @@ class ItemsList extends StatefulWidget {
 class _ItemsListState extends State<ItemsList> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
-  String? _selectedStatus; // Initially null
+  String? _selectedStatus;
   String? _selectedDisasterId;
-  List<Map<String, dynamic>> _disasters =
-      []; // To store disaster data, use dynamic
+  List<Map<String, dynamic>> _disasters = [];
   bool _loading = true;
   String? _error;
-  List<Map<String, dynamic>> _itemsList = []; // To store the fetched items
+  List<Map<String, dynamic>> _itemsList = [];
+  
+  // New state variables
+  String _disasterDescription = "Loading...";
+  int _affectedFamilies = 0;
+  int _totalMembers = 0;
+  DateTime? _lastUpdated;
 
   @override
   void initState() {
     super.initState();
-    if (widget.disasterId!='') {
+    if (widget.disasterId != null && widget.disasterId!.isNotEmpty) {
       _selectedDisasterId = widget.disasterId;
-      _fetchItems();
+      _fetchInitialData();
     } else {
       _fetchDisasters();
     }
   }
 
-  // In _fetchDisasters method:
+  Future<void> _fetchInitialData() async {
+    await _fetchItems();
+    await _fetchDisasterDetails();
+    await _fetchFamilyData();
+  }
+
   Future<void> _fetchDisasters() async {
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final dynamic response = await TokenLessHttp().get(
-        '/disaster/getDisasters',
-      );
-
+      final response = await TokenLessHttp().get('/disaster/getDisasters');
       if (response is List) {
         setState(() {
-          _disasters = List<Map<String, dynamic>>.from(
-            response.map((item) => item as Map<String, dynamic>),
-          );
+          _disasters = List<Map<String, dynamic>>.from(response);
         });
       } else {
-        throw Exception(
-          'Expected list response but got: ${response.runtimeType}',
-        );
+        throw Exception('Expected list response but got: ${response.runtimeType}');
       }
     } catch (e) {
       setState(() {
@@ -67,9 +68,53 @@ class _ItemsListState extends State<ItemsList> {
     }
   }
 
-  // In _fetchItems method:
+// TEMPORARY MOCK DATA - REMOVE WHEN BACKEND IS READY
+Future<void> _fetchDisasterDetails() async {
+  // Try real API first
+  try {
+    final response = await TokenLessHttp().get('/disaster/getDetails?id=$_selectedDisasterId');
+    if (response is Map) {
+      setState(() {
+        _disasterDescription = response['description'] ?? 'No description available';
+        _lastUpdated = DateTime.parse(response['updatedAt'] ?? DateTime.now().toString());
+      });
+      return; // Success - exit early
+    }
+  } catch (e) {
+    print('API Error: $e'); // Log but continue to mock data
+  }
+
+  // Fallback to mock data if API fails
+  setState(() {
+    _disasterDescription = "Severe flooding affecting coastal regions. Immediate need for blankets and food supplies.";
+    _lastUpdated = DateTime.now().subtract(const Duration(hours: 2));
+  });
+}
+
+Future<void> _fetchFamilyData() async {
+  // Try real API first
+  try {
+    final response = await TokenLessHttp().get('/family/getByDisaster?disasterId=$_selectedDisasterId');
+    if (response is List) {
+      setState(() {
+        _affectedFamilies = response.length;
+        _totalMembers = response.fold<int>(0, (sum, family) => sum + ((family['memberCount'] ?? 0) as num).toInt());
+      });
+      return; // Success - exit early
+    }
+  } catch (e) {
+    print('API Error: $e'); // Log but continue to mock data
+  }
+
+  // Fallback to mock data
+  setState(() {
+    _affectedFamilies = 24;
+    _totalMembers = 87;
+  });
+}
+
   Future<void> _fetchItems() async {
-    if (_selectedDisasterId == null || _selectedDisasterId!.isEmpty) {
+    if (_selectedDisasterId == null) {
       setState(() {
         _itemsList = [];
       });
@@ -82,22 +127,14 @@ class _ItemsListState extends State<ItemsList> {
     });
 
     try {
-      final dynamic response = await TokenLessHttp().get(
-        '/donation/items?disasterId=$_selectedDisasterId',
-      );
-
-      if (response is Map &&
-          response.containsKey('list') &&
-          response['list'] is List) {
+      final response = await TokenLessHttp().get('/donation/items?disasterId=$_selectedDisasterId');
+      if (response is Map && response.containsKey('list') && response['list'] is List) {
         setState(() {
-          _itemsList = List<Map<String, dynamic>>.from(
-            response['list'].map((item) => item as Map<String, dynamic>),
-          );
+          _itemsList = List<Map<String, dynamic>>.from(response['list']);
+          _lastUpdated = DateTime.now(); // Update timestamp when items are fetched
         });
       } else {
-        throw Exception(
-          'Expected map with list response but got: ${response.runtimeType}',
-        );
+        throw Exception('Expected map with list response but got: ${response.runtimeType}');
       }
     } catch (e) {
       setState(() {
@@ -110,59 +147,98 @@ class _ItemsListState extends State<ItemsList> {
     }
   }
 
-  // Determine the priority based on quantity
   String getPriority(int quantity) {
-    if (quantity < 10) {
-      return 'High'; // Priority High for quantity less than 10
-    } else if (quantity <= 50) {
-      return 'Medium'; // Priority Medium for quantity between 10 and 50
-    } else {
-      return 'Low'; // Priority Low for quantity greater than 50
-    }
+    if (quantity < 10) return 'High';
+    if (quantity <= 50) return 'Medium';
+    return 'Low';
+  }
+
+  Widget _buildDisasterInfoCard() {
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _disasters.firstWhere(
+                (d) => d['_id'] == _selectedDisasterId,
+                orElse: () => {'name': 'Disaster Details'},
+              )['name'],
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _disasterDescription,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            if (_lastUpdated != null)
+              Text(
+                'Last updated: ${DateFormat('MMM dd, yyyy - hh:mm a').format(_lastUpdated!)}',
+                style: TextStyle(color: Colors.grey[600], fontSize: 14),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFamilyDataCard() {
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Affected Families',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Total Families: $_affectedFamilies'),
+                Text('Total Members: $_totalMembers'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     if (_loading) {
       return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(), // Use a proper loading indicator
-        ),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_error != null) {
       return Scaffold(
         body: Center(
-          child: Text(
-            'Error: $_error',
-            style: const TextStyle(color: Colors.red),
-          ),
+          child: Text('Error: $_error', style: const TextStyle(color: Colors.red)),
         ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor:
-            Colors.green.shade300, // Light green color for the AppBar
+        backgroundColor: Colors.green.shade300,
         title: const Text(
           "Items List",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-            color: Colors.white,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: Colors.white),
         ),
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back,
-            size: 28,
-            color: Colors.white,
-          ), // Adjusted size
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
+          icon: const Icon(Icons.arrow_back, size: 28, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
           Padding(
@@ -171,11 +247,7 @@ class _ItemsListState extends State<ItemsList> {
               width: 200,
               child: TextField(
                 controller: _searchController,
-                onChanged: (query) {
-                  setState(() {
-                    _searchQuery = query.toLowerCase();
-                  });
-                },
+                onChanged: (query) => setState(() => _searchQuery = query.toLowerCase()),
                 decoration: InputDecoration(
                   hintText: 'Search items...',
                   hintStyle: TextStyle(color: Colors.black.withOpacity(0.7)),
@@ -184,9 +256,7 @@ class _ItemsListState extends State<ItemsList> {
                     borderSide: BorderSide.none,
                   ),
                   filled: true,
-                  fillColor: Colors.yellow.withOpacity(
-                    0.2,
-                  ), // Yellow background for the search field
+                  fillColor: Colors.yellow.withOpacity(0.2),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
                 ),
               ),
@@ -201,7 +271,7 @@ class _ItemsListState extends State<ItemsList> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Select Disaster:', // Changed from 'Select Location'
+                'Select Disaster:',
                 style: TextStyle(fontSize: 18, color: Colors.black),
               ),
               DropdownButton<String>(
@@ -209,271 +279,119 @@ class _ItemsListState extends State<ItemsList> {
                 hint: const Text("Select Disaster"),
                 isExpanded: true,
                 style: const TextStyle(color: Colors.black, fontSize: 18),
-                items:
-                    _disasters.map((disaster) {
-                      return DropdownMenuItem<String>(
-                        value: disaster['_id'],
-                        child: Text(
-                          disaster['name'] ?? '',
-                        ), // Use the 'name' from disaster
-                      );
-                    }).toList(),
+                items: _disasters.map((disaster) {
+                  return DropdownMenuItem<String>(
+                    value: disaster['_id'],
+                    child: Text(disaster['name'] ?? ''),
+                  );
+                }).toList(),
                 onChanged: (String? newValue) {
                   setState(() {
-                    _selectedDisasterId =
-                        newValue; // Update the selected disaster ID
-                    _fetchItems();
+                    _selectedDisasterId = newValue;
+                    if (newValue != null) {
+                      _fetchInitialData();
+                    }
                   });
                 },
-                icon: const Icon(
-                  Icons.arrow_drop_down,
-                  size: 28,
-                  color: Colors.green,
-                ),
-                iconSize: 28,
-                elevation: 16,
-                dropdownColor: Colors.white,
+                icon: const Icon(Icons.arrow_drop_down, size: 28, color: Colors.green),
               ),
+
               if (_selectedDisasterId != null) ...[
+                _buildDisasterInfoCard(),
+                _buildFamilyDataCard(),
+
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
                       'Items List in the Camp',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     DropdownButton<String>(
                       value: _selectedStatus,
-                      hint: const Text("Select Status"),
-                      style: const TextStyle(color: Colors.black),
+                      hint: const Text("Filter Status"),
                       items: const [
-                        DropdownMenuItem<String>(
-                          value: "All",
-                          child: Text("All"),
-                        ),
-                        DropdownMenuItem<String>(
-                          value: "Not Necessary",
-                          child: Text("Not Necessary"),
-                        ),
-                        DropdownMenuItem<String>(
-                          value: "Needed",
-                          child: Text("Needed"),
-                        ),
+                        DropdownMenuItem(value: "All", child: Text("All")),
+                        DropdownMenuItem(value: "Not Necessary", child: Text("Not Necessary")),
+                        DropdownMenuItem(value: "Needed", child: Text("Needed")),
                       ],
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          _selectedStatus = newValue;
-                        });
-                      },
-                      icon: const Icon(
-                        Icons.arrow_drop_down,
-                        size: 28,
-                        color: Colors.green,
-                      ),
-                      iconSize: 28,
-                      elevation: 16,
-                      dropdownColor: Colors.white,
+                      onChanged: (String? newValue) => setState(() => _selectedStatus = newValue),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                if (_itemsList.isNotEmpty)
-                  Table(
-                    border: TableBorder.all(color: Colors.black, width: 1.5),
-                    columnWidths: const {
-                      0: FlexColumnWidth(2),
-                      1: FlexColumnWidth(3),
-                      2: FlexColumnWidth(2),
-                      3: FlexColumnWidth(2),
-                    },
-                    children: [
-                      TableRow(
-                        decoration: BoxDecoration(
-                          color:
-                              Colors
-                                  .green, // Green background for the header row
-                        ),
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: Text(
-                              'Item',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: Text(
-                              'Quantity',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: Text(
-                              'Not Necessary/Needed',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: Text(
-                              'Priority',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      ..._itemsList
-                          .where((item) {
-                            final project = item['project'];
-                            if (project == null) return false;
-                            String itemName = project['name'] ?? '';
-                            bool matchesSearch = itemName
-                                .toLowerCase()
-                                .contains(_searchQuery);
-                            // Assuming you want to filter based on some quantity logic.
-                            // You might need to adjust this based on your actual data structure.
-                            // For example, if you have a 'quantityNeeded' or similar field.
-                            // Here, we're using a placeholder logic.
-                            int quantity = 0;
-                            // Attempt to parse a quantity field if it exists.
-                            // Replace 'someQuantityField' with the actual field name if available.
-                            // if (project.containsKey('someQuantityField')) {
-                            //   quantity = int.tryParse(project['someQuantityField']?.toString() ?? '0') ?? 0;
-                            // }
-                            String status =
-                                quantity < 10 ? 'Needed' : 'Not Necessary';
-                            bool matchesStatus =
-                                _selectedStatus == null ||
-                                _selectedStatus == "All" ||
-                                (_selectedStatus == "Not Necessary" &&
-                                    status == "Not Necessary") ||
-                                (_selectedStatus == "Needed" &&
-                                    status == "Needed");
-                            return matchesSearch && matchesStatus;
-                          })
-                          .map((item) {
-                            final project = item['project'];
-                            if (project == null) {
-                              // Handle the case where project is null, maybe return an empty row or skip.
-                              return TableRow(
-                                children: const [
-                                  Text(''),
-                                  Text(''),
-                                  Text(''),
-                                  Text(''),
-                                ],
-                              );
-                            }
-                            // Replace with your actual quantity logic if available
-                            int quantity = 0;
-                            // if (project.containsKey('someQuantityField')) {
-                            //   quantity = int.tryParse(project['someQuantityField']?.toString() ?? '0') ?? 0;
-                            // }
-                            String status =
-                                quantity < 10 ? 'Needed' : 'Not Necessary';
-                            String priority = getPriority(quantity);
 
-                            return TableRow(
-                              decoration: BoxDecoration(
-                                color:
-                                    (quantity < 10)
-                                        ? Colors
-                                            .green
-                                            .shade100 // Lighter shade for 'Needed'
-                                        : Colors
-                                            .yellow
-                                            .shade100, // Lighter shade for 'Not Necessary'
-                              ),
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text(project['name'] ?? ''),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text(
-                                    project['quantity']?.toString() ?? '',
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text(status),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text(priority),
-                                ),
-                              ],
-                            );
-                          })
-                          .toList(),
-                    ],
-                  )
-                else
-                  const Padding(
-                    padding: EdgeInsets.only(top: 16.0),
-                    child: Text(
-                      'No items found for this disaster.',
-                      style: TextStyle(fontSize: 16),
+                if (_itemsList.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: DataTable(
+                      columns: const [
+                        DataColumn(label: Text('Item', style: TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(label: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(label: Text('Priority', style: TextStyle(fontWeight: FontWeight.bold))),
+                      ],
+                      rows: _itemsList.where((item) {
+                        final name = item['project']?['name']?.toString().toLowerCase() ?? '';
+                        final matchesSearch = name.contains(_searchQuery);
+                        final quantity = int.tryParse(item['project']?['quantity']?.toString() ?? '0') ?? 0;
+                        final status = quantity < 10 ? 'Needed' : 'Not Necessary';
+                        final matchesStatus = _selectedStatus == null || 
+                                            _selectedStatus == "All" || 
+                                            _selectedStatus == status;
+                        return matchesSearch && matchesStatus;
+                      }).map((item) {
+                        final project = item['project'] ?? {};
+                        final quantity = int.tryParse(project['quantity']?.toString() ?? '0') ?? 0;
+                        final status = quantity < 10 ? 'Needed' : 'Not Necessary';
+                        final priority = getPriority(quantity);
+
+                        return DataRow(
+                          cells: [
+                            DataCell(Text(project['name']?.toString() ?? '')),
+                            DataCell(Text(quantity.toString())),
+                            DataCell(Text(status)),
+                            DataCell(Text(priority)),
+                          ],
+                        );
+                      }).toList(),
                     ),
                   ),
+                ] else ...[
+                  const Padding(
+                    padding: EdgeInsets.only(top: 16.0),
+                    child: Text('No items found for this disaster.', style: TextStyle(fontSize: 16)),
+                  ),
+                ],
+
                 const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () {
-                   Navigator.pushNamed(context, '/donations');
-                  },
-                  style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.all(
-                      Colors.green.shade400,
-                    ), // Green color for button
-                  ),
-                  child: const Text('Special Donations'),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    if (_selectedDisasterId != null) {
-                      Navigator.pushNamed(
-                        context,
-                        '/public-donation',
-                        arguments: {
-                          'disasterId': _selectedDisasterId,
-                        }, 
-                      );
-                    } else {
-                      // Optionally show a message if no disaster is selected
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please select a disaster first.'),
-                        ),
-                      );
-                    }
-                  },
-                  style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.all(
-                      Colors.green.shade400,
-                    ), // Green color for button
-                  ),
-                  child: const Text('Donations'),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => Navigator.pushNamed(context, '/donations'),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade400),
+                      child: const Text('Special Donations'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (_selectedDisasterId != null) {
+                          Navigator.pushNamed(
+                            context,
+                            '/public-donation',
+                            arguments: {'disasterId': _selectedDisasterId},
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Please select a disaster first.')),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade400),
+                      child: const Text('Donations'),
+                    ),
+                  ],
                 ),
               ],
             ],

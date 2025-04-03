@@ -47,6 +47,7 @@ import 'package:resq/screens/notice_display_screen.dart';
 import 'package:resq/screens/collectionpoint_volunteer_management.dart';
 import 'package:resq/screens/view_notice.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:resq/screens/loan_listing.dart';
 
 // Initialize the FlutterLocalNotificationsPlugin instance
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -354,6 +355,13 @@ class MyApp extends StatelessWidget {
               child: CamproleCreation(),
             );
 
+        break;
+      case '/loan-list':
+        builder =
+            (context) => AuthRoute(
+              requiredRoles: ['admin', 'stat'],
+              child: LoanListingPage(),
+            );
         break;
       case '/public-donation':
         final args = settings.arguments as dynamic?;

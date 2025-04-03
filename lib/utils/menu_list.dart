@@ -149,6 +149,12 @@ final List<Map<String, dynamic>> menuData = [
     'route': '/collectionpoint-settings',
     'roles': ['collectionPointAdmin'],
   },
+  {
+    'title':'loan list',
+    'icon': Icons.list,
+    'route': '/loan-list',
+    'roles': ['stat','admin'],
+  },
 ];
 
 List<MenuItem> menuItems =
