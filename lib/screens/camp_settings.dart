@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
 
+
 class CampSettingsScreen extends StatefulWidget {
   @override
   _CampSettingsScreenState createState() => _CampSettingsScreenState();
@@ -41,6 +42,8 @@ class _CampSettingsScreenState extends State<CampSettingsScreen> {
       });
     }
   }
+
+
 
   void _updateContactInfo() {
     setState(() {
