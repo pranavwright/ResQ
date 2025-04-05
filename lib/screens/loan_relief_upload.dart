@@ -3,16 +3,12 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:permission_handler/permission_handler.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_file/open_file.dart';
 
 class LoanReliefUploadScreen extends StatefulWidget {
-  final bool isSuperAdmin;
-  
-  const LoanReliefUploadScreen({
-    Key? key, 
-    this.isSuperAdmin = false
-  }) : super(key: key);
+  const LoanReliefUploadScreen({Key? key}) : super(key: key);
 
   @override
   _LoanReliefUploadScreenState createState() => _LoanReliefUploadScreenState();
@@ -25,7 +21,7 @@ class _LoanReliefUploadScreenState extends State<LoanReliefUploadScreen> {
   File? _selectedFile;
   bool _isEditing = false;
   
-  // Template instructions data
+  // Template data
   List<String> _applicationSteps = [
     'Download the Excel template below',
     'Fill in your loan information exactly as shown in the guide',
@@ -54,12 +50,7 @@ class _LoanReliefUploadScreenState extends State<LoanReliefUploadScreen> {
     {'Column': 'Disaster Zone', 'Data Type': 'Text', 'Example': 'DZ-2025-003'},
     {'Column': 'Relief Type Requested', 'Data Type': 'Text (FULL/HALF)', 'Example': 'HALF'},
   ];
-  
-  // Controllers for editing
-  final List<TextEditingController> _stepControllers = [];
-  final List<TextEditingController> _noteControllers = [];
-  final List<Map<String, TextEditingController>> _formatControllers = [];
-  
+
   @override
   void initState() {
     super.initState();
@@ -85,7 +76,7 @@ class _LoanReliefUploadScreenState extends State<LoanReliefUploadScreen> {
       });
     }
     
-    // Load format guide (more complex, stored as JSON)
+    // Load format guide
     final formatJsonList = prefs.getStringList('templateFormat');
     if (formatJsonList != null && formatJsonList.isNotEmpty) {
       setState(() {
@@ -102,75 +93,24 @@ class _LoanReliefUploadScreenState extends State<LoanReliefUploadScreen> {
         }).toList();
       });
     }
-    
-    // Initialize controllers
-    _initializeControllers();
-  }
-  
-  void _initializeControllers() {
-    // Clear existing controllers
-    for (var controller in _stepControllers) {
-      controller.dispose();
-    }
-    for (var controller in _noteControllers) {
-      controller.dispose();
-    }
-    for (var controllerMap in _formatControllers) {
-      controllerMap.values.forEach((controller) => controller.dispose());
-    }
-    
-    _stepControllers.clear();
-    _noteControllers.clear();
-    _formatControllers.clear();
-    
-    // Initialize step controllers
-    for (var step in _applicationSteps) {
-      _stepControllers.add(TextEditingController(text: step));
-    }
-    
-    // Initialize note controllers
-    for (var note in _importantNotes) {
-      _noteControllers.add(TextEditingController(text: note));
-    }
-    
-    // Initialize format controllers
-    for (var format in _formatGuide) {
-      _formatControllers.add({
-        'Column': TextEditingController(text: format['Column']),
-        'Data Type': TextEditingController(text: format['Data Type']),
-        'Example': TextEditingController(text: format['Example']),
-      });
-    }
   }
   
   Future<void> _saveTemplateData() async {
     final prefs = await SharedPreferences.getInstance();
     
     // Save application steps
-    List<String> updatedSteps = _stepControllers.map((controller) => controller.text).toList();
-    await prefs.setStringList('templateSteps', updatedSteps);
+    await prefs.setStringList('templateSteps', _applicationSteps);
     
     // Save important notes
-    List<String> updatedNotes = _noteControllers.map((controller) => controller.text).toList();
-    await prefs.setStringList('templateNotes', updatedNotes);
+    await prefs.setStringList('templateNotes', _importantNotes);
     
     // Save format guide
-    List<String> formatStrings = _formatControllers.map((controllerMap) {
-      return '${controllerMap['Column']!.text}|${controllerMap['Data Type']!.text}|${controllerMap['Example']!.text}';
+    List<String> formatStrings = _formatGuide.map((row) {
+      return '${row['Column']}|${row['Data Type']}|${row['Example']}';
     }).toList();
     await prefs.setStringList('templateFormat', formatStrings);
     
-    // Update state
     setState(() {
-      _applicationSteps = updatedSteps;
-      _importantNotes = updatedNotes;
-      _formatGuide = List.generate(_formatControllers.length, (index) {
-        return {
-          'Column': _formatControllers[index]['Column']!.text,
-          'Data Type': _formatControllers[index]['Data Type']!.text,
-          'Example': _formatControllers[index]['Example']!.text,
-        };
-      });
       _isEditing = false;
     });
     
@@ -182,33 +122,65 @@ class _LoanReliefUploadScreenState extends State<LoanReliefUploadScreen> {
     );
   }
 
-  Future<void> _downloadTemplate() async {
+ Future<void> _downloadTemplate() async {
+  try {
     // Request storage permission
-    var status = await Permission.storage.request();
-    if (status.isGranted) {
-      // In a real app, you would download the file
-      // For demonstration, we'll just show a success message
+    final status = await Permission.storage.request();
+    if (!status.isGranted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Template downloaded to Downloads folder'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      
-      // In a real implementation, you would use:
-      // final Uri url = Uri.parse('https://yourserver.com/template.xlsx');
-      // if (await canLaunchUrl(url)) {
-      //   await launchUrl(url);
-      // }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Permission denied to download file'),
+          content: Text('Storage permission denied'),
           backgroundColor: Colors.red,
         ),
       );
+      return;
     }
+
+    // Get the download directory
+    Directory? directory;
+    if (Platform.isAndroid) {
+      directory = await getExternalStorageDirectory();
+      directory = Directory('${directory?.path}/Download');
+    } else if (Platform.isIOS) {
+      directory = await getApplicationDocumentsDirectory();
+    }
+
+    if (!await directory!.exists()) {
+      await directory.create(recursive: true);
+    }
+
+    // Create sample Excel content (in real app, use a proper template)
+    const String templateContent = '''
+Loan ID,Borrower Name,Borrower ID,Lender Name,Original Loan Amount,Current Outstanding,Loan Start Date,Property Address,Disaster Zone,Relief Type Requested
+LOAN-2025-001,John Smith,ID12345678,First National Bank,50000,35000,01/15/2023,123 Main St, City,DZ-2025-003,HALF
+''';
+
+    // Save the file
+    final filePath = '${directory.path}/Loan_Relief_Template_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+    final File file = File(filePath);
+    await file.writeAsString(templateContent);
+
+    // Open the file (optional)
+    await OpenFile.open(filePath);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Template downloaded to: $filePath'),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 5),
+      ),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Failed to download template: $e'),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 5),
+      ),
+    );
+    debugPrint('Download error: $e');
   }
+}
 
   Future<void> _pickExcelFile() async {
     try {
@@ -247,10 +219,8 @@ class _LoanReliefUploadScreenState extends State<LoanReliefUploadScreen> {
       _hasError = false;
     });
 
-    // Simulate file upload
     await Future.delayed(const Duration(seconds: 2));
 
-    // Check file extension to make sure it's xlsx
     if (path.extension(_selectedFile!.path).toLowerCase() != '.xlsx') {
       setState(() {
         _isUploading = false;
@@ -260,8 +230,6 @@ class _LoanReliefUploadScreenState extends State<LoanReliefUploadScreen> {
       return;
     }
 
-    // In a real app, you would validate and upload the file to your server here
-    // For this demo, we'll just simulate a successful upload
     setState(() {
       _isUploading = false;
       _uploadStatus = 'File uploaded successfully! Your application is being processed.';
@@ -271,49 +239,56 @@ class _LoanReliefUploadScreenState extends State<LoanReliefUploadScreen> {
   
   void _addStep() {
     setState(() {
-      _stepControllers.add(TextEditingController(text: 'New step'));
+      _applicationSteps.add('New step');
     });
   }
   
   void _removeStep(int index) {
-    if (_stepControllers.length > 1) {
+    if (_applicationSteps.length > 1) {
       setState(() {
-        _stepControllers[index].dispose();
-        _stepControllers.removeAt(index);
+        _applicationSteps.removeAt(index);
       });
     }
   }
   
   void _addNote() {
     setState(() {
-      _noteControllers.add(TextEditingController(text: 'New note'));
+      _importantNotes.add('New note');
     });
   }
   
   void _removeNote(int index) {
-    if (_noteControllers.length > 1) {
+    if (_importantNotes.length > 1) {
       setState(() {
-        _noteControllers[index].dispose();
-        _noteControllers.removeAt(index);
+        _importantNotes.removeAt(index);
       });
     }
   }
   
   void _addFormatRow() {
     setState(() {
-      _formatControllers.add({
-        'Column': TextEditingController(text: 'New Column'),
-        'Data Type': TextEditingController(text: 'Text'),
-        'Example': TextEditingController(text: 'Example'),
+      _formatGuide.add({
+        'Column': 'New Column',
+        'Data Type': 'Text',
+        'Example': 'Example',
       });
     });
   }
   
   void _removeFormatRow(int index) {
-    if (_formatControllers.length > 1) {
+    if (_formatGuide.length > 1) {
       setState(() {
-        _formatControllers[index].values.forEach((controller) => controller.dispose());
-        _formatControllers.removeAt(index);
+        _formatGuide.removeAt(index);
+      });
+    }
+  }
+
+  void _toggleEditMode() {
+    if (_isEditing) {
+      _saveTemplateData();
+    } else {
+      setState(() {
+        _isEditing = true;
       });
     }
   }
@@ -324,23 +299,13 @@ class _LoanReliefUploadScreenState extends State<LoanReliefUploadScreen> {
       appBar: AppBar(
         title: const Text('Disaster Relief Loan Assistance'),
         backgroundColor: Colors.blue[800],
-        actions: widget.isSuperAdmin ? [
-          // Admin toggle edit mode button
+        actions: [
           IconButton(
             icon: Icon(_isEditing ? Icons.save : Icons.edit),
-            onPressed: () {
-              if (_isEditing) {
-                _saveTemplateData();
-              } else {
-                setState(() {
-                  _isEditing = true;
-                  _initializeControllers();
-                });
-              }
-            },
-            tooltip: _isEditing ? 'Save changes' : 'Edit template instructions',
+            onPressed: _toggleEditMode,
+            tooltip: _isEditing ? 'Save changes' : 'Edit template',
           ),
-        ] : null,
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -375,62 +340,65 @@ class _LoanReliefUploadScreenState extends State<LoanReliefUploadScreen> {
                         ),
                         const SizedBox(height: 12),
                         
-                        // Edit mode: steps with text fields
-                        if (_isEditing) ...[
-                          ...List.generate(_stepControllers.length, (index) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 24,
-                                    height: 24,
-                                    alignment: Alignment.center,
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue[700],
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Text(
-                                      (index + 1).toString(),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                        // Steps list
+                        ...List.generate(_applicationSteps.length, (index) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 24,
+                                  height: 24,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue[700],
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Text(
+                                    (index + 1).toString(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _stepControllers[index],
-                                      decoration: const InputDecoration(
-                                        border: OutlineInputBorder(),
-                                      ),
-                                    ),
-                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _isEditing
+                                      ? TextField(
+                                          controller: TextEditingController(text: _applicationSteps[index]),
+                                          onChanged: (value) => _applicationSteps[index] = value,
+                                          decoration: const InputDecoration(
+                                            border: OutlineInputBorder(),
+                                          ),
+                                        )
+                                      : Text(
+                                          _applicationSteps[index],
+                                          style: const TextStyle(fontSize: 16),
+                                        ),
+                                ),
+                                if (_isEditing)
                                   IconButton(
-                                    icon: const Icon(Icons.delete),
+                                    icon: const Icon(Icons.delete, color: Colors.red),
                                     onPressed: () => _removeStep(index),
-                                    color: Colors.red,
                                   ),
-                                ],
+                              ],
+                            ),
+                          );
+                        }),
+                        if (_isEditing)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: ElevatedButton.icon(
+                              onPressed: _addStep,
+                              icon: const Icon(Icons.add),
+                              label: const Text('Add Step'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue[700],
                               ),
-                            );
-                          }),
-                          ElevatedButton.icon(
-                            onPressed: _addStep,
-                            icon: const Icon(Icons.add),
-                            label: const Text('Add Step'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue[700],
                             ),
                           ),
-                        ]
-                        // View mode: display steps
-                        else ...[
-                          ...List.generate(_applicationSteps.length, (index) {
-                            return buildStepItem(index + 1, _applicationSteps[index]);
-                          }),
-                        ],
                       ],
                     ),
                   ),
@@ -470,16 +438,73 @@ class _LoanReliefUploadScreenState extends State<LoanReliefUploadScreen> {
                         const Text('Your Excel file must follow this exact format:'),
                         const SizedBox(height: 16),
                         
-                        // Format table (editable or view-only)
-                        _isEditing ? buildEditableFormatTable() : buildFormatTable(),
-                        
+                        // Format table
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
+                            columns: [
+                              const DataColumn(label: Text('Column')),
+                              const DataColumn(label: Text('Data Type')),
+                              const DataColumn(label: Text('Example')),
+                              if (_isEditing) const DataColumn(label: Text('Actions')),
+                            ],
+                            rows: List.generate(_formatGuide.length, (index) {
+                              final row = _formatGuide[index];
+                              return DataRow(cells: [
+                                DataCell(
+                                  _isEditing
+                                      ? TextField(
+                                          controller: TextEditingController(text: row['Column']),
+                                          onChanged: (value) => row['Column'] = value,
+                                          decoration: const InputDecoration(
+                                            border: OutlineInputBorder(),
+                                            contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                                          ),
+                                        )
+                                      : Text(row['Column'] ?? ''),
+                                ),
+                                DataCell(
+                                  _isEditing
+                                      ? TextField(
+                                          controller: TextEditingController(text: row['Data Type']),
+                                          onChanged: (value) => row['Data Type'] = value,
+                                          decoration: const InputDecoration(
+                                            border: OutlineInputBorder(),
+                                            contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                                          ),
+                                        )
+                                      : Text(row['Data Type'] ?? ''),
+                                ),
+                                DataCell(
+                                  _isEditing
+                                      ? TextField(
+                                          controller: TextEditingController(text: row['Example']),
+                                          onChanged: (value) => row['Example'] = value,
+                                          decoration: const InputDecoration(
+                                            border: OutlineInputBorder(),
+                                            contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                                          ),
+                                        )
+                                      : Text(row['Example'] ?? ''),
+                                ),
+                                if (_isEditing)
+                                  DataCell(
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.red),
+                                      onPressed: () => _removeFormatRow(index),
+                                    ),
+                                  ),
+                              ]);
+                            }),
+                          ),
+                        ),
                         if (_isEditing)
                           Padding(
                             padding: const EdgeInsets.only(top: 8.0),
                             child: ElevatedButton.icon(
                               onPressed: _addFormatRow,
                               icon: const Icon(Icons.add),
-                              label: const Text('Add Row'),
+                              label: const Text('Add Column'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.blue[700],
                               ),
@@ -495,52 +520,54 @@ class _LoanReliefUploadScreenState extends State<LoanReliefUploadScreen> {
                         ),
                         const SizedBox(height: 8),
                         
-                        // Edit mode: notes with text fields
-                        if (_isEditing) ...[
-                          ...List.generate(_noteControllers.length, (index) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  const Text('• ', 
-                                    style: TextStyle(
-                                      fontSize: 16, 
-                                      fontWeight: FontWeight.bold
-                                    )
-                                  ),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _noteControllers[index],
-                                      decoration: const InputDecoration(
-                                        border: OutlineInputBorder(),
-                                      ),
-                                    ),
-                                  ),
+                        // Notes list
+                        ...List.generate(_importantNotes.length, (index) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                const Text('• ', 
+                                  style: TextStyle(
+                                    fontSize: 16, 
+                                    fontWeight: FontWeight.bold
+                                  )
+                                ),
+                                Expanded(
+                                  child: _isEditing
+                                      ? TextField(
+                                          controller: TextEditingController(text: _importantNotes[index]),
+                                          onChanged: (value) => _importantNotes[index] = value,
+                                          decoration: const InputDecoration(
+                                            border: OutlineInputBorder(),
+                                          ),
+                                        )
+                                      : Text(
+                                          _importantNotes[index],
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                ),
+                                if (_isEditing)
                                   IconButton(
-                                    icon: const Icon(Icons.delete),
+                                    icon: const Icon(Icons.delete, color: Colors.red),
                                     onPressed: () => _removeNote(index),
-                                    color: Colors.red,
                                   ),
-                                ],
+                              ],
+                            ),
+                          );
+                        }),
+                        if (_isEditing)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: ElevatedButton.icon(
+                              onPressed: _addNote,
+                              icon: const Icon(Icons.add),
+                              label: const Text('Add Note'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue[700],
                               ),
-                            );
-                          }),
-                          ElevatedButton.icon(
-                            onPressed: _addNote,
-                            icon: const Icon(Icons.add),
-                            label: const Text('Add Note'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue[700],
                             ),
                           ),
-                        ]
-                        // View mode: display notes
-                        else ...[
-                          ...List.generate(_importantNotes.length, (index) {
-                            return buildBulletPoint(_importantNotes[index]);
-                          }),
-                        ],
                       ],
                     ),
                   ),
@@ -645,168 +672,6 @@ class _LoanReliefUploadScreenState extends State<LoanReliefUploadScreen> {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget buildStepItem(int number, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Colors.blue[700],
-              shape: BoxShape.circle,
-            ),
-            child: Text(
-              number.toString(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(fontSize: 16),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildBulletPoint(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('• ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          Expanded(
-            child: Text(text, style: const TextStyle(fontSize: 14)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildFormatTable() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        columns: const [
-          DataColumn(label: Text('Column')),
-          DataColumn(label: Text('Data Type')),
-          DataColumn(label: Text('Example')),
-        ],
-        rows: _formatGuide.map((row) {
-          return DataRow(cells: [
-            DataCell(Text(row['Column'] ?? '')),
-            DataCell(Text(row['Data Type'] ?? '')),
-            DataCell(Text(row['Example'] ?? '')),
-          ]);
-        }).toList(),
-      ),
-    );
-  }
-  
-  Widget buildEditableFormatTable() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        columns: const [
-          DataColumn(label: Text('Column')),
-          DataColumn(label: Text('Data Type')),
-          DataColumn(label: Text('Example')),
-          DataColumn(label: Text('Action')),
-        ],
-        rows: List.generate(_formatControllers.length, (index) {
-          return DataRow(cells: [
-            DataCell(
-              TextField(
-                controller: _formatControllers[index]['Column'],
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                ),
-              ),
-            ),
-            DataCell(
-              TextField(
-                controller: _formatControllers[index]['Data Type'],
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                ),
-              ),
-            ),
-            DataCell(
-              TextField(
-                controller: _formatControllers[index]['Example'],
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                ),
-              ),
-            ),
-            DataCell(
-              IconButton(
-                icon: const Icon(Icons.delete, color: Colors.red),
-                onPressed: () => _removeFormatRow(index),
-              ),
-            ),
-          ]);
-        }),
-      ),
-    );
-  }
-  
-  @override
-  void dispose() {
-    // Dispose all controllers
-    for (var controller in _stepControllers) {
-      controller.dispose();
-    }
-    for (var controller in _noteControllers) {
-      controller.dispose();
-    }
-    for (var controllerMap in _formatControllers) {
-      controllerMap.values.forEach((controller) => controller.dispose());
-    }
-    super.dispose();
-  }
-}
-
-// Example of how to use the widget with superadmin flag
-class MainNavigationScreen extends StatelessWidget {
-  final bool isSuperAdmin = true; // This would be determined by your auth system
-  
-  const MainNavigationScreen({Key? key}) : super(key: key);
-  
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Disaster Relief System')),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => LoanReliefUploadScreen(isSuperAdmin: isSuperAdmin),
-              ),
-            );
-          },
-          child: const Text('Go to Loan Relief Upload'),
         ),
       ),
     );
