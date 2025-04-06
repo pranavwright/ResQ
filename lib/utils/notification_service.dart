@@ -17,9 +17,9 @@ class NotificationService {
   static Future<Map<String, dynamic>?> getPendingNotification() async {
     final String? notificationData = await AuthService().readFromStorage(_pendingNotificationKey);
     
-    if (notificationData != null) {
+    if (notificationData != null && notificationData.isNotEmpty ) {
       await AuthService().deleteFromStorage(_pendingNotificationKey);
-      return jsonDecode(notificationData);
+      return  jsonDecode(notificationData) ;
     }
     return null;
   }

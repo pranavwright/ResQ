@@ -126,7 +126,7 @@ class _LoanReliefUploadScreenState extends State<LoanReliefUploadScreen> {
   try {
     // Request storage permission
     final status = await Permission.storage.request();
-    if (!status.isGranted) {
+    if (status.isGranted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Storage permission denied'),

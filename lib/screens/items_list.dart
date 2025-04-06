@@ -84,7 +84,7 @@ class _ItemsListState extends State<ItemsList> {
       _error = null;
     });
     try {
-      final response = await TokenLessHttp().get('disaster/getDisasterData')
+      final response = await TokenLessHttp().get('/disaster/getDisasters')
           .timeout(const Duration(seconds: 10));
       
       if (response is Map && response['_id'] != null) {
@@ -116,7 +116,7 @@ class _ItemsListState extends State<ItemsList> {
     
     try {
       final response = await TokenLessHttp().get(
-        'disaster/getDisasterData?id=$_selectedDisasterId'
+        '/disaster/getDisasterData?disasterId=$_selectedDisasterId'
       ).timeout(const Duration(seconds: 10));
       
       if (response is Map) {
@@ -153,7 +153,7 @@ class _ItemsListState extends State<ItemsList> {
     
     try {
       final response = await TokenLessHttp().get(
-        'ai/analyze-resources?disasterId=$_selectedDisasterId'
+        '/ai/analyze-resources?disasterId=$_selectedDisasterId'
       ).timeout(const Duration(seconds: 10));
       
       if (response is Map && response['data'] is Map) {

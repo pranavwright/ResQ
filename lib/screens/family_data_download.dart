@@ -50,17 +50,17 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
 
   // Track visibility of columns
   Map<String, bool> columnVisibility = {};
-@override
-void initState() {
-  super.initState();
-  _fetchFamilies();
-  
-  // Initialize columnVisibility for all headers
-  final allHeaders = [..._getFamilyDataHeaders(), ..._getMemberDataHeaders()];
-  columnVisibility = {
-    for (var header in allHeaders) header: true, // Default all to visible
-  };
-}
+  @override
+  void initState() {
+    super.initState();
+    _fetchFamilies();
+
+    // Initialize columnVisibility for all headers
+    final allHeaders = [..._getFamilyDataHeaders(), ..._getMemberDataHeaders()];
+    columnVisibility = {
+      for (var header in allHeaders) header: true, // Default all to visible
+    };
+  }
 
   Future<void> _fetchFamilies() async {
     try {
@@ -440,7 +440,7 @@ void initState() {
   String? _getFamilyDataValue(NeedAssessmentData data, String header) {
     switch (header) {
       case 'Family ID':
-        return data.householdHead; // Handled in the loop.
+        return data.uniqueHouseholdId; // Handled in the loop.
       case 'Village/Ward':
         return data.villageWard;
       case 'House Number':
@@ -981,7 +981,7 @@ void initState() {
               const SizedBox(height: 20),
 
               // Column visibility toggles
-   ExpansionTile(
+              ExpansionTile(
                 title: const Text(
                   'Select Columns to Display',
                   style: TextStyle(fontWeight: FontWeight.bold),
@@ -999,7 +999,9 @@ void initState() {
                       );
                     }).toList(),
               ),
-              const SizedBox(height: 20),    // Family-level filters as ExpansionTile
+              const SizedBox(
+                height: 20,
+              ), // Family-level filters as ExpansionTile
               ExpansionTile(
                 title: const Text(
                   'Family-Level Filters',
@@ -1071,17 +1073,19 @@ void initState() {
                       });
                     },
                   ),
-                  _buildCheckboxRow('Received Allowance', receivedAllowanceFilter, (
-                    value,
-                  ) {
-                    setState(() {
-                      receivedAllowanceFilter = value;
-                    });
-                  }),
+                  _buildCheckboxRow(
+                    'Received Allowance',
+                    receivedAllowanceFilter,
+                    (value) {
+                      setState(() {
+                        receivedAllowanceFilter = value;
+                      });
+                    },
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
- ExpansionTile(
+              ExpansionTile(
                 title: const Text(
                   'Individual-Level Filters',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -1193,16 +1197,17 @@ void initState() {
               ),
               const SizedBox(height: 10),
               // Data table
-             SingleChildScrollView(
-  scrollDirection: Axis.horizontal,
-  child: DataTable(
-    columns: allHeaders
-        .where((header) => columnVisibility[header] == true)
-        .map((header) => DataColumn(label: Text(header)))
-        .toList(),
-    rows: _buildDataRows(allHeaders),
-  ),
-),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columns:
+                      allHeaders
+                          .where((header) => columnVisibility[header] == true)
+                          .map((header) => DataColumn(label: Text(header)))
+                          .toList(),
+                  rows: _buildDataRows(allHeaders),
+                ),
+              ),
               const SizedBox(height: 20),
               if (filteredFamilies.isEmpty && !_isLoading)
                 Center(child: Text('No family data available')),
@@ -1213,26 +1218,50 @@ void initState() {
     );
   }
 
-
   List<DataRow> _buildDataRows(List<String> allHeaders) {
-  // First filter the headers to only include visible ones
-  final visibleHeaders = allHeaders.where((header) => columnVisibility[header] ?? true).toList();
-
-  return filteredFamilies.map((family) {
-    final data = family.data;
-    return DataRow(
-      cells: visibleHeaders.map((header) {  // Only use visible headers here
-        return DataCell(
-          Text(
-            data != null 
-                ? _getFamilyDataValue(data, header) ?? 'N/A'
-                : 'N/A',
-          ),
-        );
-      }).toList(),
-    );
-  }).toList();
-}
+    List<DataRow> rows = [];
+    for (var family in filteredFamilies) {
+      final data = family.data;
+      if (data != null) {
+        if ((data.members?.isEmpty ?? true)) {
+          // Add a single row for family with no members
+          rows.add(
+            DataRow(
+              onSelectChanged: (_) => _showFamilyDetails(family),
+              cells:
+                  allHeaders
+                      .where((header) => columnVisibility[header] == true)
+                      .map((header) {
+                        final value = _getFamilyDataValue(data, header);
+                        return DataCell(Text(value ?? 'N/A'));
+                      })
+                      .toList(),
+            ),
+          );
+        } else {
+          // Add rows for each family member
+          for (var member in data.members ?? []) {
+            rows.add(
+              DataRow(
+                onSelectChanged: (_) => _showFamilyDetails(family),
+                cells:
+                    allHeaders
+                        .where((header) => columnVisibility[header] == true)
+                        .map((header) {
+                          final value =
+                              _getMemberDataValue(member, header) ??
+                              _getFamilyDataValue(data, header);
+                          return DataCell(Text(value ?? 'N/A'));
+                        })
+                        .toList(),
+              ),
+            );
+          }
+        }
+      }
+    }
+    return rows;
+  }
 
   Widget _buildFilterDropdown(
     String label,

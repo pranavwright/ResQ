@@ -2,7 +2,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConstants {
   static const String baseUrl = "https://api.realsq.tech"; 
-  // static const String baseUrl = "http://192.168.1.48:2900"; 
+  // static const String baseUrl = "http://192.168.1.33:2900"; 
   
   // Get API key from .env file
   // Get Maps API key with fallback

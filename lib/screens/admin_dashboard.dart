@@ -73,7 +73,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Future<void> _fetchNotices() async {
     try {
-      final response = await TokenHttp().get('/notice/allNotice');
+      final response = await TokenHttp().get('/notice/allNotice?disasterId=${AuthService().getDisasterId()}');
       
       if (response is Map && response.containsKey('error')) {
         if (response['statusCode'] == 404) {
@@ -136,7 +136,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Future<void> _fetchOfficerMetrics() async {
     try {
-      final response = await TokenHttp().get('/settings/getOfficerMetrics');
+      final response = await TokenHttp().get('/settings/getOfficerMetrics?disasterId=${AuthService().getDisasterId()}');
       
       if (response is Map && response.containsKey('error')) {
         if (response['statusCode'] == 404) {
@@ -194,7 +194,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Future<void> _fetchResourceDistribution() async {
     try {
-      final response = await TokenHttp().get('/settings/getResourceDistribution');
+      final response = await TokenHttp().get('/settings/getResourceDistribution?disasterId=${AuthService().getDisasterId()}');
       
       if (response is Map && response.containsKey('error')) {
         if (response['statusCode'] == 404) {
@@ -239,7 +239,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Future<void> _fetchDisasterTimeline() async {
     try {
-      final response = await TokenHttp().get('/getDisasterTimeline');
+      final response = await TokenHttp().get('/settings/getDisasterTimeLine?disasterId=${AuthService().getDisasterId()}');
       
       if (response is Map && response.containsKey('error')) {
         if (response['statusCode'] == 404) {
