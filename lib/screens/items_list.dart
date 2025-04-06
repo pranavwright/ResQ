@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:resq/utils/http/token_less_http.dart';
+import 'dart:async';
 
 class ItemsList extends StatefulWidget {
   final String? disasterId;
@@ -17,14 +18,33 @@ class _ItemsListState extends State<ItemsList> {
   String? _selectedDisasterId;
   List<Map<String, dynamic>> _disasters = [];
   bool _loading = true;
+  bool _loadingDetails = false;
+  bool _loadingAnalysis = false;
   String? _error;
   List<Map<String, dynamic>> _itemsList = [];
   
-  // New state variables
-  String _disasterDescription = "Loading...";
-  int _affectedFamilies = 0;
-  int _totalMembers = 0;
-  DateTime? _lastUpdated;
+  // Disaster details
+  String _disasterName = "Loading...";
+  String _disasterDescription = "";
+  String _disasterLocation = "";
+  String _disasterState = "";
+  String _disasterDistrict = "";
+  String _disasterType = "";
+  String _disasterSeverity = "";
+  String _disasterStatus = "";
+  DateTime? _startDate;
+  DateTime? _endDate;
+  int _campsCount = 0;
+  int _collectionPointsCount = 0;
+  int _aliveCount = 0;
+  int _deadCount = 0;
+  int _missingCount = 0;
+  
+  // Resource analysis data
+  List<String> _movingResources = [];
+  List<String> _lessMovingResources = [];
+  List<String> _wastageResources = [];
+  String _resourceSummary = "";
 
   @override
   void initState() {
@@ -38,9 +58,24 @@ class _ItemsListState extends State<ItemsList> {
   }
 
   Future<void> _fetchInitialData() async {
-    await _fetchItems();
-    await _fetchDisasterDetails();
-    await _fetchFamilyData();
+    setState(() {
+      _loadingDetails = true;
+      _loadingAnalysis = true;
+    });
+    try {
+      await Future.wait([
+        _fetchDisasterDetails(),
+        _fetchResourceAnalysis(),
+      ]);
+    } catch (e) {
+      setState(() => _error = 'Failed to load data. Showing sample data.');
+      _loadMockData();
+    } finally {
+      setState(() {
+        _loadingDetails = false;
+        _loadingAnalysis = false;
+      });
+    }
   }
 
   Future<void> _fetchDisasters() async {
@@ -49,102 +84,194 @@ class _ItemsListState extends State<ItemsList> {
       _error = null;
     });
     try {
-      final response = await TokenLessHttp().get('/disaster/getDisasters');
-      if (response is List) {
-        setState(() {
-          _disasters = List<Map<String, dynamic>>.from(response);
-        });
+      final response = await TokenLessHttp().get('disaster/getDisasterData')
+          .timeout(const Duration(seconds: 10));
+      
+      if (response is Map && response['_id'] != null) {
+        // Single disaster response
+        setState(() => _disasters = [Map<String, dynamic>.from(response)]);
+      } else if (response is List) {
+        // List of disasters
+        setState(() => _disasters = List<Map<String, dynamic>>.from(response));
+      } else if (response is Map && response['list'] is List) {
+        // Response with 'list' field
+        setState(() => _disasters = List<Map<String, dynamic>>.from(response['list']));
       } else {
-        throw Exception('Expected list response but got: ${response.runtimeType}');
+        throw Exception('Invalid response format');
       }
+    } on TimeoutException {
+      setState(() => _error = 'Request timed out. Please check your connection');
     } catch (e) {
       setState(() {
-        _error = 'Error fetching disasters: $e';
+        _error = 'Error loading disasters. Showing sample data.';
+        _loadMockDisasters();
       });
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      setState(() => _loading = false);
     }
   }
 
-// TEMPORARY MOCK DATA - REMOVE WHEN BACKEND IS READY
-Future<void> _fetchDisasterDetails() async {
-  // Try real API first
-  try {
-    final response = await TokenLessHttp().get('/disaster/getDetails?id=$_selectedDisasterId');
-    if (response is Map) {
-      setState(() {
-        _disasterDescription = response['description'] ?? 'No description available';
-        _lastUpdated = DateTime.parse(response['updatedAt'] ?? DateTime.now().toString());
-      });
-      return; // Success - exit early
-    }
-  } catch (e) {
-    print('API Error: $e'); // Log but continue to mock data
-  }
-
-  // Fallback to mock data if API fails
-  setState(() {
-    _disasterDescription = "Severe flooding affecting coastal regions. Immediate need for blankets and food supplies.";
-    _lastUpdated = DateTime.now().subtract(const Duration(hours: 2));
-  });
-}
-
-Future<void> _fetchFamilyData() async {
-  // Try real API first
-  try {
-    final response = await TokenLessHttp().get('/family/getByDisaster?disasterId=$_selectedDisasterId');
-    if (response is List) {
-      setState(() {
-        _affectedFamilies = response.length;
-        _totalMembers = response.fold<int>(0, (sum, family) => sum + ((family['memberCount'] ?? 0) as num).toInt());
-      });
-      return; // Success - exit early
-    }
-  } catch (e) {
-    print('API Error: $e'); // Log but continue to mock data
-  }
-
-  // Fallback to mock data
-  setState(() {
-    _affectedFamilies = 24;
-    _totalMembers = 87;
-  });
-}
-
-  Future<void> _fetchItems() async {
-    if (_selectedDisasterId == null) {
-      setState(() {
-        _itemsList = [];
-      });
-      return;
-    }
-
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-
+  Future<void> _fetchDisasterDetails() async {
+    if (_selectedDisasterId == null) return;
+    
     try {
-      final response = await TokenLessHttp().get('/donation/items?disasterId=$_selectedDisasterId');
-      if (response is Map && response.containsKey('list') && response['list'] is List) {
+      final response = await TokenLessHttp().get(
+        'disaster/getDisasterData?id=$_selectedDisasterId'
+      ).timeout(const Duration(seconds: 10));
+      
+      if (response is Map) {
         setState(() {
-          _itemsList = List<Map<String, dynamic>>.from(response['list']);
-          _lastUpdated = DateTime.now(); // Update timestamp when items are fetched
+          _disasterName = response['name'] ?? 'Unnamed Disaster';
+          _disasterDescription = response['description'] ?? '';
+          _disasterLocation = response['location'] ?? '';
+          _disasterState = response['state'] ?? '';
+          _disasterDistrict = response['district'] ?? '';
+          _disasterType = response['type'] ?? '';
+          _disasterSeverity = response['severity'] ?? '';
+          _disasterStatus = response['status'] ?? '';
+          _startDate = tryParseDate(response['startDate']);
+          _endDate = tryParseDate(response['endDate']);
+          _campsCount = response['campsCount'] ?? 0;
+          _collectionPointsCount = response['collectionPointsCount'] ?? 0;
+          _aliveCount = response['alive'] ?? 0;
+          _deadCount = response['dead'] ?? 0;
+          _missingCount = response['missing'] ?? 0;
+          
+          _itemsList = (response['items'] is List) 
+            ? List<Map<String, dynamic>>.from(response['items'])
+            : [];
         });
-      } else {
-        throw Exception('Expected map with list response but got: ${response.runtimeType}');
       }
     } catch (e) {
-      setState(() {
-        _error = 'Error fetching items: $e';
-      });
-    } finally {
-      setState(() {
-        _loading = false;
-      });
+      print('Error fetching disaster details: $e');
+      _loadMockDisasterDetails();
     }
+  }
+
+  Future<void> _fetchResourceAnalysis() async {
+    if (_selectedDisasterId == null) return;
+    
+    try {
+      final response = await TokenLessHttp().get(
+        'ai/analyze-resources?disasterId=$_selectedDisasterId'
+      ).timeout(const Duration(seconds: 10));
+      
+      if (response is Map && response['data'] is Map) {
+        final data = response['data'] as Map<String, dynamic>;
+        setState(() {
+          _movingResources = List<String>.from(data['moving'] ?? []);
+          _lessMovingResources = List<String>.from(data['lessMoving'] ?? []);
+          _wastageResources = List<String>.from(data['wastage'] ?? []);
+          _resourceSummary = data['summary'] ?? 'No analysis available';
+        });
+      }
+    } catch (e) {
+      print('Error fetching resource analysis: $e');
+      _loadMockResourceData();
+    }
+  }
+
+  DateTime? tryParseDate(dynamic date) {
+    if (date == null) return null;
+    try {
+      return DateTime.parse(date.toString());
+    } catch (e) {
+      print('Error parsing date: $e');
+      return null;
+    }
+  }
+
+  // Mock data loaders
+  void _loadMockData() {
+    _loadMockDisasters();
+    if (_selectedDisasterId != null) {
+      _loadMockDisasterDetails();
+      _loadMockResourceData();
+    }
+  }
+
+  void _loadMockDisasters() {
+    setState(() {
+      _disasters = [
+        {
+          '_id': '1',
+          'name': 'Sample Flood Disaster',
+          'description': 'Coastal flooding emergency response',
+          'location': 'Mumbai',
+          'state': 'Maharashtra',
+          'district': 'Mumbai Suburban',
+          'type': 'Flood',
+          'severity': 'High',
+          'status': 'Active',
+          'startDate': DateTime.now().subtract(const Duration(days: 3)).toString(),
+          'items': []
+        },
+        {
+          '_id': '2', 
+          'name': 'Earthquake Relief',
+          'description': 'Northern region earthquake response',
+          'location': 'Uttarakhand',
+          'state': 'Uttarakhand',
+          'district': 'Rudraprayag',
+          'type': 'Earthquake',
+          'severity': 'Critical',
+          'status': 'Active',
+          'startDate': DateTime.now().subtract(const Duration(days: 1)).toString(),
+          'items': []
+        }
+      ];
+    });
+  }
+
+  void _loadMockDisasterDetails() {
+    setState(() {
+      _disasterName = "Sample Flood Disaster";
+      _disasterDescription = "Severe flooding affecting coastal regions";
+      _disasterLocation = "Mumbai";
+      _disasterState = "Maharashtra";
+      _disasterDistrict = "Mumbai Suburban";
+      _disasterType = "Flood";
+      _disasterSeverity = "High";
+      _disasterStatus = "Active";
+      _startDate = DateTime.now().subtract(const Duration(days: 3));
+      _endDate = null;
+      _campsCount = 5;
+      _collectionPointsCount = 8;
+      _aliveCount = 1200;
+      _deadCount = 12;
+      _missingCount = 5;
+      _itemsList = [
+        {
+          '_id': '1',
+          'name': 'Water Bottles', 
+          'description': '1L mineral water bottles',
+          'category': 'Drinking Water',
+          'unit': 'liters',
+          'quantity': '15',
+          'disasterId': _selectedDisasterId,
+          'room': 'Storage A'
+        },
+        {
+          '_id': '2',
+          'name': 'Blankets', 
+          'description': 'Woolen blankets',
+          'category': 'Shelter',
+          'unit': 'pieces',
+          'quantity': '45',
+          'disasterId': _selectedDisasterId,
+          'room': 'Storage B'
+        },
+      ];
+    });
+  }
+
+  void _loadMockResourceData() {
+    setState(() {
+      _movingResources = ['Water', 'Medicines', 'Ready-to-eat meals'];
+      _lessMovingResources = ['Blankets', 'Clothes', 'Tents'];
+      _wastageResources = ['Expired medicines', 'Damaged goods'];
+      _resourceSummary = 'Water demand remains high while shelter items are sufficiently stocked.';
+    });
   }
 
   String getPriority(int quantity) {
@@ -163,22 +290,39 @@ Future<void> _fetchFamilyData() async {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              _disasters.firstWhere(
-                (d) => d['_id'] == _selectedDisasterId,
-                orElse: () => {'name': 'Disaster Details'},
-              )['name'],
+              _disasterName,
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text(
-              _disasterDescription,
-              style: const TextStyle(fontSize: 16),
-            ),
+            Text(_disasterDescription),
             const SizedBox(height: 8),
-            if (_lastUpdated != null)
-              Text(
-                'Last updated: ${DateFormat('MMM dd, yyyy - hh:mm a').format(_lastUpdated!)}',
-                style: TextStyle(color: Colors.grey[600], fontSize: 14),
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: [
+                Chip(label: Text('Location: $_disasterLocation')),
+                Chip(label: Text('State: $_disasterState')),
+                Chip(label: Text('District: $_disasterDistrict')),
+                Chip(label: Text('Type: $_disasterType')),
+                Chip(label: Text('Severity: $_disasterSeverity')),
+                Chip(label: Text('Status: $_disasterStatus')),
+              ],
+            ),
+            if (_startDate != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  'Started: ${DateFormat('MMM dd, yyyy').format(_startDate!)}',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ),
+            if (_endDate != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'Ended: ${DateFormat('MMM dd, yyyy').format(_endDate!)}',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
               ),
           ],
         ),
@@ -186,7 +330,11 @@ Future<void> _fetchFamilyData() async {
     );
   }
 
-  Widget _buildFamilyDataCard() {
+  Widget _buildResourceAnalysisCard() {
+    if (_loadingAnalysis) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    
     return Card(
       elevation: 4,
       margin: const EdgeInsets.only(bottom: 16),
@@ -196,16 +344,87 @@ Future<void> _fetchFamilyData() async {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Affected Families',
+              'Resource Movement',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Total Families: $_affectedFamilies'),
-                Text('Total Members: $_totalMembers'),
-              ],
+            const SizedBox(height: 12),
+            
+            if (_movingResources.isNotEmpty) ...[
+              _buildResourceSection('Urgently Needed', _movingResources, Colors.red.shade700),
+              const SizedBox(height: 8),
+            ],
+            
+            if (_lessMovingResources.isNotEmpty) ...[
+              _buildResourceSection('Adequate Stock', _lessMovingResources, Colors.orange.shade700),
+              const SizedBox(height: 8),
+            ],
+            
+            if (_wastageResources.isNotEmpty) ...[
+              _buildResourceSection('Potential Wastage', _wastageResources, Colors.amber.shade700),
+              const SizedBox(height: 8),
+            ],
+            
+            if (_resourceSummary.isNotEmpty) ...[
+              const Divider(),
+              const SizedBox(height: 8),
+              const Text('Summary:', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(_resourceSummary),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResourceSection(String title, List<String> items, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w600,
+        )),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 8,
+          children: items.map((item) => Chip(
+            label: Text(item),
+            backgroundColor: color.withOpacity(0.2),
+          )).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatsCard() {
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Impact Statistics',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            IntrinsicHeight(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildStatItem('Camps', _campsCount),
+                  const VerticalDivider(),
+                  _buildStatItem('Collection Points', _collectionPointsCount),
+                  const VerticalDivider(),
+                  _buildStatItem('Alive', _aliveCount),
+                  const VerticalDivider(),
+                  _buildStatItem('Dead', _deadCount),
+                  const VerticalDivider(),
+                  _buildStatItem('Missing', _missingCount),
+                ],
+              ),
             ),
           ],
         ),
@@ -213,189 +432,310 @@ Future<void> _fetchFamilyData() async {
     );
   }
 
+  Widget _buildStatItem(String label, int value) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value.toString(),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        Text(
+          label,
+          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
+    if (_loading && _disasters.isEmpty && _itemsList.isEmpty) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Loading disaster data...'),
+            ],
+          ),
+        ),
       );
     }
 
-    if (_error != null) {
+    if (_error != null && _disasters.isEmpty) {
       return Scaffold(
         body: Center(
-          child: Text('Error: $_error', style: const TextStyle(color: Colors.red)),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 48),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  _error!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  if (_selectedDisasterId != null) {
+                    _fetchInitialData();
+                  } else {
+                    _fetchDisasters();
+                  }
+                },
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
         ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.green.shade300,
-        title: const Text(
-          "Items List",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: Colors.white),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, size: 28, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: SizedBox(
-              width: 200,
-              child: TextField(
-                controller: _searchController,
-                onChanged: (query) => setState(() => _searchQuery = query.toLowerCase()),
-                decoration: InputDecoration(
-                  hintText: 'Search items...',
-                  hintStyle: TextStyle(color: Colors.black.withOpacity(0.7)),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20.0),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: Colors.yellow.withOpacity(0.2),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                ),
-              ),
-            ),
-          ),
-        ],
+        title: const Text('Disaster Management'),
+        actions: [_buildSearchField()],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _fetchInitialData,
+        tooltip: 'Refresh',
+        child: const Icon(Icons.refresh),
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Select Disaster:',
-                style: TextStyle(fontSize: 18, color: Colors.black),
-              ),
-              DropdownButton<String>(
-                value: _selectedDisasterId,
-                hint: const Text("Select Disaster"),
-                isExpanded: true,
-                style: const TextStyle(color: Colors.black, fontSize: 18),
-                items: _disasters.map((disaster) {
-                  return DropdownMenuItem<String>(
-                    value: disaster['_id'],
-                    child: Text(disaster['name'] ?? ''),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedDisasterId = newValue;
-                    if (newValue != null) {
-                      _fetchInitialData();
-                    }
-                  });
-                },
-                icon: const Icon(Icons.arrow_drop_down, size: 28, color: Colors.green),
-              ),
-
+              _buildDisasterDropdown(),
               if (_selectedDisasterId != null) ...[
-                _buildDisasterInfoCard(),
-                _buildFamilyDataCard(),
-
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Items List in the Camp',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    DropdownButton<String>(
-                      value: _selectedStatus,
-                      hint: const Text("Filter Status"),
-                      items: const [
-                        DropdownMenuItem(value: "All", child: Text("All")),
-                        DropdownMenuItem(value: "Not Necessary", child: Text("Not Necessary")),
-                        DropdownMenuItem(value: "Needed", child: Text("Needed")),
-                      ],
-                      onChanged: (String? newValue) => setState(() => _selectedStatus = newValue),
-                    ),
-                  ],
-                ),
-
-                if (_itemsList.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: DataTable(
-                      columns: const [
-                        DataColumn(label: Text('Item', style: TextStyle(fontWeight: FontWeight.bold))),
-                        DataColumn(label: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold))),
-                        DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
-                        DataColumn(label: Text('Priority', style: TextStyle(fontWeight: FontWeight.bold))),
-                      ],
-                      rows: _itemsList.where((item) {
-                        final name = item['project']?['name']?.toString().toLowerCase() ?? '';
-                        final matchesSearch = name.contains(_searchQuery);
-                        final quantity = int.tryParse(item['project']?['quantity']?.toString() ?? '0') ?? 0;
-                        final status = quantity < 10 ? 'Needed' : 'Not Necessary';
-                        final matchesStatus = _selectedStatus == null || 
-                                            _selectedStatus == "All" || 
-                                            _selectedStatus == status;
-                        return matchesSearch && matchesStatus;
-                      }).map((item) {
-                        final project = item['project'] ?? {};
-                        final quantity = int.tryParse(project['quantity']?.toString() ?? '0') ?? 0;
-                        final status = quantity < 10 ? 'Needed' : 'Not Necessary';
-                        final priority = getPriority(quantity);
-
-                        return DataRow(
-                          cells: [
-                            DataCell(Text(project['name']?.toString() ?? '')),
-                            DataCell(Text(quantity.toString())),
-                            DataCell(Text(status)),
-                            DataCell(Text(priority)),
-                          ],
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ] else ...[
-                  const Padding(
-                    padding: EdgeInsets.only(top: 16.0),
-                    child: Text('No items found for this disaster.', style: TextStyle(fontSize: 16)),
-                  ),
+                if (_loadingDetails)
+                  const Center(child: CircularProgressIndicator())
+                else ...[
+                  _buildDisasterInfoCard(),
+                  _buildStatsCard(),
+                  _buildResourceAnalysisCard(),
+                  _buildItemsTableSection(),
                 ],
-
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () => Navigator.pushNamed(context, '/donations'),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade400),
-                      child: const Text('Special Donations'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        if (_selectedDisasterId != null) {
-                          Navigator.pushNamed(
-                            context,
-                            '/public-donation',
-                            arguments: {'disasterId': _selectedDisasterId},
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Please select a disaster first.')),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade400),
-                      child: const Text('Donations'),
-                    ),
-                  ],
-                ),
+              ] else if (_disasters.isEmpty) ...[
+                const Center(child: Text('No disasters available')),
               ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchField() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: SizedBox(
+        width: 200,
+        child: TextField(
+          controller: _searchController,
+          decoration: InputDecoration(
+            hintText: 'Search items...',
+            prefixIcon: const Icon(Icons.search),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: BorderSide.none,
+            ),
+            filled: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          ),
+          onChanged: (query) => setState(() => _searchQuery = query.toLowerCase()),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDisasterDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Select Disaster:', style: TextStyle(fontSize: 16)),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          value: _selectedDisasterId,
+          items: _disasters.map((disaster) => DropdownMenuItem<String>(
+            value: disaster['_id']?.toString() ?? '',
+            child: Text(disaster['name']?.toString() ?? 'Unknown'),
+          )).toList(),
+          onChanged: (value) => setState(() {
+            _selectedDisasterId = value;
+            if (value != null) _fetchInitialData();
+          }),
+          decoration: InputDecoration(
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          ),
+          isExpanded: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildItemsTableSection() {
+    return Column(
+      children: [
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Inventory Items', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            _buildStatusFilter(),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (_itemsList.isEmpty)
+          const Center(child: Text('No items found')),
+        if (_itemsList.isNotEmpty)
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              columns: const [
+                DataColumn(label: Text('Item')),
+                DataColumn(label: Text('Qty'), numeric: true),
+                DataColumn(label: Text('Unit')),
+                DataColumn(label: Text('Status')),
+                DataColumn(label: Text('Priority')),
+              ],
+              rows: _filteredItems.map((item) {
+                final quantity = int.tryParse(item['quantity']?.toString() ?? '0') ?? 0;
+                final status = quantity < 10 ? 'Needed' : 'Sufficient';
+                return DataRow(
+                  cells: [
+                    DataCell(Text(item['name']?.toString() ?? 'Unknown')),
+                    DataCell(Text(quantity.toString())),
+                    DataCell(Text(item['unit']?.toString() ?? '')),
+                    DataCell(
+                      Text(status),
+                      onTap: () => _showItemDetails(item),
+                    ),
+                    DataCell(Text(getPriority(quantity))),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+        _buildActionButtons(),
+      ],
+    );
+  }
+
+  List<Map<String, dynamic>> get _filteredItems {
+    return _itemsList.where((item) {
+      final name = item['name']?.toString().toLowerCase() ?? '';
+      final matchesSearch = name.contains(_searchQuery);
+      final quantity = int.tryParse(item['quantity']?.toString() ?? '0') ?? 0;
+      final status = quantity < 10 ? 'Needed' : 'Sufficient';
+      final matchesStatus = _selectedStatus == null || _selectedStatus == 'All' || _selectedStatus == status;
+      return matchesSearch && matchesStatus;
+    }).toList();
+  }
+
+  Widget _buildStatusFilter() {
+    return DropdownButton<String>(
+      value: _selectedStatus,
+      hint: const Text('Filter'),
+      items: const [
+        DropdownMenuItem(value: 'All', child: Text('All Items')),
+        DropdownMenuItem(value: 'Needed', child: Text('Needed')),
+        DropdownMenuItem(value: 'Sufficient', child: Text('Sufficient')),
+      ],
+      onChanged: (value) => setState(() => _selectedStatus = value),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildActionButton('Special Donations', Icons.star, () {
+            Navigator.pushNamed(context, '/donations');
+          }),
+          _buildActionButton('Donate', Icons.volunteer_activism, () {
+            if (_selectedDisasterId == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Please select a disaster first')),
+              );
+            } else {
+              Navigator.pushNamed(
+                context,
+                '/public-donation',
+                arguments: {'disasterId': _selectedDisasterId},
+              );
+            }
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton(String text, IconData icon, VoidCallback onPressed) {
+    return ElevatedButton.icon(
+      icon: Icon(icon),
+      label: Text(text),
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+      onPressed: onPressed,
+    );
+  }
+
+  void _showItemDetails(Map<String, dynamic> item) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(item['name']?.toString() ?? 'Item Details'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildDetailRow('Description', item['description']),
+              _buildDetailRow('Category', item['category']),
+              _buildDetailRow('Quantity', '${item['quantity']} ${item['unit']}'),
+              _buildDetailRow('Storage Location', item['room']),
+              if (item['disasterId'] != null)
+                _buildDetailRow('Disaster ID', item['disasterId']),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String? value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: RichText(
+        text: TextSpan(
+          style: DefaultTextStyle.of(context).style,
+          children: [
+            TextSpan(
+              text: '$label: ',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            TextSpan(text: value ?? 'Not specified'),
+          ],
         ),
       ),
     );

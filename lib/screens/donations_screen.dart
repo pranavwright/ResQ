@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:resq/screens/items_list.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class DonationsScreen extends StatefulWidget {
   const DonationsScreen({Key? key}) : super(key: key);
@@ -16,19 +18,24 @@ class _DonationsScreenState extends State<DonationsScreen> {
   final _nameController = TextEditingController();
   final _otherItemController = TextEditingController();
   final _quantityController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _squareMetersController = TextEditingController();
+  final _roomsController = TextEditingController();
 
   String _selectedType = 'money';
   String? _selectedItem;
   bool _isAnonymous = false;
   bool _showOtherItemField = false;
+  
+  // House donation specific fields
+  String _houseDonationType = 'donate'; // 'donate' or 'rent'
+  int _rentDurationMonths = 1;
+  bool _isFurnished = false;
+  bool _hasUtilities = false;
 
   final List<String> _donationItems = [
-    'Clothing',
-    'Food',
-    'Furniture',
-    'Books',
-    'Electronics',
-    'Toys',
+    'House',
+    
     'Other',
   ];
 
@@ -78,6 +85,128 @@ class _DonationsScreenState extends State<DonationsScreen> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildHouseDonationFields() {
+    return Column(
+      children: [
+        TextFormField(
+          controller: _addressController,
+          decoration: const InputDecoration(
+            labelText: 'Full Address',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.location_on),
+          ),
+          validator: (value) {
+            if (_selectedItem == 'House' && (value == null || value.isEmpty)) {
+              return 'Please enter the address';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _squareMetersController,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Area (square meters)',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.square_foot),
+          ),
+          validator: (value) {
+            if (_selectedItem == 'House' && (value == null || value.isEmpty)) {
+              return 'Please enter the area';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _roomsController,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Number of Rooms',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.king_bed),
+          ),
+          validator: (value) {
+            if (_selectedItem == 'House' && (value == null || value.isEmpty)) {
+              return 'Please enter room count';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: RadioListTile<String>(
+                title: const Text('Donate Permanently'),
+                value: 'donate',
+                groupValue: _houseDonationType,
+                onChanged: (value) {
+                  setState(() {
+                    _houseDonationType = value!;
+                  });
+                },
+              ),
+            ),
+            Expanded(
+              child: RadioListTile<String>(
+                title: const Text('Rent Temporarily'),
+                value: 'rent',
+                groupValue: _houseDonationType,
+                onChanged: (value) {
+                  setState(() {
+                    _houseDonationType = value!;
+                  });
+                },
+              ),
+            ),
+          ],
+        ),
+        if (_houseDonationType == 'rent') ...[
+          const SizedBox(height: 16),
+          TextFormField(
+            keyboardType: TextInputType.number,
+            initialValue: _rentDurationMonths.toString(),
+            decoration: const InputDecoration(
+              labelText: 'Duration (months)',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.calendar_today),
+            ),
+            onChanged: (value) {
+              _rentDurationMonths = int.tryParse(value) ?? 1;
+            },
+            validator: (value) {
+              if (_houseDonationType == 'rent' && (value == null || value.isEmpty)) {
+                return 'Please enter rental duration';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          CheckboxListTile(
+            title: const Text('Fully Furnished'),
+            value: _isFurnished,
+            onChanged: (value) {
+              setState(() {
+                _isFurnished = value!;
+              });
+            },
+          ),
+          CheckboxListTile(
+            title: const Text('Includes Utilities'),
+            value: _hasUtilities,
+            onChanged: (value) {
+              setState(() {
+                _hasUtilities = value!;
+              });
+            },
+          ),
+        ],
+      ],
     );
   }
 
@@ -169,7 +298,6 @@ class _DonationsScreenState extends State<DonationsScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Name field (only shown when not anonymous)
                         if (!_isAnonymous) ...[
                           TextFormField(
                             controller: _nameController,
@@ -188,7 +316,6 @@ class _DonationsScreenState extends State<DonationsScreen> {
                           const SizedBox(height: 16),
                         ],
 
-                        // Email field (always shown)
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
@@ -279,6 +406,7 @@ class _DonationsScreenState extends State<DonationsScreen> {
                             decoration: const InputDecoration(
                               labelText: 'Select Item',
                               border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.category),
                             ),
                             items: _donationItems.map((String value) {
                               return DropdownMenuItem<String>(
@@ -306,6 +434,7 @@ class _DonationsScreenState extends State<DonationsScreen> {
                               decoration: const InputDecoration(
                                 labelText: 'Specify Item',
                                 border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.edit),
                               ),
                               validator: (value) {
                                 if (_showOtherItemField && (value == null || value.isEmpty)) {
@@ -315,25 +444,30 @@ class _DonationsScreenState extends State<DonationsScreen> {
                               },
                             ),
                           ],
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _quantityController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: 'Quantity',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.format_list_numbered),
+                          if (_selectedItem == 'House') ...[
+                            const SizedBox(height: 16),
+                            _buildHouseDonationFields(),
+                          ] else if (_selectedItem != null && _selectedItem != 'House') ...[
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _quantityController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Quantity',
+                                border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.format_list_numbered),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter quantity';
+                                }
+                                if (int.tryParse(value) == null) {
+                                  return 'Please enter a valid number';
+                                }
+                                return null;
+                              },
                             ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter quantity';
-                              }
-                              if (int.tryParse(value) == null) {
-                                return 'Please enter a valid number';
-                              }
-                              return null;
-                            },
-                          ),
+                          ],
                         ],
                       ),
                     ),
@@ -397,51 +531,97 @@ class _DonationsScreenState extends State<DonationsScreen> {
     );
   }
 
-  void _submitDonation(BuildContext context) async {
+  Future<void> _submitDonation(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
-      // For money donations, show QR code immediately
-      if (_selectedType == 'money') {
-        _showQRCodeDialog(context);
-      } else {
-        // For item donations, show loading and then navigate
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) {
-            return const Center(child: CircularProgressIndicator());
-          },
-        );
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const Center(child: CircularProgressIndicator());
+        },
+      );
 
+      try {
+        final donationData = {
+          'type': _selectedType,
+          'donor_email': _emailController.text,
+          'donor_name': _isAnonymous ? 'Anonymous' : _nameController.text,
+          'is_anonymous': _isAnonymous,
+          'description': _descriptionController.text,
+          'submission_date': DateTime.now().toIso8601String(),
+          'item_details': _selectedType == 'items' ? {
+            'category': _selectedItem,
+            'quantity': _selectedItem == 'House' ? 1 : int.parse(_quantityController.text),
+            if (_selectedItem == 'House') ...{
+              'address': _addressController.text,
+              'square_meters': int.parse(_squareMetersController.text),
+              'rooms': int.parse(_roomsController.text),
+              'donation_type': _houseDonationType,
+              'is_furnished': _isFurnished,
+              'has_utilities': _hasUtilities,
+              if (_houseDonationType == 'rent') 'duration_months': _rentDurationMonths,
+            },
+            if (_showOtherItemField) 'custom_item': _otherItemController.text,
+          } : null,
+          'monetary_details': _selectedType == 'money' ? {
+            'amount': double.parse(_valueController.text),
+            'currency': 'INR',
+          } : null,
+        };
+
+        // Simulate API call (replace with actual HTTP request)
+        debugPrint('Submitting donation: ${jsonEncode(donationData)}');
         await Future.delayed(const Duration(seconds: 2));
-        
+
         if (mounted) {
-          Navigator.of(context).pop(); // Close loading
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => ItemsList()),
+          Navigator.of(context).pop(); // Close loading dialog
+
+          if (_selectedType == 'money') {
+            _showQRCodeDialog(context);
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => ItemsList()),
+            );
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Donation submitted successfully!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+
+          // Clear form
+          _valueController.clear();
+          _descriptionController.clear();
+          _emailController.clear();
+          _nameController.clear();
+          _otherItemController.clear();
+          _quantityController.clear();
+          _addressController.clear();
+          _squareMetersController.clear();
+          _roomsController.clear();
+          setState(() {
+            _selectedItem = null;
+            _showOtherItemField = false;
+            _isAnonymous = false;
+            _houseDonationType = 'donate';
+            _isFurnished = false;
+            _hasUtilities = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.of(context).pop(); // Close loading dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error submitting donation: $e'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Item donation submitted successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
       }
-
-      // Clear form
-      _valueController.clear();
-      _descriptionController.clear();
-      _emailController.clear();
-      _nameController.clear();
-      _otherItemController.clear();
-      _quantityController.clear();
-      setState(() {
-        _selectedItem = null;
-        _showOtherItemField = false;
-        _isAnonymous = false;
-      });
     }
   }
 
@@ -453,6 +633,9 @@ class _DonationsScreenState extends State<DonationsScreen> {
     _nameController.dispose();
     _otherItemController.dispose();
     _quantityController.dispose();
+    _addressController.dispose();
+    _squareMetersController.dispose();
+    _roomsController.dispose();
     super.dispose();
   }
 }
