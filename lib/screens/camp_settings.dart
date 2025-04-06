@@ -1,3 +1,5 @@
+
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:resq/models/NeedAssessmentData.dart';
@@ -21,11 +23,17 @@ class _CampSettingsScreenState extends State<CampSettingsScreen> {
   String _currentAddress = 'No location selected';
   bool _isLoadingAddress = false;
   bool _isSaving = false;
+  bool _mapLoadingFailed = false;
 
   @override
   void initState() {
     super.initState();
+    _verifyApiKey();
     _getCampSettings();
+    // Auto-run test in debug mode
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint('Initializing camp settings...');
+    });
   }
 
   @override
@@ -33,6 +41,17 @@ class _CampSettingsScreenState extends State<CampSettingsScreen> {
     _contactController.dispose();
     _emailController.dispose();
     super.dispose();
+  }
+
+  Future<void> _verifyApiKey() async {
+    if (ApiConstants.GOOGLE_MAPS_API_KEY.isEmpty) {
+      _showSnackBar('Google Maps API key is missing', duration: 5);
+      debugPrint('ERROR: Google Maps API key is not configured');
+    } else {
+      debugPrint('Google Maps API key is configured');
+      // Verify the key works
+      _testGeocoding();
+    }
   }
 
   Future<void> _getCampSettings() async {
@@ -48,7 +67,6 @@ class _CampSettingsScreenState extends State<CampSettingsScreen> {
         final locationLink = settings['locationString'] ?? "";
 
         setState(() {
-          // Parse location
           if (locationLink.isNotEmpty) {
             try {
               final coords = locationLink.split(',');
@@ -63,12 +81,10 @@ class _CampSettingsScreenState extends State<CampSettingsScreen> {
             }
           }
 
-          // Update controllers
           _contactController.text = settings['contact'] ?? "";
           _emailController.text = settings['email'] ?? "";
         });
 
-        // Fetch address if we have a location
         if (_campLocation != null) {
           await _fetchAddressFromLocation(_campLocation!);
         }
@@ -118,7 +134,10 @@ class _CampSettingsScreenState extends State<CampSettingsScreen> {
   }
 
   Future<void> _fetchCurrentLocation() async {
-    setState(() => _isLoadingAddress = true);
+    setState(() {
+      _isLoadingAddress = true;
+      _mapLoadingFailed = false;
+    });
 
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -154,65 +173,104 @@ class _CampSettingsScreenState extends State<CampSettingsScreen> {
         await _updateCampSettings();
       }
     } catch (e) {
+      setState(() => _mapLoadingFailed = true);
       _showSnackBar('Could not get current location');
+      debugPrint('Location error: $e');
+    } finally {
+      setState(() => _isLoadingAddress = false);
+    }
+  }
+
+  Future<void> _testGeocoding() async {
+    try {
+      debugPrint('--- Starting geocoding test ---');
+      setState(() {
+        _isLoadingAddress = true;
+        _currentAddress = 'Testing geocoding service...';
+      });
+
+      // Test with known location (New York)
+      await _fetchAddressFromLocation(const LatLng(40.7128, -74.0060));
+      await Future.delayed(const Duration(seconds: 1));
+
+      // Test with current location if available
+      if (_campLocation != null) {
+        await _fetchAddressFromLocation(_campLocation!);
+      }
+
+      _showSnackBar('Geocoding test completed', isError: false);
+    } catch (e) {
+      _showSnackBar('Geocoding test failed: ${e.toString()}');
+      debugPrint('Geocoding test error: $e');
     } finally {
       setState(() => _isLoadingAddress = false);
     }
   }
 
   Future<void> _fetchAddressFromLocation(LatLng location) async {
-    setState(() => _isLoadingAddress = true);
+    setState(() {
+      _isLoadingAddress = true;
+      _currentAddress = 'Fetching address...';
+    });
 
+    debugPrint('Fetching address for ${location.latitude},${location.longitude}');
+
+    // Try primary geocoding method
     try {
       List<Placemark> placemarks = await placemarkFromCoordinates(
         location.latitude,
         location.longitude,
-      );
+      ).timeout(const Duration(seconds: 5));
 
       if (placemarks.isNotEmpty) {
         final place = placemarks.first;
+        final address = [
+          place.street,
+          place.locality,
+          place.administrativeArea,
+          place.country
+        ].where((part) => part?.isNotEmpty ?? false).join(', ');
+
         setState(() {
-          _currentAddress = '${place.street}, ${place.locality}, ${place.country}';
+          _currentAddress = address.isNotEmpty 
+              ? address 
+              : 'Location found (no address details)';
+          _mapLoadingFailed = false;
         });
+        return;
       }
     } catch (e) {
-      setState(() => _currentAddress = 'Address could not be determined');
-    } finally {
-      setState(() => _isLoadingAddress = false);
+      debugPrint('Primary geocoding failed: $e');
     }
-  }
 
-  Widget _buildStaticMapImage() {
-    if (_campLocation == null) return Container();
+    // Fallback to direct API call
+    try {
+      final url = 'https://maps.googleapis.com/maps/api/geocode/json?'
+          'latlng=${location.latitude},${location.longitude}'
+          '&key=${ApiConstants.GOOGLE_MAPS_API_KEY}';
+      
+      final response = await TokenHttp().get(url);
+      
+      if (response.statusCode == 200) {
+        final results = response.data['results'] as List?;
+        if (results != null && results.isNotEmpty) {
+          setState(() {
+            _currentAddress = results.first['formatted_address'] ?? 
+                'Address available (no details)';
+            _mapLoadingFailed = false;
+          });
+          return;
+        }
+      }
+    } catch (e) {
+      debugPrint('Fallback geocoding failed: $e');
+    }
 
-    final lat = _campLocation!.latitude;
-    final lng = _campLocation!.longitude;
-    final staticMapUrl =
-        'https://maps.googleapis.com/maps/api/staticmap?center=$lat,$lng&zoom=14&size=400x300&markers=color:red%7C$lat,$lng&key=${ApiConstants.GOOGLE_MAPS_API_KEY}';
-
-    return Image.network(
-      staticMapUrl,
-      width: double.infinity,
-      height: 150,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.map, size: 40, color: Colors.grey.shade400),
-            Text(
-              'Map not available',
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
-          ],
-        ),
-      ),
-      loadingBuilder: (context, child, loadingProgress) {
-        return loadingProgress == null
-            ? child
-            : const Center(child: CircularProgressIndicator());
-      },
-    );
+    setState(() {
+      _currentAddress = 'Geocoding service unavailable. '
+          'Check API key and internet connection.';
+      _mapLoadingFailed = true;
+    });
   }
 
   Future<void> _updateCampLocation() async {
@@ -221,13 +279,17 @@ class _CampSettingsScreenState extends State<CampSettingsScreen> {
       MaterialPageRoute(
         builder: (context) => LocationSelectionWidget(
           initialLocation: _campLocation ?? const LatLng(0, 0),
-          onLocationSelected: (LatLng location) {},
+          onLocationSelected: (LatLng location) => location,
         ),
       ),
     );
 
     if (newLocation != null) {
-      setState(() => _campLocation = newLocation);
+      setState(() {
+        _campLocation = newLocation;
+        _currentAddress = 'Fetching address...';
+        _mapLoadingFailed = false;
+      });
       await _fetchAddressFromLocation(newLocation);
       await _updateCampSettings();
     }
@@ -293,7 +355,7 @@ class _CampSettingsScreenState extends State<CampSettingsScreen> {
         borderRadius: BorderRadius.circular(12),
         onTap: _updateCampLocation,
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -301,82 +363,139 @@ class _CampSettingsScreenState extends State<CampSettingsScreen> {
                 children: [
                   Icon(Icons.location_on, color: Colors.red.shade600, size: 28),
                   const SizedBox(width: 8),
-                  const Text(
-                    'Location',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  const Expanded(
+                    child: Text(
+                      'Location',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
                   ),
-                  const Spacer(),
-                  IconButton(
-                    icon: Icon(Icons.my_location, color: Colors.blue.shade600),
-                    onPressed: _fetchCurrentLocation,
+                  Tooltip(
+                    message: 'Test Geocoding',
+                    child: IconButton(
+                      icon: Icon(Icons.bug_report, size: 22, color: Colors.orange),
+                      onPressed: _testGeocoding,
+                      padding: EdgeInsets.zero,
+                    ),
                   ),
-                  Icon(Icons.chevron_right, color: Colors.grey.shade600),
+                  Tooltip(
+                    message: 'Current Location',
+                    child: IconButton(
+                      icon: Icon(Icons.my_location, size: 22, color: Colors.blue.shade600),
+                      onPressed: _fetchCurrentLocation,
+                      padding: EdgeInsets.zero,
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Container(
-                height: 150,
-                clipBehavior: Clip.antiAlias,
+                height: 180,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.grey.shade300),
                 ),
-                child: _campLocation == null
-                    ? Center(
-                        child: Text(
-                          'Set a location',
-                          style: TextStyle(color: Colors.grey.shade600),
-                        ),
-                      )
-                    : _buildStaticMapImage(),
+                child: _buildMapWidget(),
               ),
               if (_campLocation != null) ...[
+                const SizedBox(height: 12),
+                _buildInfoContainer(
+                  'Coordinates',
+                  'Lat: ${_campLocation!.latitude.toStringAsFixed(6)}\n'
+                  'Lng: ${_campLocation!.longitude.toStringAsFixed(6)}',
+                ),
                 const SizedBox(height: 8),
-                Container(
-                  margin: const EdgeInsets.only(top: 8),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 8,
-                    horizontal: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.pin_drop,
-                        size: 16,
-                        color: Colors.red.shade600,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Lat: ${_campLocation!.latitude.toStringAsFixed(6)}, Long: ${_campLocation!.longitude.toStringAsFixed(6)}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade800,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                _buildInfoContainer(
+                  'Address',
+                  _isLoadingAddress ? 'Loading address...' : _currentAddress,
+                  isError: _mapLoadingFailed,
                 ),
               ],
-              const SizedBox(height: 8),
-              if (_isLoadingAddress)
-                const Center(child: CircularProgressIndicator())
-              else
-                Text(
-                  _currentAddress,
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildMapWidget() {
+    if (_campLocation == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.map, size: 40, color: Colors.grey.shade400),
+            Text(
+              'No location set',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_mapLoadingFailed) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 40, color: Colors.red.shade400),
+            Text(
+              'Map loading failed',
+              style: TextStyle(color: Colors.red.shade600),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GoogleMap(
+      initialCameraPosition: CameraPosition(
+        target: _campLocation!,
+        zoom: 14,
+      ),
+      markers: {
+        Marker(
+          markerId: const MarkerId('camp_location'),
+          position: _campLocation!,
+          infoWindow: InfoWindow(
+            title: 'Camp Location',
+            snippet: _currentAddress,
+          ),
+        ),
+      },
+      onMapCreated: (controller) {
+        // Can store controller if needed
+      },
+      zoomControlsEnabled: false,
+    );
+  }
+
+  Widget _buildInfoContainer(String title, String content, {bool isError = false}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            content,
+            style: TextStyle(
+              color: isError ? Colors.red : Colors.grey.shade800,
+            ),
+          ),
+        ],
       ),
     );
   }

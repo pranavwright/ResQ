@@ -54,3 +54,4 @@ ios/GoogleService-Info.plist
 web/firebase-messaging-sw.js
 lib/main.dart
 .env
+lib/screens/camp_settings.dart
