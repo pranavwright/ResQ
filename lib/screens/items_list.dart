@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:resq/utils/http/token_less_http.dart';
 import 'dart:async';
 
+import 'package:url_launcher/url_launcher.dart';
+
 class ItemsList extends StatefulWidget {
   final String? disasterId;
   const ItemsList({super.key, this.disasterId});
@@ -22,7 +24,7 @@ class _ItemsListState extends State<ItemsList> {
   bool _loadingAnalysis = false;
   String? _error;
   List<Map<String, dynamic>> _itemsList = [];
-  
+
   // Disaster details
   String _disasterName = "Loading...";
   String _disasterDescription = "";
@@ -39,7 +41,7 @@ class _ItemsListState extends State<ItemsList> {
   int _aliveCount = 0;
   int _deadCount = 0;
   int _missingCount = 0;
-  
+
   // Resource analysis data
   List<String> _movingResources = [];
   List<String> _lessMovingResources = [];
@@ -63,10 +65,7 @@ class _ItemsListState extends State<ItemsList> {
       _loadingAnalysis = true;
     });
     try {
-      await Future.wait([
-        _fetchDisasterDetails(),
-        _fetchResourceAnalysis(),
-      ]);
+      await Future.wait([_fetchDisasterDetails(), _fetchResourceAnalysis()]);
     } catch (e) {
       setState(() => _error = 'Failed to load data. Showing sample data.');
       _loadMockData();
@@ -84,9 +83,10 @@ class _ItemsListState extends State<ItemsList> {
       _error = null;
     });
     try {
-      final response = await TokenLessHttp().get('/disaster/getDisasters')
+      final response = await TokenLessHttp()
+          .get('/disaster/getDisasters')
           .timeout(const Duration(seconds: 10));
-      
+
       if (response is Map && response['_id'] != null) {
         // Single disaster response
         setState(() => _disasters = [Map<String, dynamic>.from(response)]);
@@ -95,12 +95,16 @@ class _ItemsListState extends State<ItemsList> {
         setState(() => _disasters = List<Map<String, dynamic>>.from(response));
       } else if (response is Map && response['list'] is List) {
         // Response with 'list' field
-        setState(() => _disasters = List<Map<String, dynamic>>.from(response['list']));
+        setState(
+          () => _disasters = List<Map<String, dynamic>>.from(response['list']),
+        );
       } else {
         throw Exception('Invalid response format');
       }
     } on TimeoutException {
-      setState(() => _error = 'Request timed out. Please check your connection');
+      setState(
+        () => _error = 'Request timed out. Please check your connection',
+      );
     } catch (e) {
       setState(() {
         _error = 'Error loading disasters. Showing sample data.';
@@ -113,12 +117,12 @@ class _ItemsListState extends State<ItemsList> {
 
   Future<void> _fetchDisasterDetails() async {
     if (_selectedDisasterId == null) return;
-    
+
     try {
-      final response = await TokenLessHttp().get(
-        '/disaster/getDisasterData?disasterId=$_selectedDisasterId'
-      ).timeout(const Duration(seconds: 10));
-      
+      final response = await TokenLessHttp()
+          .get('/disaster/getDisasterData?disasterId=$_selectedDisasterId')
+          .timeout(const Duration(seconds: 10));
+
       if (response is Map) {
         setState(() {
           _disasterName = response['name'] ?? 'Unnamed Disaster';
@@ -136,10 +140,11 @@ class _ItemsListState extends State<ItemsList> {
           _aliveCount = response['alive'] ?? 0;
           _deadCount = response['dead'] ?? 0;
           _missingCount = response['missing'] ?? 0;
-          
-          _itemsList = (response['items'] is List) 
-            ? List<Map<String, dynamic>>.from(response['items'])
-            : [];
+
+          _itemsList =
+              (response['items'] is List)
+                  ? List<Map<String, dynamic>>.from(response['items'])
+                  : [];
         });
       }
     } catch (e) {
@@ -150,12 +155,12 @@ class _ItemsListState extends State<ItemsList> {
 
   Future<void> _fetchResourceAnalysis() async {
     if (_selectedDisasterId == null) return;
-    
+
     try {
-      final response = await TokenLessHttp().get(
-        '/ai/analyze-resources?disasterId=$_selectedDisasterId'
-      ).timeout(const Duration(seconds: 10));
-      
+      final response = await TokenLessHttp()
+          .get('/ai/analyze-resources?disasterId=$_selectedDisasterId')
+          .timeout(const Duration(seconds: 10));
+
       if (response is Map && response['data'] is Map) {
         final data = response['data'] as Map<String, dynamic>;
         setState(() {
@@ -203,11 +208,12 @@ class _ItemsListState extends State<ItemsList> {
           'type': 'Flood',
           'severity': 'High',
           'status': 'Active',
-          'startDate': DateTime.now().subtract(const Duration(days: 3)).toString(),
-          'items': []
+          'startDate':
+              DateTime.now().subtract(const Duration(days: 3)).toString(),
+          'items': [],
         },
         {
-          '_id': '2', 
+          '_id': '2',
           'name': 'Earthquake Relief',
           'description': 'Northern region earthquake response',
           'location': 'Uttarakhand',
@@ -216,9 +222,10 @@ class _ItemsListState extends State<ItemsList> {
           'type': 'Earthquake',
           'severity': 'Critical',
           'status': 'Active',
-          'startDate': DateTime.now().subtract(const Duration(days: 1)).toString(),
-          'items': []
-        }
+          'startDate':
+              DateTime.now().subtract(const Duration(days: 1)).toString(),
+          'items': [],
+        },
       ];
     });
   }
@@ -243,26 +250,36 @@ class _ItemsListState extends State<ItemsList> {
       _itemsList = [
         {
           '_id': '1',
-          'name': 'Water Bottles', 
+          'name': 'Water Bottles',
           'description': '1L mineral water bottles',
           'category': 'Drinking Water',
           'unit': 'liters',
           'quantity': '15',
           'disasterId': _selectedDisasterId,
-          'room': 'Storage A'
+          'room': 'Storage A',
         },
         {
           '_id': '2',
-          'name': 'Blankets', 
+          'name': 'Blankets',
           'description': 'Woolen blankets',
           'category': 'Shelter',
           'unit': 'pieces',
           'quantity': '45',
           'disasterId': _selectedDisasterId,
-          'room': 'Storage B'
+          'room': 'Storage B',
         },
       ];
     });
+  }
+
+  Future<void> _launchMaps() async {
+    final String googleMapsUrl =
+        'https://www.google.com/maps/search/?q=$_disasterLocation';
+    if (await canLaunch(googleMapsUrl)) {
+      await launch(googleMapsUrl);
+    } else {
+      throw 'Could not open the map.';
+    }
   }
 
   void _loadMockResourceData() {
@@ -270,7 +287,8 @@ class _ItemsListState extends State<ItemsList> {
       _movingResources = ['Water', 'Medicines', 'Ready-to-eat meals'];
       _lessMovingResources = ['Blankets', 'Clothes', 'Tents'];
       _wastageResources = ['Expired medicines', 'Damaged goods'];
-      _resourceSummary = 'Water demand remains high while shelter items are sufficiently stocked.';
+      _resourceSummary =
+          'Water demand remains high while shelter items are sufficiently stocked.';
     });
   }
 
@@ -300,7 +318,10 @@ class _ItemsListState extends State<ItemsList> {
               spacing: 16,
               runSpacing: 8,
               children: [
-                Chip(label: Text('Location: $_disasterLocation')),
+                GestureDetector(
+                  onTap: _launchMaps,
+                  child: Chip(label: Text('Location: Open In Maps')),
+                ),
                 Chip(label: Text('State: $_disasterState')),
                 Chip(label: Text('District: $_disasterDistrict')),
                 Chip(label: Text('Type: $_disasterType')),
@@ -334,7 +355,7 @@ class _ItemsListState extends State<ItemsList> {
     if (_loadingAnalysis) {
       return const Center(child: CircularProgressIndicator());
     }
-    
+
     return Card(
       elevation: 4,
       margin: const EdgeInsets.only(bottom: 16),
@@ -348,26 +369,41 @@ class _ItemsListState extends State<ItemsList> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            
+
             if (_movingResources.isNotEmpty) ...[
-              _buildResourceSection('Urgently Needed', _movingResources, Colors.red.shade700),
+              _buildResourceSection(
+                'Urgently Needed',
+                _movingResources,
+                Colors.red.shade700,
+              ),
               const SizedBox(height: 8),
             ],
-            
+
             if (_lessMovingResources.isNotEmpty) ...[
-              _buildResourceSection('Adequate Stock', _lessMovingResources, Colors.orange.shade700),
+              _buildResourceSection(
+                'Adequate Stock',
+                _lessMovingResources,
+                Colors.orange.shade700,
+              ),
               const SizedBox(height: 8),
             ],
-            
+
             if (_wastageResources.isNotEmpty) ...[
-              _buildResourceSection('Potential Wastage', _wastageResources, Colors.amber.shade700),
+              _buildResourceSection(
+                'Potential Wastage',
+                _wastageResources,
+                Colors.amber.shade700,
+              ),
               const SizedBox(height: 8),
             ],
-            
+
             if (_resourceSummary.isNotEmpty) ...[
               const Divider(),
               const SizedBox(height: 8),
-              const Text('Summary:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Summary:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               Text(_resourceSummary),
             ],
           ],
@@ -380,17 +416,22 @@ class _ItemsListState extends State<ItemsList> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w600,
-        )),
+        Text(
+          title,
+          style: TextStyle(color: color, fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 4),
         Wrap(
           spacing: 8,
-          children: items.map((item) => Chip(
-            label: Text(item),
-            backgroundColor: color.withOpacity(0.2),
-          )).toList(),
+          children:
+              items
+                  .map(
+                    (item) => Chip(
+                      label: Text(item),
+                      backgroundColor: color.withOpacity(0.2),
+                    ),
+                  )
+                  .toList(),
         ),
       ],
     );
@@ -440,10 +481,7 @@ class _ItemsListState extends State<ItemsList> {
           value.toString(),
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
-        Text(
-          label,
-          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-        ),
+        Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
       ],
     );
   }
@@ -518,6 +556,7 @@ class _ItemsListState extends State<ItemsList> {
                 if (_loadingDetails)
                   const Center(child: CircularProgressIndicator())
                 else ...[
+                  _buildActionButtons(),
                   _buildDisasterInfoCard(),
                   _buildStatsCard(),
                   _buildResourceAnalysisCard(),
@@ -550,7 +589,8 @@ class _ItemsListState extends State<ItemsList> {
             filled: true,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16),
           ),
-          onChanged: (query) => setState(() => _searchQuery = query.toLowerCase()),
+          onChanged:
+              (query) => setState(() => _searchQuery = query.toLowerCase()),
         ),
       ),
     );
@@ -564,18 +604,22 @@ class _ItemsListState extends State<ItemsList> {
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           value: _selectedDisasterId,
-          items: _disasters.map((disaster) => DropdownMenuItem<String>(
-            value: disaster['_id']?.toString() ?? '',
-            child: Text(disaster['name']?.toString() ?? 'Unknown'),
-          )).toList(),
-          onChanged: (value) => setState(() {
-            _selectedDisasterId = value;
-            if (value != null) _fetchInitialData();
-          }),
+          items:
+              _disasters
+                  .map(
+                    (disaster) => DropdownMenuItem<String>(
+                      value: disaster['_id']?.toString() ?? '',
+                      child: Text(disaster['name']?.toString() ?? 'Unknown'),
+                    ),
+                  )
+                  .toList(),
+          onChanged:
+              (value) => setState(() {
+                _selectedDisasterId = value;
+                if (value != null) _fetchInitialData();
+              }),
           decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16),
           ),
           isExpanded: true,
@@ -591,13 +635,15 @@ class _ItemsListState extends State<ItemsList> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Inventory Items', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text(
+              'Inventory Items',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             _buildStatusFilter(),
           ],
         ),
         const SizedBox(height: 12),
-        if (_itemsList.isEmpty)
-          const Center(child: Text('No items found')),
+        if (_itemsList.isEmpty) const Center(child: Text('No items found')),
         if (_itemsList.isNotEmpty)
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -609,25 +655,26 @@ class _ItemsListState extends State<ItemsList> {
                 DataColumn(label: Text('Status')),
                 DataColumn(label: Text('Priority')),
               ],
-              rows: _filteredItems.map((item) {
-                final quantity = int.tryParse(item['quantity']?.toString() ?? '0') ?? 0;
-                final status = quantity < 10 ? 'Needed' : 'Sufficient';
-                return DataRow(
-                  cells: [
-                    DataCell(Text(item['name']?.toString() ?? 'Unknown')),
-                    DataCell(Text(quantity.toString())),
-                    DataCell(Text(item['unit']?.toString() ?? '')),
-                    DataCell(
-                      Text(status),
-                      onTap: () => _showItemDetails(item),
-                    ),
-                    DataCell(Text(getPriority(quantity))),
-                  ],
-                );
-              }).toList(),
+              rows:
+                  _filteredItems.map((item) {
+                    final quantity =
+                        int.tryParse(item['quantity']?.toString() ?? '0') ?? 0;
+                    final status = quantity < 10 ? 'Needed' : 'Sufficient';
+                    return DataRow(
+                      cells: [
+                        DataCell(Text(item['name']?.toString() ?? 'Unknown')),
+                        DataCell(Text(quantity.toString())),
+                        DataCell(Text(item['unit']?.toString() ?? '')),
+                        DataCell(
+                          Text(status),
+                          onTap: () => _showItemDetails(item),
+                        ),
+                        DataCell(Text(getPriority(quantity))),
+                      ],
+                    );
+                  }).toList(),
             ),
           ),
-        _buildActionButtons(),
       ],
     );
   }
@@ -638,7 +685,10 @@ class _ItemsListState extends State<ItemsList> {
       final matchesSearch = name.contains(_searchQuery);
       final quantity = int.tryParse(item['quantity']?.toString() ?? '0') ?? 0;
       final status = quantity < 10 ? 'Needed' : 'Sufficient';
-      final matchesStatus = _selectedStatus == null || _selectedStatus == 'All' || _selectedStatus == status;
+      final matchesStatus =
+          _selectedStatus == null ||
+          _selectedStatus == 'All' ||
+          _selectedStatus == status;
       return matchesSearch && matchesStatus;
     }).toList();
   }
@@ -683,7 +733,11 @@ class _ItemsListState extends State<ItemsList> {
     );
   }
 
-  Widget _buildActionButton(String text, IconData icon, VoidCallback onPressed) {
+  Widget _buildActionButton(
+    String text,
+    IconData icon,
+    VoidCallback onPressed,
+  ) {
     return ElevatedButton.icon(
       icon: Icon(icon),
       label: Text(text),
@@ -697,29 +751,33 @@ class _ItemsListState extends State<ItemsList> {
   void _showItemDetails(Map<String, dynamic> item) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(item['name']?.toString() ?? 'Item Details'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildDetailRow('Description', item['description']),
-              _buildDetailRow('Category', item['category']),
-              _buildDetailRow('Quantity', '${item['quantity']} ${item['unit']}'),
-              _buildDetailRow('Storage Location', item['room']),
-              if (item['disasterId'] != null)
-                _buildDetailRow('Disaster ID', item['disasterId']),
+      builder:
+          (context) => AlertDialog(
+            title: Text(item['name']?.toString() ?? 'Item Details'),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildDetailRow('Description', item['description']),
+                  _buildDetailRow('Category', item['category']),
+                  _buildDetailRow(
+                    'Quantity',
+                    '${item['quantity']} ${item['unit']}',
+                  ),
+                  _buildDetailRow('Storage Location', item['room']),
+                  if (item['disasterId'] != null)
+                    _buildDetailRow('Disaster ID', item['disasterId']),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
     );
   }
 

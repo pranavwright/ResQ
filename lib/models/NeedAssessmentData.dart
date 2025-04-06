@@ -543,6 +543,17 @@ class NeedAssessmentData {
             }
           }
         }
+        if (filters['status'] != null) {
+          if (filters['status'] is String) {
+            if (member.gender != filters['status']) {
+              return false;
+            }
+          } else if (filters['status'] is List) {
+            if (!filters['status'].contains(member.gender)) {
+              return false;
+            }
+          }
+        }
 
         if (filters['memberEducation'] != null) {
           if (filters['memberEducation'] is String) {
@@ -667,6 +678,7 @@ class Member {
   String gender;
   String relationship;
   String maritalStatus = '';
+  String status = ''; // Status of the member
   String ldm = ''; // L/D/M
   String aadharNo = '';
   String grievouslyInjured = '';
@@ -704,6 +716,7 @@ class Member {
     required this.relationship,
     required this.gender,
     this.maritalStatus = '',
+    this.status = '',
     this.ldm = '',
     this.aadharNo = '',
     this.grievouslyInjured = '',
@@ -742,6 +755,7 @@ class Member {
     String? gender,
     String? relationship,
     String? maritalStatus,
+    String? status,
     String? ldm,
     String? aadharNo,
     String? grievouslyInjured,
@@ -779,6 +793,7 @@ class Member {
       gender: gender ?? this.gender,
       relationship: relationship ?? this.relationship,
       maritalStatus: maritalStatus ?? this.maritalStatus,
+      status: status ?? this.status,
       ldm: ldm ?? this.ldm,
       aadharNo: aadharNo ?? this.aadharNo,
       grievouslyInjured: grievouslyInjured ?? this.grievouslyInjured,
@@ -835,6 +850,7 @@ class Member {
       gender: json['gender'] ?? '',
       relationship: json['relationship'] ?? '',
       maritalStatus: json['maritalStatus'] ?? '',
+      status: json['status'] ?? '',
       ldm: json['ldm'] ?? '',
       aadharNo: json['aadharNo'] ?? '',
       grievouslyInjured: json['grievouslyInjured'] ?? '',
@@ -880,6 +896,7 @@ class Member {
       'gender': gender,
       'relationship': relationship,
       'maritalStatus': maritalStatus,
+      'status': status,
       'ldm': ldm,
       'aadharNo': aadharNo,
       'grievouslyInjured': grievouslyInjured,

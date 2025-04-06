@@ -356,6 +356,24 @@ class _IndividualMemberInputState extends State<IndividualMemberInput> {
                 );
               }).toList(),
             ),
+            DropdownButtonFormField<String>(
+              decoration: InputDecoration(
+                labelText: "Status",
+                border: OutlineInputBorder(),
+              ),
+              value: widget.member.status.isNotEmpty ? widget.member.status : "alive",
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  widget.onChanged(widget.member.copyWith(status: newValue));
+                }
+              },
+              items: ["alive", "died", "missing", "died for another reason", "missing for another reason", "not affected"].map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+            ),
             SizedBox(height: 12),
             TextFormField(
               decoration: InputDecoration(

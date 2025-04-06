@@ -405,6 +405,7 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
       'Member Name',
       'Member Age',
       'Member Gender',
+      'Member Status',
       'Member Relationship',
       'Member Marital Status',
       'Member L/D/M',
@@ -641,6 +642,9 @@ class _FamilyDataDownloadScreenState extends State<FamilyDataDownloadScreen> {
         return member.gender;
       case 'Member Relationship':
         return member.relationship;
+      case 'Member Status':
+        return member.status;
+      case 'Member L/D/M':
       case 'Member Marital Status':
         return member.maritalStatus;
       case 'Member L/D/M':
