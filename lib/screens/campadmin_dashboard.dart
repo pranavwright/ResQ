@@ -4,7 +4,7 @@ import 'package:resq/utils/resq_menu.dart';
 import 'package:resq/utils/colors.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:resq/screens/camp_supply_request.dart';
-import 'package:resq/screens/camp_settings.dart'; // Import your CampSettingsScreen
+import 'package:resq/screens/camp_settings.dart';
 
 class CampAdminDashboard extends StatelessWidget {
   @override
@@ -30,7 +30,10 @@ class CampAdminDashboard extends StatelessWidget {
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => CampSupplyRequestScreen(campId: 'greenfield_zone3', campName: "hello",),
+                    builder: (context) => CampSupplyRequestScreen(
+                      campId: 'greenfield_zone3', 
+                      campName: "Greenfield Zone 3",
+                    ),
                   ),
                 );
                 
@@ -69,8 +72,7 @@ class CampAdminDashboard extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(child: StatsCard(title: 'Total Residents', value: '1,242')),
-                      Expanded(child: StatsCard(title: 'Shelter Capacity', value: '82%')),
-                      Expanded(child: StatsCard(title: 'Supplies Delivered', value: '87%')),
+                      Expanded(child: StatsCard(title: 'Total Families', value: '312')),
                     ],
                   ),
                   SizedBox(height: 24),
@@ -168,38 +170,103 @@ class CampAdminDashboard extends StatelessWidget {
                   ),
                   SizedBox(height: 24),
                   
-                  // Additional Metrics
-                  Card(
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Camp Metrics',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
-                          SizedBox(height: 16),
-                          _buildMetricRow('Medical Cases', '24', Icons.medical_services),
-                          _buildMetricRow('New Arrivals', '18', Icons.group_add),
-                          _buildMetricRow('Meals Served', '1,850', Icons.restaurant),
-                          _buildMetricRow('Water Distributed', '2,400L', Icons.water_drop),
-                        ],
+                  // Individual Resource Charts
+                  Column(
+                    children: [
+                      _buildResourceChart(
+                        title: 'Water Distribution',
+                        color: Colors.blue.shade400,
+                        value: 180,
+                        maxValue: 200,
+                        unit: 'Liters',
                       ),
-                    ),
+                      SizedBox(height: 16),
+                      _buildResourceChart(
+                        title: 'Food Distribution',
+                        color: Colors.green.shade400,
+                        value: 140,
+                        maxValue: 200,
+                        unit: 'Kgs',
+                      ),
+                      SizedBox(height: 16),
+                      _buildResourceChart(
+                        title: 'Medicine Distribution',
+                        color: Colors.red.shade400,
+                        value: 90,
+                        maxValue: 150,
+                        unit: 'Kits',
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildResourceChart({
+    required String title,
+    required Color color,
+    required double value,
+    required double maxValue,
+    required String unit,
+  }) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                Spacer(),
+                Text(
+                  '${value.toInt()} $unit',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12),
+            Container(
+              height: 30,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: value / maxValue,
+                  backgroundColor: color.withOpacity(0.2),
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                  minHeight: 30,
+                ),
+              ),
+            ),
+            SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('0 $unit'),
+                Text('${maxValue.toInt()} $unit'),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -227,20 +294,5 @@ class CampAdminDashboard extends StatelessWidget {
         barRods: [BarChartRodData(toY: 75, color: Colors.purple.shade400, width: 22)],
       ),
     ];
-  }
-
-  Widget _buildMetricRow(String title, String value, IconData icon) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.primary),
-          SizedBox(width: 12),
-          Text(title, style: TextStyle(fontSize: 16)),
-          Spacer(),
-          Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
   }
 }
