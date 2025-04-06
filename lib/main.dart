@@ -9,6 +9,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:resq/firebase_options.dart';
 import 'package:resq/screens/collectionpoint_volunteer.dart';
+import 'package:resq/screens/id_card_generator.dart';
 import 'package:resq/screens/identity.dart';
 import 'package:resq/screens/splash_screen.dart';
 import 'package:resq/utils/notification_service.dart';
@@ -425,6 +426,11 @@ class MyApp extends StatelessWidget {
         builder =
             (context) =>
                 AuthRoute(requiresAuth: true, child: ProfileUpdateScreen());
+        break;
+      case '/idcards':
+        builder =
+            (context) =>
+                AuthRoute(requiresAuth: true, child: IdCardGenerator());
         break;
       case '/donations':
         builder =

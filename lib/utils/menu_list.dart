@@ -72,6 +72,12 @@ final List<Map<String, dynamic>> menuData = [
     "roles": ["admin", "stat"],
   },
   {
+    "title": "Id Card Generator",
+    "icon": Icons.card_membership,
+    "route": "/idcards",
+    "roles": ["admin", "stat"],
+  },
+  {
     "title": "Collection Points",
     "icon": Icons.add_location,
     "route": '/admin-collectionpoint',
