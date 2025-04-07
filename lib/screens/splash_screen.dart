@@ -3,8 +3,10 @@ import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:resq/firebase_options.dart';
+import 'package:resq/main.dart';
 import 'package:resq/screens/main_home.dart';
 import 'package:resq/utils/notification_service.dart';
 import 'package:resq/widgets/text_animation.dart';
@@ -61,6 +63,28 @@ class _SplashScreenState extends State<SplashScreen> {
     }
   }
 
+
+Future<void> _requestNotificationPermissions() async {
+  final messaging = FirebaseMessaging.instance;
+  final settings = await messaging.requestPermission(
+    alert: true,
+    announcement: false,
+    badge: true,
+    carPlay: false,
+    criticalAlert: false,
+    provisional: false,
+    sound: true,
+  );
+  print('Authorization status: ${settings.authorizationStatus}');
+
+  // Get FCM token for this device
+  final token = await messaging.getToken();
+  print('FCM Token: $token');
+  // You should send this token to your server to target this device
+}
+
+
+
   Future<void> _checkPendingNotifications() async {
     final pendingNotification =
         await NotificationService.getPendingNotification();
@@ -82,6 +106,10 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> requestPermission() async {
+
+
+  // Request notification permissions early
+  await _requestNotificationPermissions();
     print("Requesting storage permissions...");
 
     if (Platform.isAndroid) {

@@ -1,5 +1,6 @@
-import 'dart:io';
-import 'dart:typed_data';
+import 'dart:convert'; // For Base64 encoding
+import 'dart:io'; // For File handling
+import 'dart:typed_data'; // For handling bytes
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:resq/utils/http/token_http.dart';
@@ -59,41 +60,65 @@ class _IdentityState extends State<Identity> {
     }
   }
 
- Future<void> _uploadImage(dynamic imageFile) async {
-  setState(() {
-    _isUploading = true;
-  });
+  // Function to convert image to Base64 and upload it
+  Future<void> _uploadImage(dynamic imageFile) async {
+    setState(() {
+      _isUploading = true;
+    });
 
-  try {
-    final response = await TokenHttp().putWithFileUpload(
-      endpoint: '/auth/updateProfilePicture',
-      file: imageFile,
-      fieldName: 'profilePicture',
-      additionalFields: {
-        if (name.isNotEmpty) 'name': name,
-        if (email.isNotEmpty) 'email': email,
-      },
-    );
+    try {
+      if (kIsWeb) {
+        // Convert web image to Base64
+        final base64String = base64Encode(_webImage!);
+        final Map<String, dynamic> data = {
+          'photo': base64String,
+        };
 
-    if (response != null && response['photoUrl'] != null) {
+        // Send Base64 string to server
+        final response = await TokenHttp().post('/auth/uploadProfilePicture', data);
+
+        if (response != null && response['photoUrl'] != null) {
+          setState(() {
+            imageUrl = response['photoUrl'];
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Profile picture updated successfully')),
+            );
+            _fetchUserData();
+          });
+        }
+      } else {
+        // For local file, convert image to Base64
+        final bytes = await _imageFile!.readAsBytes();
+        final base64String = base64Encode(bytes);
+        final Map<String, dynamic> data = {
+          'photo': base64String,
+        };
+
+        // Send Base64 string to server
+        final response = await TokenHttp().post('/auth/uploadProfilePicture', data);
+
+        if (response != null && response['photoUrl'] != null) {
+          setState(() {
+            imageUrl = response['photoUrl'];
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Profile picture updated successfully')),
+            );
+          });
+          _fetchUserData();
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to upload image: $e')),
+      );
+    } finally {
       setState(() {
-        imageUrl = response['photoUrl'];
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile picture updated successfully')),
-        );
+        _isUploading = false;
       });
     }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to upload image: $e')),
-    );
-  } finally {
-    setState(() {
-      _isUploading = false;
-    });
   }
-}
 
+  // Function to pick image from camera or gallery
   Future<void> _pickImage() async {
     final pickedFile = await showDialog<XFile?>(
       context: context,
@@ -143,58 +168,59 @@ class _IdentityState extends State<Identity> {
     }
   }
 
+  // Function to update user profile data (name/email)
   Future<void> _updateProfile(String field, String value) async {
-  try {
-    setState(() {
-      _isLoading = true;
-    });
+    try {
+      setState(() {
+        _isLoading = true;
+      });
 
-    // Prepare the update data
-    final Map<String, dynamic> updateData = {field: value};
-    
-    // For name updates, we might not need to upload a file
-    if (field == 'name') {
-      final response = await TokenHttp().put('/auth/updateUser', updateData);
+      // Prepare the update data
+      final Map<String, dynamic> updateData = {field: value};
+      
+      if (field == 'name') {
+        final response = await TokenHttp().post('/auth/updateUser', updateData);
 
-      if (response != null && response['success'] == true) {
-        setState(() {
-          name = value;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Name updated successfully'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        if (response != null && response['success'] == true) {
+          setState(() {
+            name = value;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Name updated successfully'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          _fetchUserData();
+        }
+      } else if (field == 'email') {
+        final response = await TokenHttp().post('/auth/updateUser', updateData);
+
+        if (response != null && response['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Email updated successfully'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          _fetchUserData();
+        }
       }
-    } 
-    // For email updates
-    else if (field == 'email') {
-      final response = await TokenHttp().put('/auth/updateUser', updateData);
-
-      if (response != null && response['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Email updated successfully'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update $field: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Failed to update $field: $e'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  } finally {
-    setState(() {
-      _isLoading = false;
-    });
   }
-}
 
+  // Function to show edit dialog for name/email
   void _showEditDialog(String field) {
     if (field == 'name') {
       nameController.text = name;
@@ -243,6 +269,7 @@ class _IdentityState extends State<Identity> {
     );
   }
 
+  // Function to get image provider
   ImageProvider _getImageProvider() {
     if (kIsWeb) {
       if (_webImage != null) return MemoryImage(_webImage!);
@@ -385,44 +412,7 @@ class _IdentityState extends State<Identity> {
 
                     const SizedBox(height: 20),
 
-                    // Roles Section
-                    if (roles.isNotEmpty)
-                      Card(
-                        elevation: 8,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Container(
-                          width: MediaQuery.of(context).size.width * 0.9,
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Colors.blue.shade50, Colors.white],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Roles',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              ...roles.map((role) => ListTile(
-                                    leading: const Icon(Icons.verified,
-                                        color: Colors.green),
-                                    title: Text(role['roleName'] ?? 'Unknown Role'),
-                                  )),
-                            ],
-                          ),
-                        ),
-                      ),
+                  
                   ],
                 ),
               ),

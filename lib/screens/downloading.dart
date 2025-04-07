@@ -1,7 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:resq/utils/http/token_less_http.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:dio/dio.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/foundation.dart'; // For kIsWeb check
+// import 'dart:html' as html;
 
 class Downloading extends StatefulWidget {
-  const Downloading ({super.key});
+  const Downloading({super.key});
 
   @override
   _DownloadingState createState() => _DownloadingState();
@@ -11,40 +18,127 @@ class _DownloadingState extends State<Downloading> {
   bool isDownloading = false; // To track the download status
   double downloadProgress = 0.0; // To track download progress
   String platform = ''; // To track the selected platform
+  String? downloadUrl;
+  String? errorMessage;
 
-  // Method to simulate the download process for each platform
-  void startDownload(String selectedPlatform) {
+  Dio dio = Dio();
+
+  // Method to initiate the download process
+  void startDownload(String selectedPlatform) async {
     setState(() {
       isDownloading = true;
-      platform = selectedPlatform; // Set the selected platform
+      platform = selectedPlatform;
+      downloadProgress = 0.0;
+      errorMessage = null;
+      downloadUrl = null;
     });
 
-    // Simulate download progress
-    Future.delayed(Duration(milliseconds: 100), () {
-      downloadProgress = 0.1;
-      setState(() {});
+    try {
+      final response = await TokenLessHttp().get('/settings/getApk');
 
-      Future.delayed(Duration(milliseconds: 500), () {
-        downloadProgress = 0.3;
-        setState(() {});
-
-        Future.delayed(Duration(milliseconds: 500), () {
-          downloadProgress = 0.5;
-          setState(() {});
-
-          Future.delayed(Duration(milliseconds: 500), () {
-            downloadProgress = 0.7;
-            setState(() {});
-
-            Future.delayed(Duration(milliseconds: 500), () {
-              downloadProgress = 1.0;
-              isDownloading = false; // Mark download as complete
-              setState(() {});
-            });
-          });
+      if (response['apk']['url'] != null) {
+        setState(() {
+          downloadUrl = response['apk']['url'];
         });
+        await _downloadFile(downloadUrl!);
+      } else {
+        setState(() {
+          isDownloading = false;
+          errorMessage = 'Download URL not found.';
+        });
+        print('Error: Download URL not found in the response.');
+      }
+    } catch (e) {
+      setState(() {
+        isDownloading = false;
+        errorMessage = 'Failed to fetch download URL: $e';
       });
-    });
+      print('Error fetching download URL: $e');
+    }
+  }
+
+  Future<void> _downloadFile(String url) async {
+    if (kIsWeb) {
+      // For web, simply open the URL in a new tab
+      print('Opening download URL in a new tab: $url');
+      // You might need a package like url_launcher for more control on web
+      // For a basic approach, you can use the html package:
+      // html.window.open(url, '_blank');
+      setState(() {
+        isDownloading = false;
+      });
+      return;
+    }
+
+    // For mobile platforms
+    PermissionStatus status;
+    if (Platform.isAndroid) {
+      status = await Permission.storage.request();
+    } else if (Platform.isIOS) {
+      status =
+          await Permission.storage
+              .request(); // iOS might not need explicit storage permission for app's documents directory
+    } else {
+      // Other platforms might have different permission requirements
+      status = PermissionStatus.granted; // Assume granted for others
+    }
+
+    if (status.isGranted) {
+      String savePath;
+      if (Platform.isAndroid) {
+        Directory? externalDir = await getExternalStorageDirectory();
+        savePath = '${externalDir?.path}/REalSQ_$platform.apk';
+      } else if (Platform.isIOS) {
+        Directory appDocDir = await getApplicationDocumentsDirectory();
+        savePath = '${appDocDir.path}/REalSQ_$platform.apk';
+      } else {
+        // Fallback for other platforms
+        Directory tempDir = await getTemporaryDirectory();
+        savePath = '${tempDir.path}/REalSQ_$platform.apk';
+      }
+
+      try {
+        await dio.download(
+          url,
+          savePath,
+          onReceiveProgress: (received, total) {
+            if (total != -1) {
+              setState(() {
+                downloadProgress = received / total;
+              });
+              print('${(downloadProgress * 100).toStringAsFixed(0)}%');
+            }
+          },
+        );
+        setState(() {
+          isDownloading = false;
+          downloadProgress = 1.0;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'REalSQ for $platform downloaded successfully to: $savePath',
+              ),
+            ),
+          );
+          print('Download completed to: $savePath');
+          // Optionally, you can trigger installation here for Android
+        });
+      } catch (e) {
+        setState(() {
+          isDownloading = false;
+          errorMessage = 'Download failed: $e';
+        });
+        print('Download failed: $e');
+      }
+    } else {
+      setState(() {
+        isDownloading = false;
+        errorMessage = 'Storage permission not granted.';
+      });
+      print('Storage permission not granted');
+      // Optionally, open app settings to allow the user to grant permission
+      openAppSettings();
+    }
   }
 
   // Navigate back when the back arrow is pressed
@@ -69,7 +163,12 @@ class _DownloadingState extends State<Downloading> {
         actions: [
           IconButton(
             icon: Icon(Icons.download, color: Colors.white),
-            onPressed: () {}, // Action for the appbar download button
+            onPressed: () {
+              // You might want to show a dialog or options for manual download here
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Select a platform to start download')),
+              );
+            },
           ),
         ],
       ),
@@ -78,7 +177,10 @@ class _DownloadingState extends State<Downloading> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Colors.blueAccent, const Color.fromARGB(255, 214, 103, 234)],
+            colors: [
+              Colors.blueAccent,
+              const Color.fromARGB(255, 214, 103, 234),
+            ],
           ),
         ),
         child: Center(
@@ -86,7 +188,6 @@ class _DownloadingState extends State<Downloading> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Image with a rounded corner effect in a card
                 Card(
                   margin: EdgeInsets.symmetric(horizontal: 20, vertical: 30),
                   shape: RoundedRectangleBorder(
@@ -97,22 +198,23 @@ class _DownloadingState extends State<Downloading> {
                     borderRadius: BorderRadius.circular(15),
                     child: Image.asset(
                       'assets/images/logo.jpg',
-                      width: 250, // Optional width for better image size on web
-                      height: 250, // Optional height for better image size on web
-                      fit: BoxFit.cover, // To adjust the image aspect ratio
+                      width: 250,
+                      height: 250,
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ),
-                SizedBox(height: 30), // Space between image and download progress
+                SizedBox(height: 30),
 
                 if (isDownloading)
-                  // Show downloading progress when downloading
                   Column(
                     children: [
                       CircularProgressIndicator(
                         value: downloadProgress,
                         strokeWidth: 6,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.greenAccent),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Colors.greenAccent,
+                        ),
                       ),
                       SizedBox(height: 20),
                       Text(
@@ -125,27 +227,36 @@ class _DownloadingState extends State<Downloading> {
                       ),
                     ],
                   )
+                else if (errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Text(
+                      errorMessage!,
+                      style: TextStyle(color: Colors.red, fontSize: 16),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
                 else
-                  // Show the three platform-specific download buttons when not downloading
                   Column(
                     children: [
-                      // Wrap the Row in a SingleChildScrollView to enable horizontal scrolling if necessary
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // iOS Download Button
                             Container(
-                              width: 120, // Reduced width for each button
+                              width: 120,
                               child: ElevatedButton.icon(
-                                icon: Icon(Icons.apple, color: Colors.white), // iOS icon
+                                icon: Icon(Icons.apple, color: Colors.white),
                                 label: Text('iOS'),
-                                onPressed: () => startDownload("iOS"), // Trigger iOS download
+                                onPressed: () => startDownload("iOS"),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.black, // Set background color to black
-                                  foregroundColor: Colors.white, // Set text color to white
-                                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+                                  backgroundColor: Colors.black,
+                                  foregroundColor: Colors.white,
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 15,
+                                  ),
                                   textStyle: TextStyle(fontSize: 16),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
@@ -153,19 +264,28 @@ class _DownloadingState extends State<Downloading> {
                                 ),
                               ),
                             ),
-                            SizedBox(width: 20), // Add some space between the buttons
-
-                            // Windows Download Button
+                            SizedBox(width: 20),
                             Container(
-                              width: 120, // Reduced width for each button
+                              width: 120,
                               child: ElevatedButton.icon(
-                                icon: Icon(Icons.desktop_windows, color: const Color.fromARGB(255, 132, 228, 249)), // Windows icon
+                                icon: Icon(
+                                  Icons.desktop_windows,
+                                  color: const Color.fromARGB(
+                                    255,
+                                    132,
+                                    228,
+                                    249,
+                                  ),
+                                ),
                                 label: Text('Windows'),
-                                onPressed: () => startDownload("Windows"), // Trigger Windows download
+                                onPressed: () => startDownload("Windows"),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.black, // Set background color to black
-                                  foregroundColor: Colors.white, // Set text color to white
-                                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+                                  backgroundColor: Colors.black,
+                                  foregroundColor: Colors.white,
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 15,
+                                  ),
                                   textStyle: TextStyle(fontSize: 16),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
@@ -173,19 +293,23 @@ class _DownloadingState extends State<Downloading> {
                                 ),
                               ),
                             ),
-                            SizedBox(width: 20), // Add some space between the buttons
-
-                            // Android Download Button
+                            SizedBox(width: 20),
                             Container(
-                              width: 120, // Reduced width for each button
+                              width: 120,
                               child: ElevatedButton.icon(
-                                icon: Icon(Icons.android, color: const Color.fromARGB(255, 81, 228, 73)), // Android icon
+                                icon: Icon(
+                                  Icons.android,
+                                  color: const Color.fromARGB(255, 81, 228, 73),
+                                ),
                                 label: Text('Android'),
-                                onPressed: () => startDownload("Android"), // Trigger Android download
+                                onPressed: () => startDownload("Android"),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.black, // Set background color to black
-                                  foregroundColor: Colors.white, // Set text color to white
-                                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+                                  backgroundColor: Colors.black,
+                                  foregroundColor: Colors.white,
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 15,
+                                  ),
                                   textStyle: TextStyle(fontSize: 16),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
@@ -196,29 +320,22 @@ class _DownloadingState extends State<Downloading> {
                           ],
                         ),
                       ),
-                      SizedBox(height: 30), // Space after the buttons
-
-                      // Title text about REalSQ or the platform information
+                      SizedBox(height: 30),
                       Text(
-                        'REalSQ', // Change this text to your desired title
+                        'REalSQ',
                         style: TextStyle(
                           fontSize: 30,
                           fontWeight: FontWeight.bold,
                           color: Colors.black,
                         ),
                       ),
-                      SizedBox(height: 15), // Space between title and description
-
-                      // Description text
+                      SizedBox(height: 15),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 40),
                         child: Text(
                           'REalSQ is a platform where users can download applications for iOS, Android, and Windows platforms. Choose the platform and start your download!',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.black54,
-                          ),
+                          style: TextStyle(fontSize: 18, color: Colors.black54),
                         ),
                       ),
                       Padding(

@@ -93,33 +93,11 @@ Future<void> main() async {
   // Initialize local notifications
   await _initLocalNotifications();
 
-  // Request notification permissions early
-  await _requestNotificationPermissions();
-
   if (kIsWeb) {
     setUrlStrategy(PathUrlStrategy());
   }
 
   runApp(const MyApp());
-}
-
-Future<void> _requestNotificationPermissions() async {
-  final messaging = FirebaseMessaging.instance;
-  final settings = await messaging.requestPermission(
-    alert: true,
-    announcement: false,
-    badge: true,
-    carPlay: false,
-    criticalAlert: false,
-    provisional: false,
-    sound: true,
-  );
-  print('Authorization status: ${settings.authorizationStatus}');
-
-  // Get FCM token for this device
-  final token = await messaging.getToken();
-  print('FCM Token: $token');
-  // You should send this token to your server to target this device
 }
 
 Future<void> _initLocalNotifications() async {

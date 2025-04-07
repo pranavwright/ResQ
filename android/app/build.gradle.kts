@@ -1,4 +1,9 @@
 import java.util.Properties
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
 
 plugins {
     id("com.android.application")
@@ -32,11 +37,22 @@ android {
        
     }
 
-    buildTypes {
-        release {
-            signingConfig = signingConfigs.getByName("debug")
-        }
+    signingConfigs {
+    release {
+        keyAlias keystoreProperties['keyAlias']
+        keyPassword keystoreProperties['keyPassword']
+        storeFile file(keystoreProperties['storeFile'])
+        storePassword keystoreProperties['storePassword']
     }
+}
+buildTypes {
+    release {
+        signingConfig signingConfigs.release
+        // Other release specific configurations can go here, e.g.,
+        minifyEnabled true // Enable code shrinking (ProGuard/R8)
+        shrinkResources true // Remove unused resources
+    }
+}
 }
 
 flutter {

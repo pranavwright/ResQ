@@ -54,3 +54,5 @@ ios/GoogleService-Info.plist
 web/firebase-messaging-sw.js
 lib/main.dart
 .env
+key.properties
+resq.jks
